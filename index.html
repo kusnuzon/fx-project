@@ -131,46 +131,50 @@
 
 <script>
     function calculatePips() {
-        // Get user inputs
-        const tradeType = document.getElementById('trade_type').value;
-        const entryPrice = parseFloat(document.getElementById('entry_price').value);
-        const pipDistance = parseInt(document.getElementById('pip_distance').value);
-        const stopLossPips = parseInt(document.getElementById('stop_loss').value);
-        const takeProfit1Pips = parseInt(document.getElementById('take_profit_1').value);
-        const takeProfitOtherPips = parseInt(document.getElementById('take_profit_2_5').value);
+    // Get user inputs
+    const tradeType = document.getElementById('trade_type').value;
+    const entryPrice = parseFloat(document.getElementById('entry_price').value);
+    const pipDistance = parseInt(document.getElementById('pip_distance').value);
+    const stopLossPips = parseInt(document.getElementById('stop_loss').value);
+    const takeProfit1Pips = parseInt(document.getElementById('take_profit_1').value);
+    const takeProfitOtherPips = parseInt(document.getElementById('take_profit_2_5').value);
 
-        const tableBody = document.getElementById('positionsTable').getElementsByTagName('tbody')[0];
-        tableBody.innerHTML = '';  // Clear the table
+    const tableBody = document.getElementById('positionsTable').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = '';  // Clear the table
 
-        // Calculate and display positions
-        for (let i = 0; i < 5; i++) {
-            const positionNumber = i + 1;
-            const positionEntryPrice = entryPrice + (i * pipDistance * 0.1); // Calculate entry price for each position
-            
-            // Adjust Stop Loss and Take Profit based on Trade Type
-            const stopLossPrice = tradeType === 'BUY'
-                ? positionEntryPrice - (stopLossPips * 0.1)
-                : positionEntryPrice + (stopLossPips * 0.1);
-            const takeProfitPrice = tradeType === 'BUY'
-                ? positionEntryPrice + ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1)
-                : positionEntryPrice - ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1);
+    // Calculate and display positions
+    for (let i = 0; i < 5; i++) {
+        const positionNumber = i + 1;
 
-            // Calculate stop loss and take profit in pips
-            const stopLossInPips = stopLossPips;
-            const takeProfitInPips = positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips;
+        // Adjust entry price based on trade type
+        const positionEntryPrice = tradeType === 'BUY'
+            ? entryPrice - (i * pipDistance * 0.1)
+            : entryPrice + (i * pipDistance * 0.1);
+        
+        // Adjust Stop Loss and Take Profit based on Trade Type
+        const stopLossPrice = tradeType === 'BUY'
+            ? positionEntryPrice - (stopLossPips * 0.1)
+            : positionEntryPrice + (stopLossPips * 0.1);
+        const takeProfitPrice = tradeType === 'BUY'
+            ? positionEntryPrice + ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1)
+            : positionEntryPrice - ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1);
 
-            // Create new row for the table
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td>${positionNumber}</td>
-                <td>${positionEntryPrice.toFixed(2)}</td>
-                <td>${stopLossPrice.toFixed(2)}</td>
-                <td>${takeProfitPrice.toFixed(2)}</td>
-                <td>${stopLossInPips}</td>
-                <td>${takeProfitInPips}</td>
-            `;
-        }
+        // Calculate stop loss and take profit in pips
+        const stopLossInPips = stopLossPips;
+        const takeProfitInPips = positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips;
+
+        // Create new row for the table
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td>${positionNumber}</td>
+            <td>${positionEntryPrice.toFixed(2)}</td>
+            <td>${stopLossPrice.toFixed(2)}</td>
+            <td>${takeProfitPrice.toFixed(2)}</td>
+            <td>${stopLossInPips}</td>
+            <td>${takeProfitInPips}</td>
+        `;
     }
+}
 
     // Call the function initially to populate the table with default values
     window.onload = calculatePips;
