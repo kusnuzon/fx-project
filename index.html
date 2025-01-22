@@ -29,7 +29,7 @@
         margin-bottom: 10px;
         font-weight: bold;
     }
-    form input {
+    form input, form select {
         width: 100%;
         padding: 10px;
         margin-bottom: 20px;
@@ -71,7 +71,7 @@
             width: 90%;
         }
     }
-	footer {
+    footer {
         text-align: center;
         margin-top: 20px;
         padding: 10px;
@@ -87,6 +87,12 @@
 
 <div class="form-container">
     <form id="calcForm">
+        <label for="trade_type">Trade Type:</label>
+        <select id="trade_type" name="trade_type">
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+        </select>
+
         <label for="entry_price">Entry Price (XAUUSD):</label>
         <input type="number" step="0.01" id="entry_price" name="entry_price" value="2000.00" required><br>
 
@@ -126,11 +132,12 @@
 <script>
     function calculatePips() {
         // Get user inputs
+        const tradeType = document.getElementById('trade_type').value;
         const entryPrice = parseFloat(document.getElementById('entry_price').value);
         const pipDistance = parseInt(document.getElementById('pip_distance').value);
-        const stopLossPips = parseInt(document.getElementById('stop_loss').value); // Dynamic based on user input
-        const takeProfit1Pips = parseInt(document.getElementById('take_profit_1').value); // Dynamic based on user input
-        const takeProfitOtherPips = parseInt(document.getElementById('take_profit_2_5').value); // Dynamic based on user input
+        const stopLossPips = parseInt(document.getElementById('stop_loss').value);
+        const takeProfit1Pips = parseInt(document.getElementById('take_profit_1').value);
+        const takeProfitOtherPips = parseInt(document.getElementById('take_profit_2_5').value);
 
         const tableBody = document.getElementById('positionsTable').getElementsByTagName('tbody')[0];
         tableBody.innerHTML = '';  // Clear the table
@@ -138,13 +145,19 @@
         // Calculate and display positions
         for (let i = 0; i < 5; i++) {
             const positionNumber = i + 1;
-            const positionEntryPrice = entryPrice + (i * pipDistance * 0.1);  // Calculate entry price for each position
-            const stopLossPrice = positionEntryPrice - (stopLossPips * 0.1); // Stop loss based on user input
-            const takeProfitPrice = positionEntryPrice + ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1); // Calculate take profit price based on user input
+            const positionEntryPrice = entryPrice + (i * pipDistance * 0.1); // Calculate entry price for each position
+            
+            // Adjust Stop Loss and Take Profit based on Trade Type
+            const stopLossPrice = tradeType === 'BUY'
+                ? positionEntryPrice - (stopLossPips * 0.1)
+                : positionEntryPrice + (stopLossPips * 0.1);
+            const takeProfitPrice = tradeType === 'BUY'
+                ? positionEntryPrice + ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1)
+                : positionEntryPrice - ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1);
 
             // Calculate stop loss and take profit in pips
-            const stopLossInPips = stopLossPips; // User-defined stop loss in pips
-            const takeProfitInPips = positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips; // User-defined take profit in pips
+            const stopLossInPips = stopLossPips;
+            const takeProfitInPips = positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips;
 
             // Create new row for the table
             const row = tableBody.insertRow();
