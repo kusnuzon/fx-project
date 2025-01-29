@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator Risk Reward dan Lot Otomatis</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #2b2b2b, #1e1e1e);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #d1d1d1;
+      flex-direction: column;
+    }
+    h1 {
+      text-align: center;
+      color: #d1d1d1;
+      font-size: 24px;
+    }
+    form {
+      background: #333;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      max-width: 400px;
+      width: 100%;
+      margin: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #b0b0b0;
+      font-size: 16px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background-color: #444;
+      color: #d1d1d1;
+    }
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #357ab8;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #2b2b2b;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    th, td {
+      text-align: center;
+      padding: 10px;
+      color: #d1d1d1;
+      font-size: 16px;
+    }
+    th {
+      background-color: #444;
+    }
+    .profit {
+      color: #4a90e2;
+    }
+    .loss {
+      color: #e74c3c;
+    }
+    @media (max-width: 600px) {
+      form, table {
+        max-width: 90%;
+      }
+    }
+	.risk-status {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    .risk-safe {
+        background: #2c3e50;
+        color: #4a90e2;
+    }
+    .risk-danger {
+        background: #2c3e50;
+        color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kalkulator Risk Reward dan Lot Otomatis</h1>
+
+  <form id="calculator-form">
+    <label for="balance">Modal (USD):</label>
+    <input type="number" id="balance" placeholder="Masukkan modal awal" required>
+
+    <label for="riskPercent">Resiko Maksimal (%):</label>
+    <input type="number" id="riskPercent" placeholder="Masukkan resiko dalam persen" required>
+
+    <label for="entries">Jumlah Entry:</label>
+    <input type="number" id="entries" placeholder="Masukkan jumlah entry" required>
+	
+	<label for="layerDistance">Jarak Layer (dalam pips):</label>
+	<input type="number" id="layerDistance" placeholder="Masukkan jarak layer (0 untuk non-layer)" value="0">
+	
+    <label for="tradeType">Tipe Trade:</label>
+    <select id="tradeType">
+      <option value="buy">Buy</option>
+      <option value="sell">Sell</option>
+    </select>
+
+    <label for="pair">Nama Pair:</label>
+    <select id="pair">
+      <option value="XAUUSD">XAUUSD</option>
+    </select>
+
+    <label for="entryPrice">Entry Price:</label>
+    <input type="number" id="entryPrice" placeholder="Masukkan entry price" required>
+
+    <label for="stopLossPips">Stop Loss (dalam pips):</label>
+    <input type="number" id="stopLossPips" placeholder="Masukkan stop loss dalam pips" required>
+
+    <label for="riskReward">Risk Reward (contoh: 2 = 1:2):</label>
+    <input type="number" step="0.1" id="riskReward" placeholder="Masukkan rasio risk reward" required>
+
+    <button type="button" onclick="calculate()">Hitung</button>
+  </form>
+	<div style="text-align: center; color: #e74c3c; margin: 15px 0;">
+	Resiko Maksimal: $<span id="max-risk-amount">0.00</span>
+	</div>
+  <table id="result-table">
+    <thead>
+      <tr>
+		<th>No</th> 
+        <th>Jumlah Lot</th>
+        <th>Entry Price</th>
+        <th>Stop Loss Price</th>
+        <th>Take Profit Price</th>
+        <th>Kerugian (USD)</th>
+        <th>Keuntungan (USD)</th>
+        <th>Total Modal (Untung)</th>
+        <th>Total Modal (Rugi)</th>
+      </tr>
+    </thead>
+	
+    <tbody></tbody>
+  </table>
+
+  <script>
+    function calculate() {
+      const balance = parseFloat(document.getElementById("balance").value);
+      const riskPercent = parseFloat(document.getElementById("riskPercent").value);
+      const entries = parseInt(document.getElementById("entries").value);
+      const layerDistance = parseFloat(document.getElementById("layerDistance").value) || 0;
+      const tradeType = document.getElementById("tradeType").value;
+      const entryPrice = parseFloat(document.getElementById("entryPrice").value);
+      const stopLossPips = parseFloat(document.getElementById("stopLossPips").value);
+      const riskReward = parseFloat(document.getElementById("riskReward").value);
+
+      const resultTableBody = document.querySelector("#result-table tbody");
+      const maxRiskDisplay = document.getElementById("max-risk-amount");
+
+      // Hapus tampilan risiko sebelumnya
+      const existingRiskDisplay = document.querySelector('.risk-status');
+      if (existingRiskDisplay) existingRiskDisplay.remove();
+
+      if (isNaN(balance) || isNaN(riskPercent) || isNaN(entries) || isNaN(entryPrice) || isNaN(stopLossPips) || isNaN(riskReward) || stopLossPips <= 0) {
+        alert("Harap isi semua input dengan benar dan pastikan Stop Loss > 0!");
+        resultTableBody.innerHTML = "";
+        return;
+      }
+
+      // Hitung risiko maksimal
+      const maxRisk = (balance * riskPercent) / 100;
+      maxRiskDisplay.textContent = maxRisk.toFixed(2);
+
+      // Hitung lot awal
+      const pipValuePerLot = 10;
+      let lotPerEntry = (maxRisk / entries) / (stopLossPips * pipValuePerLot);
+      lotPerEntry = Math.round(lotPerEntry * 100) / 100;
+
+      // Validasi lot
+      if (lotPerEntry < 0.01 || lotPerEntry > 100) {
+        alert(lotPerEntry < 0.01 ? "Lot terlalu kecil! Minimal 0.01 lot" : "Lot terlalu besar! Maksimal 100 lot");
+        resultTableBody.innerHTML = "";
+        return;
+      }
+
+      // Penyesuaian lot otomatis
+      let adjustedLot = lotPerEntry;
+      let totalRisk = 0;
+      let attempts = 0;
+
+      do {
+        totalRisk = 0;
+        
+        // Hitung total risiko dengan lot saat ini
+        for (let i = 0; i < entries; i++) {
+          let currentEntryPrice = entryPrice;
+          if (layerDistance > 0) {
+            currentEntryPrice = tradeType === "buy" 
+              ? entryPrice - (layerDistance * i * 0.1)
+              : entryPrice + (layerDistance * i * 0.1);
+          }
+
+          const stopLossPrice = tradeType === "buy" 
+            ? currentEntryPrice - stopLossPips * 0.1 
+            : currentEntryPrice + stopLossPips * 0.1;
+
+          const lossUSD = Math.abs(
+            (tradeType === "buy" 
+              ? (currentEntryPrice - stopLossPrice) 
+              : (stopLossPrice - currentEntryPrice)) * adjustedLot * 100
+          );
+
+          totalRisk += lossUSD;
+        }
+
+        // Penyesuaian lot jika risiko melebihi
+        if (totalRisk > maxRisk) {
+          adjustedLot = Math.max(adjustedLot - 0.01, 0.01);
+          attempts++;
+        }
+
+        if (attempts > 1000) break; // Fail-safe
+      } while (totalRisk > maxRisk && adjustedLot >= 0.01);
+
+      // Tampilkan status risiko
+      const riskPercentage = (totalRisk / maxRisk) * 100;
+      const riskDisplay = document.createElement('div');
+      riskDisplay.className = `risk-status ${totalRisk > maxRisk ? 'risk-danger' : 'risk-safe'}`;
+      riskDisplay.innerHTML = `
+        Total Risiko: $${totalRisk.toFixed(2)}<br>
+        (${riskPercentage.toFixed(1)}% dari risiko maksimal)
+      `;
+      document.querySelector('body').insertBefore(riskDisplay, document.getElementById('result-table'));
+
+      // Validasi akhir risiko
+      if (totalRisk > maxRisk) {
+        alert(`Risiko tetap melebihi! $${totalRisk.toFixed(2)} > $${maxRisk.toFixed(2)}`);
+        resultTableBody.innerHTML = "";
+        return;
+      }
+
+      // Generate tabel
+      resultTableBody.innerHTML = "";
+      for (let i = 0; i < entries; i++) {
+        let currentEntryPrice = entryPrice;
+        if (layerDistance > 0) {
+          currentEntryPrice = tradeType === "buy" 
+            ? entryPrice - (layerDistance * i * 0.1)
+            : entryPrice + (layerDistance * i * 0.1);
+        }
+
+        const stopLossPrice = tradeType === "buy" 
+          ? currentEntryPrice - stopLossPips * 0.1 
+          : currentEntryPrice + stopLossPips * 0.1;
+
+        const takeProfitPrice = tradeType === "buy" 
+          ? currentEntryPrice + stopLossPips * riskReward * 0.1 
+          : currentEntryPrice - stopLossPips * riskReward * 0.1;
+
+        const lossUSD = Math.abs(
+          (tradeType === "buy" 
+            ? (currentEntryPrice - stopLossPrice) 
+            : (stopLossPrice - currentEntryPrice)) * adjustedLot * 100
+        );
+
+        const profitUSD = Math.abs(
+          (tradeType === "buy" 
+            ? (takeProfitPrice - currentEntryPrice) 
+            : (currentEntryPrice - takeProfitPrice)) * adjustedLot * 100
+        );
+
+        const row = `
+          <tr>
+			<td>${i + 1}</td> 
+            <td>${adjustedLot.toFixed(2)}</td>
+            <td>${currentEntryPrice.toFixed(2)}</td>
+            <td>${stopLossPrice.toFixed(2)}</td>
+            <td>${takeProfitPrice.toFixed(2)}</td>
+            <td class="loss">-${lossUSD.toFixed(2)}</td>
+            <td class="profit">+${profitUSD.toFixed(2)}</td>
+            <td>${(balance + profitUSD).toFixed(2)}</td>
+            <td>${(balance - lossUSD).toFixed(2)}</td>
+          </tr>
+        `;
+        resultTableBody.innerHTML += row;
+      }
+    }
+  </script>
+
+  <footer style="text-align: center; margin-top: 20px; color: #d1d1d1;">
+    Developed by ZONん逸 ♾
+  </footer>
+  
+</body>
+</html>
