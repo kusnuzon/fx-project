@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter – CARTRIDGE VAULT</title>
+
+    <!-- Pixel Font & Global Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        .result-box {
+            background: #1e1e2e;
+            border: 2px solid #4e4e68;
+            padding: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #f0e6d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ UNIT CONVERTER</h1>
+        <p class="subtitle" style="text-align:center;">Pips • Suhu • Jarak</p>
+
+        <form id="converterForm">
+            <label for="type">Jenis Konversi:</label>
+            <select id="type">
+                <option value="pips">Pips ke USD (XAUUSD)</option>
+                <option value="temp">Suhu (°C ↔ °F)</option>
+                <option value="dist">Jarak (km ↔ mil)</option>
+            </select>
+
+            <label for="inputValue">Nilai:</label>
+            <input type="number" id="inputValue" placeholder="Masukkan nilai" step="any" required>
+
+            <label for="direction">Arah:</label>
+            <select id="direction">
+                <option value="to">Pips → USD</option>
+                <option value="from">°C → °F</option>
+            </select>
+
+            <button type="button" onclick="convert()">KONVERSI</button>
+        </form>
+
+        <div class="result-box" id="result">Hasil akan tampil di sini</div>
+    </div>
+
+    <script>
+        const typeSelect = document.getElementById('type');
+        const directionSelect = document.getElementById('direction');
+
+        // Ubah pilihan arah sesuai jenis konversi
+        typeSelect.addEventListener('change', () => {
+            const type = typeSelect.value;
+            directionSelect.innerHTML = '';
+            if (type === 'pips') {
+                directionSelect.innerHTML = `
+                    <option value="to">Pips → USD</option>
+                    <option value="from">USD → Pips</option>
+                `;
+            } else if (type === 'temp') {
+                directionSelect.innerHTML = `
+                    <option value="to">°C → °F</option>
+                    <option value="from">°F → °C</option>
+                `;
+            } else if (type === 'dist') {
+                directionSelect.innerHTML = `
+                    <option value="to">km → mil</option>
+                    <option value="from">mil → km</option>
+                `;
+            }
+        });
+
+        function convert() {
+            const type = typeSelect.value;
+            const dir = directionSelect.value;
+            const val = parseFloat(document.getElementById('inputValue').value);
+            const resultDiv = document.getElementById('result');
+
+            if (isNaN(val)) {
+                resultDiv.textContent = 'Masukkan angka yang valid.';
+                return;
+            }
+
+            let result;
+            if (type === 'pips') {
+                const pipValue = 0.1; // 1 pip XAUUSD = $0.10 per 0.01 lot, di sini kita gunakan 1 lot = $10 per pip
+                if (dir === 'to') {
+                    result = `$${(val * 10).toFixed(2)} (dengan 1 lot)`;
+                } else {
+                    result = `${(val / 10).toFixed(2)} pips`;
+                }
+            } else if (type === 'temp') {
+                if (dir === 'to') {
+                    result = `${(val * 9/5 + 32).toFixed(2)} °F`;
+                } else {
+                    result = `${((val - 32) * 5/9).toFixed(2)} °C`;
+                }
+            } else if (type === 'dist') {
+                if (dir === 'to') {
+                    result = `${(val * 0.621371).toFixed(2)} mil`;
+                } else {
+                    result = `${(val / 0.621371).toFixed(2)} km`;
+                }
+            }
+
+            resultDiv.textContent = result;
+        }
+    </script>
+
+    <footer>🛠️ CARTRIDGE VAULT</footer>
+</body>
+</html>
