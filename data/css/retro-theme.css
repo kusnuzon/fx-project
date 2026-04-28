@@ -439,6 +439,68 @@ footer {
     text-decoration: underline;
 }
 
+/* --- NES Emulator --- */
+.nes-canvas {
+    display: block;
+    margin: 0 auto;
+    image-rendering: pixelated;
+    width: 100%;
+    max-width: 512px;
+    height: auto;
+    border: 4px solid #6e6e8a;
+    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
+    background: #000;
+}
+
+.nes-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.nes-controls button {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    background: #3a3a52;
+    color: #d1d1db;
+    border: 2px solid #5a5a7a;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.nes-controls button:hover {
+    background: #4b4b6e;
+    border-color: #b9a88c;
+    color: #f0e6d2;
+}
+
+.nes-dropzone {
+    border: 2px dashed #5a5a7a;
+    padding: 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+    color: #8e8ea0;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    transition: border-color 0.2s;
+    background: rgba(0,0,0,0.3);
+}
+.nes-dropzone.drag-over {
+    border-color: #cfba8c;
+    color: #cfba8c;
+}
+
+.nes-status {
+    text-align: center;
+    font-size: 0.6rem;
+    color: #7a7a95;
+    margin-top: 0.5rem;
+}
+
 /* --- Responsif dasar --- */
 @media (max-width: 700px) {
     .cal-table th, .cal-table td {
