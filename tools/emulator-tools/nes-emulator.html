@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NES Emulator – CARTRIDGE VAULT</title>
+
+    <!-- Global Theme & Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <!-- JSNES Library -->
+    <script src="https://unpkg.com/jsnes/dist/jsnes.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 NES EMULATOR</h1>
+        <p class="subtitle" style="text-align:center;">Drag & drop .nes ROM</p>
+
+        <div class="nes-dropzone" id="dropZone">
+            ⬇️ Drop NES ROM here<br>
+            <span style="font-size:0.4rem;">(.nes file)</span>
+        </div>
+
+        <canvas class="nes-canvas" id="nesCanvas" width="256" height="240" style="display:none;"></canvas>
+
+        <div class="nes-controls" id="controls" style="display:none;">
+            <button onclick="nes.stop()" title="Stop">⏹️ STOP</button>
+            <button onclick="nes.reset()" title="Reset">🔄 RESET</button>
+            <button onclick="nes.togglePause()" title="Pause/Resume">⏯️ PAUSE</button>
+        </div>
+
+        <div class="nes-status" id="statusText"></div>
+    </div>
+
+    <footer>🛠️ CARTRIDGE VAULT</footer>
+
+    <script>
+        // ── NES Emulator Core ──
+        const nes = {
+            instance: null,
+            frameTimer: null,
+            paused: false,
+            loaded: false,
+
+            init() {
+                this.instance = new jsnes.NES({
+                    onFrame: (buffer) => this.drawFrame(buffer),
+                    onAudioSample: () => {} // audio diabaikan untuk kesederhanaan
+                });
+
+                // Keyboard controller (Player 1)
+                this.keyMap = {
+                    'Enter': jsnes.Controller.BUTTON_START,
+                    'Shift': jsnes.Controller.BUTTON_SELECT,
+                    'ArrowUp': jsnes.Controller.BUTTON_UP,
+                    'ArrowDown': jsnes.Controller.BUTTON_DOWN,
+                    'ArrowLeft': jsnes.Controller.BUTTON_LEFT,
+                    'ArrowRight': jsnes.Controller.BUTTON_RIGHT,
+                    'z': jsnes.Controller.BUTTON_A,
+                    'x': jsnes.Controller.BUTTON_B,
+                };
+
+                this.keyboardHandler = (e) => {
+                    const button = this.keyMap[e.key];
+                    if (button !== undefined) {
+                        e.preventDefault();
+                        if (e.type === 'keydown') {
+                            this.instance.buttonDown(1, button);
+                        } else {
+                            this.instance.buttonUp(1, button);
+                        }
+                    }
+                };
+
+                window.addEventListener('keydown', this.keyboardHandler);
+                window.addEventListener('keyup', this.keyboardHandler);
+            },
+
+            loadROM(romData) {
+                this.stop();
+                this.instance.loadROM(romData);
+                this.loaded = true;
+                this.paused = false;
+                document.getElementById('nesCanvas').style.display = 'block';
+                document.getElementById('controls').style.display = 'flex';
+                document.getElementById('statusText').textContent = 'ROM loaded. Use keyboard: arrows, Z, X, Enter, Shift.';
+                this.startFrameLoop();
+            },
+
+            startFrameLoop() {
+                this.stopFrameLoop();
+                this.frameTimer = setInterval(() => {
+                    if (!this.paused) {
+                        this.instance.frame();
+                    }
+                }, 1000 / 60); // 60 FPS
+            },
+
+            stopFrameLoop() {
+                if (this.frameTimer) {
+                    clearInterval(this.frameTimer);
+                    this.frameTimer = null;
+                }
+            },
+
+            drawFrame(buffer) {
+                const canvas = document.getElementById('nesCanvas');
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.createImageData(256, 240);
+                for (let i = 0; i < buffer.length; i++) {
+                    imageData.data[i] = buffer[i];
+                }
+                ctx.putImageData(imageData, 0, 0);
+            },
+
+            stop() {
+                this.stopFrameLoop();
+                this.loaded = false;
+                document.getElementById('statusText').textContent = 'Emulator stopped.';
+                document.getElementById('nesCanvas').style.display = 'none';
+                document.getElementById('controls').style.display = 'none';
+                if (this.instance) this.instance.reset();
+            },
+
+            reset() {
+                if (this.instance) this.instance.reset();
+                this.paused = false;
+                document.getElementById('statusText').textContent = 'Reset.';
+            },
+
+            togglePause() {
+                if (!this.loaded) return;
+                this.paused = !this.paused;
+                document.getElementById('statusText').textContent = this.paused ? 'PAUSED' : 'Running...';
+            }
+        };
+
+        // ── Drag and Drop ROM ──
+        function setupDropZone() {
+            const dropZone = document.getElementById('dropZone');
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.toLowerCase().endsWith('.nes')) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const romBytes = new Uint8Array(ev.target.result);
+                        nes.loadROM(romBytes);
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    alert('Please drop a valid .nes ROM file.');
+                }
+            });
+
+            // Fallback: click to open file dialog
+            dropZone.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.nes';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            const romBytes = new Uint8Array(ev.target.result);
+                            nes.loadROM(romBytes);
+                        };
+                        reader.readAsArrayBuffer(file);
+                    }
+                };
+                input.click();
+            });
+        }
+
+        // ── Init ──
+        nes.init();
+        setupDropZone();
+    </script>
+</body>
+</html>
