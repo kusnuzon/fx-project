@@ -1,17 +1,15 @@
 /* =============================================
-   CARTRIDGE VAULT – GLOBAL RETRO THEME
-   Mencakup semua komponen: form, input, button,
-   table, tooltip, animasi, footer.
+   CARTRIDGE VAULT – GLOBAL RETRO THEME (SOFT)
    ============================================= */
 
-/* --- Reset dasar --- */
+/* Reset dasar */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* --- Body: latar gelap + grid piksel + animasi bintang --- */
+/* Body: latar gelap + grid piksel + animasi bintang */
 body {
     background: #101018;
     color: #cdcdd4;
@@ -52,19 +50,18 @@ body::before {
     to   { background-position: -200px -200px; }
 }
 
-/* --- Judul & heading --- */
+/* Judul & heading */
 h1, h2, h3 {
     font-family: 'Press Start 2P', cursive;
-    color: #b9a88c;            /* gold pucat */
+    color: #b9a88c;
     text-align: center;
     margin: 20px 0;
     text-shadow: 2px 2px 0 #3b3224;
 }
-
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.2rem; }
 
-/* --- Kontainer utama --- */
+/* Container */
 .container {
     position: relative;
     z-index: 2;
@@ -82,7 +79,7 @@ h2 { font-size: 1.2rem; }
     padding: 2rem;
 }
 
-/* --- Form & input (gaya global) --- */
+/* Form & input */
 form {
     background: #2a2a3c;
     padding: 20px;
@@ -101,7 +98,7 @@ label {
     font-weight: bold;
 }
 
-input, select, button {
+input, select {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -118,21 +115,33 @@ input:focus, select:focus {
     outline: none;
 }
 
+/* Tombol global yang nyaman di mata */
 button {
-    background-color: #6c63ff;
-    color: white;
-    border: none;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    border: 1px solid #5a5a7a;
+    border-radius: 5px;
+    background-color: #3a3a52;          /* abu ungu gelap */
+    color: #d1d1db;
+    font-weight: normal;
     cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
 }
 
 button:hover {
-    background-color: #5549d9;
-    transform: translateY(-2px);
+    background-color: #4b4b6e;          /* sedikit lebih terang */
+    border-color: #8a8aaa;
+    transform: translateY(-1px);
 }
 
-/* --- Tabel --- */
+button:active {
+    transform: translateY(0);
+    background-color: #2e2e42;
+}
+
+/* Tabel */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -157,11 +166,10 @@ th {
     font-weight: bold;
 }
 
-/* Warna profit / loss */
-.profit { color: #6c9; }    /* hijau lembut */
-.loss   { color: #e07373; } /* merah redup */
+.profit { color: #6c9; }
+.loss   { color: #e07373; }
 
-/* --- Tooltip --- */
+/* Tooltip */
 .tooltip {
     position: relative;
     display: inline-block;
@@ -191,7 +199,7 @@ th {
     opacity: 1;
 }
 
-/* --- Footer --- */
+/* Footer */
 footer {
     text-align: center;
     margin-top: 20px;
@@ -202,7 +210,7 @@ footer {
     border-top: 2px solid #4b4b68;
 }
 
-/* --- Animasi (fadeIn dll) tetap tersedia --- */
+/* Animasi */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-20px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -212,7 +220,7 @@ footer {
     to   { opacity: 1; transform: translateX(0); }
 }
 
-/* --- Responsif dasar --- */
+/* Responsif */
 @media (max-width: 600px) {
     .container, form, table {
         max-width: 95%;
