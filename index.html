@@ -12,25 +12,26 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #1a202c;              /* dark grayish blue */
+            color: #e2e8f0;
             min-height: 100vh;
             padding: 2rem;
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
+            background: #2d3748;              /* dark card */
             border-radius: 1.5rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             padding: 3rem;
         }
         h1 {
             font-size: 2.5rem;
-            color: #2d3748;
+            color: #f7fafc;
             margin-bottom: 0.25rem;
         }
         .subtitle {
-            color: #718096;
+            color: #a0aec0;
             margin-bottom: 2rem;
             font-size: 1.1rem;
         }
@@ -39,8 +40,8 @@
         }
         .category-title {
             font-size: 1.5rem;
-            color: #4a5568;
-            border-bottom: 3px solid #e2e8f0;
+            color: #cbd5e0;
+            border-bottom: 3px solid #4a5568;
             padding-bottom: 0.5rem;
             margin-bottom: 1rem;
         }
@@ -51,20 +52,20 @@
         }
         .tool-list li a {
             display: block;
-            background: #edf2f7;
+            background: #4a5568;              /* slightly lighter card */
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
             text-decoration: none;
-            color: #2b6cb0;
+            color: #bee3f8;                  /* light blue link */
             font-weight: 500;
             transition: all 0.2s ease;
             border: 2px solid transparent;
         }
         .tool-list li a:hover {
-            background: #bee3f8;
-            border-color: #3182ce;
+            background: #2b6cb0;
+            border-color: #63b3ed;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(49,130,206,0.2);
+            box-shadow: 0 4px 12px rgba(49,130,206,0.4);
         }
         .loading {
             text-align: center;
@@ -72,8 +73,8 @@
             padding: 2rem;
         }
         .error {
-            background: #fff5f5;
-            color: #c53030;
+            background: #742a2a;              /* dark red */
+            color: #fed7d7;
             padding: 1rem;
             border-radius: 0.5rem;
             border-left: 4px solid #fc8181;
@@ -87,19 +88,19 @@
             margin-top: 2rem;
             text-align: center;
             font-size: 0.85rem;
-            color: #a0aec0;
+            color: #718096;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🛠 Tool Dashboard</h1>
-        <p class="subtitle">All tools organized by folder – inside <code>Tools/</code></p>
+        <p class="subtitle">All tools organized by folder – inside <code>tools/</code></p>
         <div id="tools-container">
-            <div class="loading">🔍 Scanning <code>Tools/</code> for categories...</div>
+            <div class="loading">🔍 Scanning <code>tools/</code> for categories...</div>
         </div>
         <div class="footer">
-            <span>Add a new subfolder inside <code>Tools/</code> with HTML files, push, and it shows up here.</span>
+            <span>Add a new subfolder inside <code>tools/</code> with HTML files, push, and it shows up here.</span>
         </div>
     </div>
 
@@ -109,14 +110,12 @@
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
 
-            // The folder that contains all tool subfolders.
-            // Change this if your container folder has a different name.
-            const TOOLS_PARENT_FOLDER = 'Tools';
+            // Lowercase folder name as requested
+            const TOOLS_PARENT_FOLDER = 'tools';
 
             const container = document.getElementById('tools-container');
 
             try {
-                // 1. Fetch the contents of the container folder
                 const parentApiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_PARENT_FOLDER}`;
                 const parentResponse = await fetch(parentApiUrl);
 
@@ -126,7 +125,6 @@
 
                 const parentItems = await parentResponse.json();
 
-                // 2. Filter only subdirectories (ignore files, hidden folders, etc.)
                 const categories = parentItems.filter(item =>
                     item.type === 'dir' && !item.name.startsWith('.')
                 );
@@ -136,14 +134,12 @@
                     return;
                 }
 
-                // 3. For each category folder, fetch its contents in parallel
                 const categoryPromises = categories.map(async folder => {
                     const folderApiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_PARENT_FOLDER}/${folder.name}`;
                     const folderResponse = await fetch(folderApiUrl);
                     if (!folderResponse.ok) return { category: folder.name, tools: [] };
 
                     const files = await folderResponse.json();
-                    // Only keep .html files (exclude index.html, 404.html)
                     const htmlFiles = files.filter(file =>
                         file.type === 'file' &&
                         file.name.endsWith('.html') &&
@@ -154,14 +150,12 @@
 
                 const categoryResults = await Promise.all(categoryPromises);
 
-                // 4. Build the UI
                 container.innerHTML = '';
 
                 categoryResults.forEach(({ category, tools }) => {
                     const categoryDiv = document.createElement('div');
                     categoryDiv.className = 'category';
 
-                    // Beautify category name for display
                     const displayName = category
                         .replace(/[-_]/g, ' ')
                         .replace(/\b\w/g, char => char.toUpperCase());
@@ -188,7 +182,6 @@
 
                             const li = document.createElement('li');
                             const link = document.createElement('a');
-                            // Relative path from root: Tools/category/filename.html
                             link.href = `${TOOLS_PARENT_FOLDER}/${category}/${file.name}`;
                             link.textContent = toolName;
                             li.appendChild(link);
