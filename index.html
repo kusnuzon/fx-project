@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FX Toolbox</title>
+    <title>Tool Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -14,18 +14,15 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 2rem;
         }
         .container {
+            max-width: 800px;
+            margin: 0 auto;
             background: white;
             border-radius: 1.5rem;
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             padding: 3rem;
-            max-width: 700px;
-            width: 100%;
         }
         h1 {
             font-size: 2.5rem;
@@ -36,6 +33,16 @@
             color: #718096;
             margin-bottom: 2rem;
             font-size: 1.1rem;
+        }
+        .category {
+            margin-bottom: 2rem;
+        }
+        .category-title {
+            font-size: 1.5rem;
+            color: #4a5568;
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
         }
         .tool-list {
             list-style: none;
@@ -70,6 +77,11 @@
             padding: 1rem;
             border-radius: 0.5rem;
             border-left: 4px solid #fc8181;
+            margin-bottom: 1rem;
+        }
+        .empty-folder {
+            color: #a0aec0;
+            font-style: italic;
         }
         .footer {
             margin-top: 2rem;
@@ -81,69 +93,116 @@
 </head>
 <body>
     <div class="container">
-        <h1>🛠 FX Toolbox</h1>
-        <p class="subtitle">Modular tools, always up to date – from <code>fx-project</code></p>
+        <h1>🛠 Tool Dashboard</h1>
+        <p class="subtitle">All tools organized by folder – inside <code>Tools/</code></p>
         <div id="tools-container">
-            <div class="loading">🔍 Scanning repository for tools...</div>
+            <div class="loading">🔍 Scanning <code>Tools/</code> for categories...</div>
         </div>
         <div class="footer">
-            <span>Automatically updated via GitHub API</span>
+            <span>Add a new subfolder inside <code>Tools/</code> with HTML files, push, and it shows up here.</span>
         </div>
     </div>
 
     <script>
         (async function() {
-            // ── CONFIGURATION ── (already set for kusnuzon/fx-project)
+            // ── CONFIGURATION ──
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
-            const TOOLS_FOLDER   = '';            // '' if tools are in the repo root, otherwise 'tools/'
-            const EXCLUDE_FILES  = ['index.html', '404.html', 'README.md'];
+
+            // The folder that contains all tool subfolders.
+            // Change this if your container folder has a different name.
+            const TOOLS_PARENT_FOLDER = 'Tools';
 
             const container = document.getElementById('tools-container');
 
             try {
-                const apiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_FOLDER}`;
-                const response = await fetch(apiUrl);
+                // 1. Fetch the contents of the container folder
+                const parentApiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_PARENT_FOLDER}`;
+                const parentResponse = await fetch(parentApiUrl);
 
-                if (!response.ok) {
-                    throw new Error(`GitHub API error (${response.status}) – check that the repo is public.`);
+                if (!parentResponse.ok) {
+                    throw new Error(`Folder "${TOOLS_PARENT_FOLDER}" not found or repo is private (status ${parentResponse.status}).`);
                 }
 
-                const files = await response.json();
+                const parentItems = await parentResponse.json();
 
-                const toolFiles = files.filter(file =>
-                    file.type === 'file' &&
-                    file.name.endsWith('.html') &&
-                    !EXCLUDE_FILES.includes(file.name)
+                // 2. Filter only subdirectories (ignore files, hidden folders, etc.)
+                const categories = parentItems.filter(item =>
+                    item.type === 'dir' && !item.name.startsWith('.')
                 );
 
-                if (toolFiles.length === 0) {
-                    container.innerHTML = '<p class="loading">No tool pages found yet. Push some HTML files to the repo!</p>';
+                if (categories.length === 0) {
+                    container.innerHTML = `<p class="loading">No tool categories found inside <code>${TOOLS_PARENT_FOLDER}/</code>. Create subfolders like <code>any-tools</code> with HTML files inside.</p>`;
                     return;
                 }
 
-                const list = document.createElement('ul');
-                list.className = 'tool-list';
+                // 3. For each category folder, fetch its contents in parallel
+                const categoryPromises = categories.map(async folder => {
+                    const folderApiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_PARENT_FOLDER}/${folder.name}`;
+                    const folderResponse = await fetch(folderApiUrl);
+                    if (!folderResponse.ok) return { category: folder.name, tools: [] };
 
-                toolFiles.forEach(file => {
-                    const rawName = file.name.replace('.html', '');
-                    const displayName = rawName
+                    const files = await folderResponse.json();
+                    // Only keep .html files (exclude index.html, 404.html)
+                    const htmlFiles = files.filter(file =>
+                        file.type === 'file' &&
+                        file.name.endsWith('.html') &&
+                        !['index.html', '404.html'].includes(file.name)
+                    );
+                    return { category: folder.name, tools: htmlFiles };
+                });
+
+                const categoryResults = await Promise.all(categoryPromises);
+
+                // 4. Build the UI
+                container.innerHTML = '';
+
+                categoryResults.forEach(({ category, tools }) => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'category';
+
+                    // Beautify category name for display
+                    const displayName = category
                         .replace(/[-_]/g, ' ')
                         .replace(/\b\w/g, char => char.toUpperCase());
 
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = file.name;          // relative link works inside /fx-project/
-                    link.textContent = displayName;
-                    li.appendChild(link);
-                    list.appendChild(li);
+                    const title = document.createElement('h2');
+                    title.className = 'category-title';
+                    title.textContent = displayName;
+                    categoryDiv.appendChild(title);
+
+                    if (tools.length === 0) {
+                        const empty = document.createElement('p');
+                        empty.className = 'empty-folder';
+                        empty.textContent = 'No HTML tools in this category yet.';
+                        categoryDiv.appendChild(empty);
+                    } else {
+                        const list = document.createElement('ul');
+                        list.className = 'tool-list';
+
+                        tools.forEach(file => {
+                            const rawName = file.name.replace('.html', '');
+                            const toolName = rawName
+                                .replace(/[-_]/g, ' ')
+                                .replace(/\b\w/g, char => char.toUpperCase());
+
+                            const li = document.createElement('li');
+                            const link = document.createElement('a');
+                            // Relative path from root: Tools/category/filename.html
+                            link.href = `${TOOLS_PARENT_FOLDER}/${category}/${file.name}`;
+                            link.textContent = toolName;
+                            li.appendChild(link);
+                            list.appendChild(li);
+                        });
+
+                        categoryDiv.appendChild(list);
+                    }
+
+                    container.appendChild(categoryDiv);
                 });
 
-                container.innerHTML = '';
-                container.appendChild(list);
-
             } catch (error) {
-                container.innerHTML = `<div class="error">⚠️ Could not load tools: ${error.message}</div>`;
+                container.innerHTML = `<div class="error">⚠️ ${error.message}</div>`;
                 console.error(error);
             }
         })();
