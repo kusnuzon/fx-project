@@ -10,33 +10,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-    <!-- Global Retro Theme -->
+    <!-- Global Retro Theme (latar + bintang) -->
     <link rel="stylesheet" href="data/css/retro-theme.css">
 
     <style>
-        /* === DASHBOARD SPECIFIC (tidak mengganggu tools) === */
+        /* === DASHBOARD SPECIFIC – CARTRIDGE VAULT === */
 
-        /* Container utama dashboard – perhalus border & glow */
+        /* Container utama dengan frame retro lembut */
         .dashboard-container {
             position: relative;
             z-index: 2;
             max-width: 860px;
             margin: 2rem auto;
-            background: rgba(16, 16, 28, 0.9);
+            background: rgba(20, 20, 32, 0.9); /* ungu gelap transparan */
             backdrop-filter: blur(4px);
-            border: 4px solid #6c63ff;
-            outline: 4px solid #3f3f5c;
+            border: 4px solid #6e6e8a;         /* abu ungu, tidak tajam */
+            outline: 4px solid #3d3d56;
             outline-offset: 6px;
             box-shadow:
                 0 0 0 4px #1e1e2f,
                 0 0 0 8px #0a0a14,
-                0 10px 30px rgba(0, 0, 0, 0.7),
-                inset 0 0 30px rgba(0, 0, 0, 0.5);
-            padding: 2rem 2rem 1.5rem 2rem;
-            border-radius: 4px;
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.4);
+            padding: 2rem 2rem 1.5rem;
         }
 
-        /* Scanline di atas dashboard */
+        /* Scanline halus (lebih transparan) */
         .dashboard-container::after {
             content: "";
             position: absolute;
@@ -46,8 +45,8 @@
             height: 100%;
             background: repeating-linear-gradient(
                 0deg,
-                rgba(0,0,0,0.1) 0px,
-                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.05) 0px,
+                rgba(0,0,0,0.05) 2px,
                 transparent 2px,
                 transparent 4px
             );
@@ -61,124 +60,117 @@
             z-index: 20;
         }
 
-        /* Header animasi */
+        /* Judul utama - gold lembut */
         h1 {
             font-family: 'Press Start 2P', cursive;
             font-size: 2rem;
-            color: #ffd700;
+            color: #cfba8c;              /* gold pucat */
             text-shadow:
-                3px 3px 0 #aa6600,
-                6px 6px 0 rgba(0,0,0,0.5);
-            margin-bottom: 0.5rem;
+                2px 2px 0 #4a3e2c,
+                4px 4px 0 rgba(0,0,0,0.4);
             text-align: center;
-            animation: glowPulse 3s ease-in-out infinite;
+            animation: softGlow 3s ease-in-out infinite;
+            margin-bottom: 0.3rem;
         }
 
-        @keyframes glowPulse {
-            0%, 100% { text-shadow: 3px 3px 0 #aa6600, 6px 6px 0 rgba(0,0,0,0.5), 0 0 8px rgba(255,215,0,0.2); }
-            50%      { text-shadow: 3px 3px 0 #aa6600, 6px 6px 0 rgba(0,0,0,0.5), 0 0 18px rgba(255,215,0,0.5); }
+        @keyframes softGlow {
+            0%, 100% { text-shadow: 2px 2px 0 #4a3e2c, 4px 4px 0 rgba(0,0,0,0.4), 0 0 6px rgba(207,186,140,0.2); }
+            50%      { text-shadow: 2px 2px 0 #4a3e2c, 4px 4px 0 rgba(0,0,0,0.4), 0 0 14px rgba(207,186,140,0.35); }
         }
 
         .subtitle {
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.55rem;
-            color: #8b8bb0;
+            font-size: 0.5rem;
+            color: #8e8ea0;
             text-align: center;
-            margin-bottom: 2.2rem;
-            line-height: 1.8;
+            margin-bottom: 2rem;
         }
         .subtitle code {
-            background: #2e2e42;
+            background: #2b2b3c;
             padding: 0.2rem 0.5rem;
-            color: #ffb86c;
+            color: #ccb38a;
         }
 
         /* Kategori */
         .category {
-            margin-bottom: 2.2rem;
+            margin-bottom: 2rem;
         }
 
         .category-title {
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.75rem;
-            color: #c084fc;
+            font-size: 0.7rem;
+            color: #9da5b4;             /* biru abu lembut */
             text-transform: uppercase;
-            border-bottom: 4px double #6c63ff;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.2rem;
+            border-bottom: 3px double #5a5a7a;
+            padding-bottom: 0.4rem;
+            margin-bottom: 1rem;
         }
 
-        /* Grid tombol cartridge */
+        /* Grid cartridge */
         .tool-list {
             list-style: none;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.8rem;
         }
 
         .tool-list li a {
             display: block;
-            background: #1e1e2f;
-            color: #e0e0e0;
+            background: #2a2a3c;
+            color: #d1d1db;
             text-decoration: none;
-            font-family: 'Courier New', Courier, monospace;
             font-weight: bold;
-            font-size: 0.95rem;
-            padding: 1rem 1.2rem;
+            font-size: 0.9rem;
+            padding: 0.9rem 1rem;
             text-align: center;
-            border: 3px solid #3f3f5c;
-            box-shadow:
-                4px 4px 0 0 #0a0a14,
-                inset 0 0 0 2px #2a2a40;
-            transition: all 0.1s ease-in-out;
+            border: 2px solid #4e4e68;
+            box-shadow: 2px 2px 0 #0e0e1a, inset 0 0 0 2px #202030;
+            transition: all 0.1s ease;
         }
 
         .tool-list li a:hover {
-            background: #4e4b8e;
-            border-color: #ffd700;
-            color: #0d0d0d;
-            transform: translate(-2px, -2px);
-            box-shadow:
-                6px 6px 0 0 #000,
-                inset 0 0 0 2px #f0e68c;
+            background: #4b4a6e;
+            border-color: #b9a88c;
+            color: #f0e6d2;
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #0a0a14, inset 0 0 0 2px #3b3b52;
         }
 
-        /* Tanda buka tab baru */
         .tool-list li a[target="_blank"]::after {
             content: " ↗";
-            font-size: 0.8em;
-            opacity: 0.7;
+            font-size: 0.7em;
+            opacity: 0.5;
         }
 
         .empty-folder {
             color: #6b6b80;
             font-style: italic;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            padding-left: 0.5rem;
         }
 
-        /* Loading & error */
+        /* Loading */
         .loading {
             text-align: center;
-            color: #a0a0c0;
+            color: #9a9ab0;
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             padding: 2rem;
             animation: blink 1.5s infinite;
         }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+            50% { opacity: 0.35; }
         }
 
         .error {
-            background: #2a1212;
-            color: #ffb3b3;
+            background: #2a1a1a;
+            color: #dbb0b0;
             padding: 1rem;
-            border: 3px solid #ff4d4d;
-            box-shadow: 4px 4px 0 #000;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
+            border: 2px solid #a05050;
+            font-size: 0.8rem;
+            margin: 1rem 0;
         }
 
         /* Footer animasi */
@@ -186,8 +178,8 @@
             margin-top: 2rem;
             text-align: center;
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.45rem;
-            color: #5a5a7a;
+            font-size: 0.4rem;
+            color: #5e5e78;
             position: relative;
         }
         .dashboard-footer::after {
@@ -198,10 +190,10 @@
 
         @keyframes flickerFooter {
             0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
-            20%, 24%, 55% { opacity: 0.3; }
+            20%, 24%, 55% { opacity: 0.2; }
         }
 
-        /* Responsif */
+        /* Responsive */
         @media (max-width: 600px) {
             .dashboard-container {
                 padding: 1.2rem;
@@ -210,7 +202,7 @@
                 outline-offset: 3px;
             }
             h1 {
-                font-size: 1.4rem;
+                font-size: 1.3rem;
             }
             .tool-list {
                 grid-template-columns: 1fr;
