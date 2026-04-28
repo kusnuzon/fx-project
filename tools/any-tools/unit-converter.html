@@ -5,23 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unit Converter – CARTRIDGE VAULT</title>
 
-    <!-- Pixel Font & Global Theme -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
-
-    <style>
-        .result-box {
-            background: #1e1e2e;
-            border: 2px solid #4e4e68;
-            padding: 1rem;
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 1.2rem;
-            color: #f0e6d2;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -55,7 +42,6 @@
         const typeSelect = document.getElementById('type');
         const directionSelect = document.getElementById('direction');
 
-        // Ubah pilihan arah sesuai jenis konversi
         typeSelect.addEventListener('change', () => {
             const type = typeSelect.value;
             directionSelect.innerHTML = '';
@@ -90,7 +76,6 @@
 
             let result;
             if (type === 'pips') {
-                const pipValue = 0.1; // 1 pip XAUUSD = $0.10 per 0.01 lot, di sini kita gunakan 1 lot = $10 per pip
                 if (dir === 'to') {
                     result = `$${(val * 10).toFixed(2)} (dengan 1 lot)`;
                 } else {
