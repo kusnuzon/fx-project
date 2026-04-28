@@ -1,15 +1,16 @@
 /* =============================================
-   CARTRIDGE VAULT – GLOBAL RETRO THEME (SOFT)
+   CARTRIDGE VAULT – GLOBAL RETRO THEME (FULL)
+   Mencakup SEMUA komponen dari seluruh tools.
    ============================================= */
 
-/* Reset dasar */
+/* --- Reset dasar --- */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Body: latar gelap + grid piksel + animasi bintang */
+/* --- Body: latar gelap + grid piksel + animasi bintang --- */
 body {
     background: #101018;
     color: #cdcdd4;
@@ -18,7 +19,6 @@ body {
     position: relative;
     overflow-x: hidden;
     min-height: 100vh;
-
     background-image:
         linear-gradient(rgba(120,120,150,0.07) 1px, transparent 1px),
         linear-gradient(90deg, rgba(120,120,150,0.07) 1px, transparent 1px);
@@ -50,7 +50,7 @@ body::before {
     to   { background-position: -200px -200px; }
 }
 
-/* Judul & heading */
+/* --- Judul & heading --- */
 h1, h2, h3 {
     font-family: 'Press Start 2P', cursive;
     color: #b9a88c;
@@ -61,7 +61,7 @@ h1, h2, h3 {
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.2rem; }
 
-/* Container */
+/* --- Container --- */
 .container {
     position: relative;
     z-index: 2;
@@ -79,7 +79,7 @@ h2 { font-size: 1.2rem; }
     padding: 2rem;
 }
 
-/* Form & input */
+/* --- Form & input (global) --- */
 form {
     background: #2a2a3c;
     padding: 20px;
@@ -120,7 +120,7 @@ textarea {
     font-family: 'Courier New', Courier, monospace;
 }
 
-/* Tombol global yang nyaman di mata */
+/* --- Tombol global --- */
 button {
     width: 100%;
     padding: 10px;
@@ -134,19 +134,17 @@ button {
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
 }
-
 button:hover {
     background-color: #4b4b6e;
     border-color: #8a8aaa;
     transform: translateY(-1px);
 }
-
 button:active {
     transform: translateY(0);
     background-color: #2e2e42;
 }
 
-/* Tabel */
+/* --- Tabel global --- */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -156,7 +154,6 @@ table {
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-
 th, td {
     text-align: center;
     padding: 10px;
@@ -164,17 +161,15 @@ th, td {
     font-size: 0.9rem;
     border: 1px solid #3f3f5c;
 }
-
 th {
     background-color: #3f3f5c;
     color: #f0e6d2;
     font-weight: bold;
 }
-
 .profit { color: #6c9; }
 .loss   { color: #e07373; }
 
-/* Tooltip */
+/* --- Tooltip --- */
 .tooltip {
     position: relative;
     display: inline-block;
@@ -204,7 +199,7 @@ th {
     opacity: 1;
 }
 
-/* Footer */
+/* --- Footer --- */
 footer {
     text-align: center;
     margin-top: 20px;
@@ -215,7 +210,7 @@ footer {
     border-top: 2px solid #4b4b68;
 }
 
-/* Animasi */
+/* --- Animasi dasar --- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-20px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -225,7 +220,243 @@ footer {
     to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Responsif */
+/* =============================================
+   KOMPONEN KHUSUS DARI BERBAGAI TOOLS
+   ============================================= */
+
+/* --- Unit Converter: result box --- */
+.result-box {
+    background: #1e1e2e;
+    border: 2px solid #4e4e68;
+    padding: 1rem;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #f0e6d2;
+}
+
+/* --- Quick Notes --- */
+.notes-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+.notes-list li {
+    background: #1e1e2e;
+    border: 1px solid #3f3f5c;
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    word-break: break-word;
+    display: flex;
+    justify-content: space-between;
+}
+.delete-btn {
+    background: #6e3a3a;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    width: auto;
+    border: 1px solid #8a5050;
+}
+.delete-btn:hover {
+    background: #8a4a4a;
+}
+
+/* --- PipsCalc 2.0: risk status --- */
+.risk-status {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.risk-safe {
+    background: #2c3e50;
+    color: #4a90e2;
+}
+.risk-danger {
+    background: #2c3e50;
+    color: #e74c3c;
+}
+
+/* --- FX Calendar & News --- */
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #4b4b68;
+}
+.tab-btn {
+    flex: 1;
+    padding: 0.7rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    background: transparent;
+    color: #7a7a95;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.tab-btn.active {
+    color: #cfba8c;
+    border-bottom: 3px solid #cfba8c;
+    background: rgba(207,186,140,0.08);
+}
+.tab-btn:hover {
+    color: #b9a88c;
+}
+
+/* Filter row (layout) */
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    align-items: center;
+}
+.filter-row select,
+.filter-row input {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    background: #2a2a3c;
+    color: #cdcdd4;
+    border: 1px solid #4b4b68;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+.filter-row input {
+    flex: 1;
+    min-width: 140px;
+}
+.filter-row label {
+    font-size: 0.65rem;
+    color: #9da5b4;
+    margin-right: 0.2rem;
+    white-space: nowrap;
+}
+
+/* Calendar table */
+.cal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+.cal-table th {
+    background: #3f3f5c;
+    color: #f0e6d2;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.6rem;
+    font-family: 'Press Start 2P', cursive;
+    text-align: center;
+    position: sticky;
+    top: 0;
+}
+.cal-table td {
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid #3f3f5c;
+    text-align: center;
+    vertical-align: middle;
+}
+.cal-table tr:hover td {
+    background: rgba(207,186,140,0.06);
+}
+.cal-table tr.past-event td {
+    opacity: 0.5;
+}
+
+/* Day group header */
+.day-group {
+    background: #2a2a3c;
+    font-weight: bold;
+    color: #cfba8c;
+    font-size: 0.7rem;
+    font-family: 'Press Start 2P', cursive;
+}
+.day-group td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 2px solid #4b4b68;
+}
+
+/* Impact badge */
+.impact {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.impact-high    { background: #5c2a2a; color: #f0a0a0; }
+.impact-medium  { background: #5c4a2a; color: #f0d0a0; }
+.impact-low     { background: #2a3a2a; color: #a0d0a0; }
+.impact-holiday { background: #3a2a5c; color: #c0a0f0; }
+
+/* News cards */
+.news-card {
+    background: #2a2a3c;
+    border: 1px solid #4b4b68;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    border-radius: 4px;
+    transition: all 0.1s;
+}
+.news-card:hover {
+    border-color: #b9a88c;
+    background: #32324a;
+}
+.news-card h3 {
+    font-size: 0.85rem;
+    color: #e0d0b0;
+    margin-bottom: 0.3rem;
+    text-align: left;
+    font-family: 'Courier New', monospace;
+}
+.news-card .meta {
+    font-size: 0.65rem;
+    color: #8e8ea0;
+    margin-bottom: 0.4rem;
+}
+.news-card .snippet {
+    font-size: 0.75rem;
+    color: #b0b0c0;
+    line-height: 1.4;
+}
+.news-card a {
+    color: #b9a88c;
+    text-decoration: none;
+    font-size: 0.65rem;
+}
+.news-card a:hover {
+    text-decoration: underline;
+}
+
+/* --- Responsif dasar --- */
+@media (max-width: 700px) {
+    .cal-table th, .cal-table td {
+        font-size: 0.55rem;
+        padding: 0.3rem 0.2rem;
+    }
+    .cal-table th {
+        font-size: 0.45rem;
+    }
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .tab-btn {
+        font-size: 0.45rem;
+    }
+}
+
 @media (max-width: 600px) {
     .container, form, table {
         max-width: 95%;
