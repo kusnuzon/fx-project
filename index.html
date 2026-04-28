@@ -3,114 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Dashboard</title>
+    <title>Pixel Toolbox</title>
+
+    <!-- Pixel Font from Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
     <style>
-        * {
+        /* === GLOBAL RESET === */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        /* === PIXEL DARK BACKGROUND === */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a202c;              /* dark grayish blue */
-            color: #e2e8f0;
+            background: #0d0d0d;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
             min-height: 100vh;
-            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+
+            /* Subtle pixel grid */
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 8px 8px;
         }
+
+        /* === MONITOR FRAME === */
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #2d3748;              /* dark card */
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            padding: 3rem;
+            position: relative;
+            max-width: 850px;
+            width: 100%;
+            background: #12121a;
+            padding: 2.5rem 2rem 2rem 2rem;
+
+            /* Pixelated border - multi-layer */
+            border: 4px solid #6c63ff;
+            outline: 4px solid #3f3f5c;
+            outline-offset: 6px;
+            box-shadow:
+                0 0 0 4px #1e1e2f,
+                0 0 0 8px #0a0a14,
+                0 0 20px rgba(108, 99, 255, 0.4),
+                inset 0 0 20px rgba(0,0,0,0.6);
+
+            /* Retro screen curvature (subtle) */
+            border-radius: 4px; /* sharp corners */
         }
+
+        /* Optional scanlines */
+        .container::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.15) 0px,
+                rgba(0,0,0,0.15) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+            border-radius: inherit;
+        }
+
+        /* Content above scanlines */
+        .container > * {
+            position: relative;
+            z-index: 20;
+        }
+
+        /* === HEADER === */
         h1 {
-            font-size: 2.5rem;
-            color: #f7fafc;
-            margin-bottom: 0.25rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.8rem;
+            color: #ffd700;          /* gold */
+            text-shadow:
+                3px 3px 0 #aa6600,
+                6px 6px 0 rgba(0,0,0,0.5);
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+            word-spacing: 4px;
         }
+
         .subtitle {
-            color: #a0aec0;
-            margin-bottom: 2rem;
-            font-size: 1.1rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: #8b8bb0;
+            margin-bottom: 2.2rem;
+            line-height: 1.8;
         }
+        .subtitle code {
+            background: #2e2e42;
+            padding: 0.2rem 0.5rem;
+            border-radius: 2px;
+            color: #ffb86c;
+        }
+
+        /* === CATEGORY SECTION === */
         .category {
-            margin-bottom: 2rem;
+            margin-bottom: 2.2rem;
         }
+
         .category-title {
-            font-size: 1.5rem;
-            color: #cbd5e0;
-            border-bottom: 3px solid #4a5568;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.75rem;
+            color: #c084fc;
+            text-transform: uppercase;
+            border-bottom: 4px double #6c63ff;
             padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
+            letter-spacing: 1px;
         }
+
+        /* === TOOL LIST (GRID OF BUTTONS) === */
         .tool-list {
             list-style: none;
             display: grid;
-            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
         }
+
         .tool-list li a {
             display: block;
-            background: #4a5568;              /* slightly lighter card */
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem;
+            background: #1e1e2f;
+            color: #e0e0e0;
             text-decoration: none;
-            color: #bee3f8;                  /* light blue link */
-            font-weight: 500;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 0.95rem;
+            padding: 1rem 1.2rem;
+            text-align: center;
+
+            /* Pixelated border */
+            border: 3px solid #3f3f5c;
+            box-shadow:
+                4px 4px 0 0 #0a0a14,
+                inset 0 0 0 2px #2a2a40;
+            transition: all 0.1s ease-in-out;
+            letter-spacing: 0.5px;
         }
+
         .tool-list li a:hover {
-            background: #2b6cb0;
-            border-color: #63b3ed;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(49,130,206,0.4);
+            background: #4e4b8e;
+            border-color: #ffd700;
+            color: #0d0d0d;
+            transform: translate(-2px, -2px);
+            box-shadow:
+                6px 6px 0 0 #000,
+                inset 0 0 0 2px #f0e68c;
+            text-shadow: none;
         }
+
+        /* Empty folder note */
+        .empty-folder {
+            color: #6b6b80;
+            font-style: italic;
+            font-size: 0.85rem;
+            padding-left: 0.5rem;
+        }
+
+        /* === LOADING & ERROR === */
         .loading {
             text-align: center;
-            color: #a0aec0;
+            color: #a0a0c0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
             padding: 2rem;
+            animation: blink 1.5s infinite;
         }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
         .error {
-            background: #742a2a;              /* dark red */
-            color: #fed7d7;
+            background: #2a1212;
+            color: #ffb3b3;
             padding: 1rem;
-            border-radius: 0.5rem;
-            border-left: 4px solid #fc8181;
+            border: 3px solid #ff4d4d;
+            box-shadow: 4px 4px 0 #000;
+            font-size: 0.85rem;
             margin-bottom: 1rem;
         }
-        .empty-folder {
-            color: #a0aec0;
-            font-style: italic;
-        }
+
+        /* === FOOTER === */
         .footer {
             margin-top: 2rem;
             text-align: center;
-            font-size: 0.85rem;
-            color: #718096;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #5a5a7a;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.2rem;
+            }
+            .container {
+                padding: 1.5rem;
+                border-width: 3px;
+                outline-width: 3px;
+                outline-offset: 3px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛠 Tool Dashboard</h1>
-        <p class="subtitle">All tools organized by folder – inside <code>tools/</code></p>
+        <h1>⚡ PIXEL TOOLS</h1>
+        <p class="subtitle">All tools inside <code>tools/</code> folder</p>
+
         <div id="tools-container">
-            <div class="loading">🔍 Scanning <code>tools/</code> for categories...</div>
+            <div class="loading">> SCANNING TOOLS...</div>
         </div>
-        <div class="footer">
-            <span>Add a new subfolder inside <code>tools/</code> with HTML files, push, and it shows up here.</span>
-        </div>
+
+        <div class="footer">▲ PRESS START ▲</div>
     </div>
 
     <script>
         (async function() {
-            // ── CONFIGURATION ──
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
-
-            // Lowercase folder name as requested
             const TOOLS_PARENT_FOLDER = 'tools';
 
             const container = document.getElementById('tools-container');
@@ -130,7 +257,7 @@
                 );
 
                 if (categories.length === 0) {
-                    container.innerHTML = `<p class="loading">No tool categories found inside <code>${TOOLS_PARENT_FOLDER}/</code>. Create subfolders like <code>any-tools</code> with HTML files inside.</p>`;
+                    container.innerHTML = `<div class="loading">No categories inside ${TOOLS_PARENT_FOLDER}/</div>`;
                     return;
                 }
 
@@ -168,7 +295,7 @@
                     if (tools.length === 0) {
                         const empty = document.createElement('p');
                         empty.className = 'empty-folder';
-                        empty.textContent = 'No HTML tools in this category yet.';
+                        empty.textContent = '- No tools yet -';
                         categoryDiv.appendChild(empty);
                     } else {
                         const list = document.createElement('ul');
