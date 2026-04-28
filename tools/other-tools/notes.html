@@ -12,11 +12,6 @@
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
     <style>
-        textarea {
-            width: 100%;
-            height: 120px;
-            resize: vertical;
-        }
         .notes-list {
             list-style: none;
             padding: 0;
@@ -40,6 +35,10 @@
             font-size: 0.7rem;
             padding: 0.2rem 0.5rem;
             width: auto;
+            border: 1px solid #8a5050;
+        }
+        .delete-btn:hover {
+            background: #8a4a4a;
         }
     </style>
 </head>
@@ -105,7 +104,6 @@
             renderNotes();
         }
 
-        // Render awal
         renderNotes();
     </script>
 
