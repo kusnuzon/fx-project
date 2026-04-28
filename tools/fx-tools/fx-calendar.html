@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FX Calendar & News – CARTRIDGE VAULT</title>
 
-    <!-- Pixel Font & Global Theme -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -16,13 +15,11 @@
         <h1>📡 FX TERMINAL</h1>
         <p class="subtitle" style="text-align:center;">Calendar & News – Live Data</p>
 
-        <!-- TABS -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('calendar')" id="tab-calendar">📅 Kalender</button>
             <button class="tab-btn" onclick="switchTab('news')" id="tab-news">📰 Berita</button>
         </div>
 
-        <!-- CALENDAR VIEW -->
         <div id="view-calendar">
             <div class="filter-row">
                 <label>Mata Uang:</label>
@@ -49,7 +46,6 @@
             <div id="calendar-content"><div class="loading">Loading calendar...</div></div>
         </div>
 
-        <!-- NEWS VIEW -->
         <div id="view-news" style="display:none;">
             <div class="filter-row">
                 <label>Cari:</label>
@@ -62,7 +58,6 @@
     <footer>🛠️ CARTRIDGE VAULT</footer>
 
     <script>
-        // ── GLOBAL STATE ──
         let calendarData = [];
         let newsData = [];
         const CALENDAR_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
@@ -74,7 +69,6 @@
             CNY:'🇨🇳 CNY'
         };
 
-        // ── INIT ──
         (async function init() {
             await Promise.all([fetchCalendar(), fetchNews()]);
         })();
@@ -115,26 +109,11 @@
             });
         }
 
-        // ── TAB SWITCH ──
         function switchTab(tab) {
             document.getElementById('view-calendar').style.display = tab==='calendar'?'block':'none';
             document.getElementById('view-news').style.display = tab==='news'?'block':'none';
             document.getElementById('tab-calendar').classList.toggle('active', tab==='calendar');
             document.getElementById('tab-news').classList.toggle('active', tab==='news');
-        }
-
-        // ── TIMEZONE ──
-        function fmtDate(isoStr, tz) {
-            // isoStr example: "2026-04-29T08:30:00-04:00"
-            const d = new Date(isoStr);
-            if (isNaN(d.getTime())) return isoStr;
-            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
-            if (offset !== null) {
-                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-                const local = new Date(utc + (offset * 3600000));
-                return local.toISOString().replace('T',' ').slice(0,19);
-            }
-            return d.toLocaleString('id-ID', {hour12:false});
         }
 
         function fmtTimeOnly(isoStr, tz) {
@@ -183,7 +162,6 @@
             return new Date(isoStr) < new Date();
         }
 
-        // ── RENDER CALENDAR ──
         function renderCalendar() {
             const tz = document.getElementById('filterTz').value;
             const cur = document.getElementById('filterCurrency').value;
@@ -197,10 +175,8 @@
                 return true;
             });
 
-            // Sort by date
             filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
 
-            // Group by day
             const groups = {};
             filtered.forEach(e => {
                 const key = getDayKey(e.date, tz);
@@ -237,7 +213,6 @@
             container.innerHTML = html;
         }
 
-        // ── RENDER NEWS ──
         function renderNews() {
             const search = document.getElementById('filterNewsSearch')?.value?.toLowerCase() || '';
             const container = document.getElementById('news-content');
