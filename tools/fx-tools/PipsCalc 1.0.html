@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pip(s) Calculator for XAUUSD</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #222;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: linear-gradient(to bottom, #ffffff, #f2f2f2);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-in-out;
+            position: relative;
+        }
+        form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+        }
+        form input, form select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        form input:hover, form select:hover {
+            box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out, transform 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(to right, #0056b3, #004080);
+            transform: translateY(-2px);
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            animation: slideIn 1s ease-in-out;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            text-align: center;
+            padding: 12px;
+            font-size: 14px;
+        }
+        th {
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white;
+            font-weight: bold;
+        }
+        td {
+            background-color: #fff;
+        }
+        td:hover {
+            background-color: #f1f1f1;
+        }
+        @media (max-width: 768px) {
+            .form-container, table {
+                width: 90%;
+            }
+            form label, form input, form select, button {
+                font-size: 14px;
+            }
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(to right, #333, #555);
+            color: white;
+            font-size: 14px;
+        }
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the element */
+            left: 50%;
+            margin-left: -100px; /* Center the tooltip */
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pip(s) Calculator for XAUUSD</h1>
+    <div class="form-container">
+        <form id="calcForm">
+            <label for="trade_type">
+                Trade Type <span class="tooltip">ℹ<span class="tooltiptext">Select BUY or SELL based on your trade preference.</span></span>:
+            </label>
+            <select id="trade_type" name="trade_type">
+                <option value="BUY">BUY</option>
+                <option value="SELL">SELL</option>
+            </select>
+
+            <label for="entry_price">
+                Entry Price (XAUUSD) <span class="tooltip">ℹ<span class="tooltiptext">The price at which you enter the trade.</span></span>:
+            </label>
+            <input type="number" step="0.01" id="entry_price" name="entry_price" value="2000.00" required><br>
+
+            <label for="pip_distance">
+                Distance between positions (in pips) <span class="tooltip">ℹ<span class="tooltiptext">Defines the gap between consecutive positions.</span></span>:
+            </label>
+            <input type="number" id="pip_distance" name="pip_distance" value="40" required><br>
+
+            <label for="stop_loss">
+                Stop Loss (in pips) <span class="tooltip">ℹ<span class="tooltiptext">The maximum loss for a position in pips.</span></span>:
+            </label>
+            <input type="number" id="stop_loss" name="stop_loss" value="20" required><br>
+
+            <label for="take_profit_1">
+                Take Profit for Position 1 (in pips) <span class="tooltip">ℹ<span class="tooltiptext">Profit target for the first position.</span></span>:
+            </label>
+            <input type="number" id="take_profit_1" name="take_profit_1" value="50" required><br>
+
+            <label for="take_profit_2_5">
+                Take Profit for Position 2-5 (in pips) <span class="tooltip">ℹ<span class="tooltiptext">Profit target for subsequent positions.</span></span>:
+            </label>
+            <input type="number" id="take_profit_2_5" name="take_profit_2_5" value="100" required><br>
+
+            <button type="button" onclick="calculatePips()">Calculate</button>
+        </form>
+    </div>
+
+    <h2>Calculated Positions and Pips:</h2>
+    <table id="positionsTable">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Entry Price</th>
+                <th>Stop Loss Price</th>
+                <th>Take Profit Price</th>
+                <th>Stop Loss (Pips)</th>
+                <th>Take Profit (Pips)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Positions will be dynamically added here -->
+        </tbody>
+    </table>
+
+<script>
+    function calculatePips() {
+    // Get user inputs
+    const tradeType = document.getElementById('trade_type').value;
+    const entryPrice = parseFloat(document.getElementById('entry_price').value);
+    const pipDistance = parseInt(document.getElementById('pip_distance').value);
+    const stopLossPips = parseInt(document.getElementById('stop_loss').value);
+    const takeProfit1Pips = parseInt(document.getElementById('take_profit_1').value);
+    const takeProfitOtherPips = parseInt(document.getElementById('take_profit_2_5').value);
+
+    const tableBody = document.getElementById('positionsTable').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = '';  // Clear the table
+
+    // Calculate and display positions
+    for (let i = 0; i < 5; i++) {
+        const positionNumber = i + 1;
+
+        // Adjust entry price based on trade type
+        const positionEntryPrice = tradeType === 'BUY'
+            ? entryPrice - (i * pipDistance * 0.1)
+            : entryPrice + (i * pipDistance * 0.1);
+        
+        // Adjust Stop Loss and Take Profit based on Trade Type
+        const stopLossPrice = tradeType === 'BUY'
+            ? positionEntryPrice - (stopLossPips * 0.1)
+            : positionEntryPrice + (stopLossPips * 0.1);
+        const takeProfitPrice = tradeType === 'BUY'
+            ? positionEntryPrice + ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1)
+            : positionEntryPrice - ((positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips) * 0.1);
+
+        // Calculate stop loss and take profit in pips
+        const stopLossInPips = stopLossPips;
+        const takeProfitInPips = positionNumber === 1 ? takeProfit1Pips : takeProfitOtherPips;
+
+        // Create new row for the table
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td>${positionNumber}</td>
+            <td>${positionEntryPrice.toFixed(2)}</td>
+            <td>${stopLossPrice.toFixed(2)}</td>
+            <td>${takeProfitPrice.toFixed(2)}</td>
+            <td>${stopLossInPips}</td>
+            <td>${takeProfitInPips}</td>
+        `;
+    }
+}
+
+    // Call the function initially to populate the table with default values
+    window.onload = calculatePips;
+</script>
+<footer>
+    Developed by ZONん逸 ♾
+</footer>
+</body>
+</html>
