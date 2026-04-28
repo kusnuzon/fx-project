@@ -5,34 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalkulator Risk Reward dan Lot Otomatis</title>
 
-    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-    <!-- Global Retro Theme -->
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
-
-    <!-- Tambahan kecil untuk risk-status (gaya spesifik) -->
-    <style>
-        .risk-status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .risk-safe {
-            background: #2c3e50;
-            color: #4a90e2;
-        }
-        .risk-danger {
-            background: #2c3e50;
-            color: #e74c3c;
-        }
-    </style>
 </head>
 <body>
     <h1>Kalkulator Risk Reward dan Lot Otomatis</h1>
@@ -95,7 +71,6 @@
     </table>
 
     <script>
-        // (fungsi calculate() tetap sama persis seperti sebelumnya, tidak perlu diubah)
         function calculate() {
             const balance = parseFloat(document.getElementById("balance").value);
             const riskPercent = parseFloat(document.getElementById("riskPercent").value);
