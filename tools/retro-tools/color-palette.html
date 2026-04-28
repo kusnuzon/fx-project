@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Palette – CARTRIDGE VAULT</title>
+
+    <!-- Pixel Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- Global Retro Theme (from root) -->
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        /* Palette-specific styling */
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .color-card {
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            border-radius: 4px;
+            box-shadow: inset 0 0 0 2px #1e1e2e, 3px 3px 0 #0a0a14;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            padding: 0.5rem;
+        }
+
+        .color-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: inset 0 0 0 2px #3b3b52, 4px 4px 0 #0a0a14;
+            border-color: #b9a88c;
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 60px;
+            border-radius: 2px;
+            margin-bottom: 0.4rem;
+            border: 1px solid #000;
+        }
+
+        .color-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #cdcdd4;
+            word-break: break-all;
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #b9a88c;
+            color: #0d0d0d;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 2px solid #5a5a7a;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .copied-toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 RETRO PALETTE</h1>
+        <p class="subtitle">Click a color to copy its hex code</p>
+
+        <div class="palette-grid" id="paletteGrid"></div>
+
+        <div class="copied-toast" id="toast">COPIED!</div>
+    </div>
+
+    <script>
+        // Classic console palettes (NES, Game Boy, SNES inspired)
+        const palette = [
+            { name: "NES Black", hex: "#000000" },
+            { name: "NES White", hex: "#FCFCFC" },
+            { name: "NES Gray", hex: "#BCBCBC" },
+            { name: "NES Dark Gray", hex: "#7C7C7C" },
+            { name: "NES Sky Blue", hex: "#A4E4FC" },
+            { name: "NES Blue", hex: "#3CBCFC" },
+            { name: "NES Royal Blue", hex: "#0078F8" },
+            { name: "NES Navy", hex: "#0000FC" },
+            { name: "NES Purple", hex: "#4428BC" },
+            { name: "NES Magenta", hex: "#940084" },
+            { name: "NES Red", hex: "#A80020" },
+            { name: "NES Orange", hex: "#D82800" },
+            { name: "NES Salmon", hex: "#F87858" },
+            { name: "NES Yellow", hex: "#F8D878" },
+            { name: "NES Green", hex: "#007800" },
+            { name: "Game Boy Dark", hex: "#0F380F" },
+            { name: "Game Boy Mid", hex: "#306230" },
+            { name: "Game Boy Light", hex: "#8BAC0F" },
+            { name: "Game Boy Pale", hex: "#9BBC0F" },
+            { name: "SNES Lavender", hex: "#AFA0D8" },
+            { name: "SNES Teal", hex: "#68C0A8" },
+            { name: "SNES Pink", hex: "#F8A0B8" },
+            { name: "SNES Gold", hex: "#E0B860" },
+            { name: "SNES Crimson", hex: "#D84040" }
+        ];
+
+        const grid = document.getElementById('paletteGrid');
+        const toast = document.getElementById('toast');
+
+        palette.forEach(color => {
+            const card = document.createElement('div');
+            card.className = 'color-card';
+
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = color.hex;
+
+            const label = document.createElement('div');
+            label.className = 'color-label';
+            label.textContent = color.hex;
+
+            card.appendChild(swatch);
+            card.appendChild(label);
+
+            card.addEventListener('click', () => {
+                navigator.clipboard.writeText(color.hex).then(() => {
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 1500);
+                });
+            });
+
+            grid.appendChild(card);
+        });
+    </script>
+</body>
+</html>
