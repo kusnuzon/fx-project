@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FX Calendar & News – CARTRIDGE VAULT</title>
+
+    <!-- Pixel Font & Global Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        /* === TABS === */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #4b4b68;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 0.7rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            background: transparent;
+            color: #7a7a95;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .tab-btn.active {
+            color: #cfba8c;
+            border-bottom: 3px solid #cfba8c;
+            background: rgba(207,186,140,0.08);
+        }
+        .tab-btn:hover {
+            color: #b9a88c;
+        }
+
+        /* === FILTER ROW === */
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            align-items: center;
+        }
+        .filter-row select, .filter-row input {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            background: #2a2a3c;
+            color: #cdcdd4;
+            border: 1px solid #4b4b68;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            min-width: 80px;
+        }
+        .filter-row input {
+            flex: 1;
+            min-width: 140px;
+        }
+        .filter-row label {
+            font-size: 0.65rem;
+            color: #9da5b4;
+            margin-right: 0.2rem;
+            white-space: nowrap;
+        }
+
+        /* === TABLE === */
+        .cal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        .cal-table th {
+            background: #3f3f5c;
+            color: #f0e6d2;
+            padding: 0.5rem 0.4rem;
+            font-size: 0.6rem;
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            position: sticky;
+            top: 0;
+        }
+        .cal-table td {
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #3f3f5c;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .cal-table tr:hover td {
+            background: rgba(207,186,140,0.06);
+        }
+        .cal-table tr.past-event td {
+            opacity: 0.5;
+        }
+
+        /* === DAY GROUP HEADER === */
+        .day-group {
+            background: #2a2a3c;
+            font-weight: bold;
+            color: #cfba8c;
+            font-size: 0.7rem;
+            font-family: 'Press Start 2P', cursive;
+        }
+        .day-group td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 2px solid #4b4b68;
+        }
+
+        /* === IMPACT BADGE === */
+        .impact {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .impact-high    { background: #5c2a2a; color: #f0a0a0; }
+        .impact-medium  { background: #5c4a2a; color: #f0d0a0; }
+        .impact-low     { background: #2a3a2a; color: #a0d0a0; }
+        .impact-holiday { background: #3a2a5c; color: #c0a0f0; }
+
+        /* === NEWS CARDS === */
+        .news-card {
+            background: #2a2a3c;
+            border: 1px solid #4b4b68;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: 4px;
+            transition: all 0.1s;
+        }
+        .news-card:hover {
+            border-color: #b9a88c;
+            background: #32324a;
+        }
+        .news-card h3 {
+            font-size: 0.85rem;
+            color: #e0d0b0;
+            margin-bottom: 0.3rem;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+        }
+        .news-card .meta {
+            font-size: 0.65rem;
+            color: #8e8ea0;
+            margin-bottom: 0.4rem;
+        }
+        .news-card .snippet {
+            font-size: 0.75rem;
+            color: #b0b0c0;
+            line-height: 1.4;
+        }
+        .news-card a {
+            color: #b9a88c;
+            text-decoration: none;
+            font-size: 0.65rem;
+        }
+        .news-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* === LOADING / EMPTY === */
+        .loading {
+            text-align: center;
+            color: #9a9ab0;
+            padding: 2rem;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%,100%{opacity:1;} 50%{opacity:0.35;}
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 700px) {
+            .cal-table th, .cal-table td {
+                font-size: 0.55rem;
+                padding: 0.3rem 0.2rem;
+            }
+            .cal-table th {
+                font-size: 0.45rem;
+            }
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .tab-btn {
+                font-size: 0.45rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 FX TERMINAL</h1>
+        <p class="subtitle" style="text-align:center;">Calendar & News – Live Data</p>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('calendar')" id="tab-calendar">📅 Kalender</button>
+            <button class="tab-btn" onclick="switchTab('news')" id="tab-news">📰 Berita</button>
+        </div>
+
+        <!-- CALENDAR VIEW -->
+        <div id="view-calendar">
+            <div class="filter-row">
+                <label>Mata Uang:</label>
+                <select id="filterCurrency" onchange="renderCalendar()">
+                    <option value="ALL">ALL</option>
+                </select>
+                <label>Dampak:</label>
+                <select id="filterImpact" onchange="renderCalendar()">
+                    <option value="ALL">ALL</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                    <option value="Holiday">Holiday</option>
+                </select>
+                <label>Cari:</label>
+                <input type="text" id="filterSearch" placeholder="Search event..." oninput="renderCalendar()">
+                <label>Zona:</label>
+                <select id="filterTz" onchange="renderCalendar()">
+                    <option value="WIB">WIB (UTC+7)</option>
+                    <option value="UTC">UTC</option>
+                    <option value="local">Local</option>
+                </select>
+            </div>
+            <div id="calendar-content"><div class="loading">Loading calendar...</div></div>
+        </div>
+
+        <!-- NEWS VIEW -->
+        <div id="view-news" style="display:none;">
+            <div class="filter-row">
+                <label>Cari:</label>
+                <input type="text" id="filterNewsSearch" placeholder="Search news..." oninput="renderNews()">
+            </div>
+            <div id="news-content"><div class="loading">Loading news...</div></div>
+        </div>
+    </div>
+
+    <footer>🛠️ CARTRIDGE VAULT</footer>
+
+    <script>
+        // ── GLOBAL STATE ──
+        let calendarData = [];
+        let newsData = [];
+        const CALENDAR_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+        const NEWS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https://www.forexlive.com/feed/';
+
+        const COUNTRY_MAP = {
+            USD:'🇺🇸 USD', EUR:'🇪🇺 EUR', GBP:'🇬🇧 GBP', JPY:'🇯🇵 JPY',
+            AUD:'🇦🇺 AUD', NZD:'🇳🇿 NZD', CAD:'🇨🇦 CAD', CHF:'🇨🇭 CHF',
+            CNY:'🇨🇳 CNY'
+        };
+
+        // ── INIT ──
+        (async function init() {
+            await Promise.all([fetchCalendar(), fetchNews()]);
+        })();
+
+        async function fetchCalendar() {
+            try {
+                const r = await fetch(CALENDAR_URL);
+                if (!r.ok) throw new Error('Calendar fetch failed');
+                calendarData = await r.json();
+                populateCurrencyFilter();
+                renderCalendar();
+            } catch(e) {
+                document.getElementById('calendar-content').innerHTML =
+                    '<div class="error">⚠️ Gagal memuat kalender. Coba refresh.</div>';
+            }
+        }
+
+        async function fetchNews() {
+            try {
+                const r = await fetch(NEWS_URL);
+                if (!r.ok) throw new Error('News fetch failed');
+                const json = await r.json();
+                newsData = json.items || [];
+                renderNews();
+            } catch(e) {
+                document.getElementById('news-content').innerHTML =
+                    '<div class="error">⚠️ Gagal memuat berita. Coba refresh.</div>';
+            }
+        }
+
+        function populateCurrencyFilter() {
+            const currencies = [...new Set(calendarData.map(e=>e.country))].sort();
+            const sel = document.getElementById('filterCurrency');
+            sel.innerHTML = '<option value="ALL">ALL</option>';
+            currencies.forEach(c => {
+                const label = COUNTRY_MAP[c] || c;
+                sel.innerHTML += `<option value="${c}">${label}</option>`;
+            });
+        }
+
+        // ── TAB SWITCH ──
+        function switchTab(tab) {
+            document.getElementById('view-calendar').style.display = tab==='calendar'?'block':'none';
+            document.getElementById('view-news').style.display = tab==='news'?'block':'none';
+            document.getElementById('tab-calendar').classList.toggle('active', tab==='calendar');
+            document.getElementById('tab-news').classList.toggle('active', tab==='news');
+        }
+
+        // ── TIMEZONE ──
+        function fmtDate(isoStr, tz) {
+            // isoStr example: "2026-04-29T08:30:00-04:00"
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return isoStr;
+            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            if (offset !== null) {
+                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                const local = new Date(utc + (offset * 3600000));
+                return local.toISOString().replace('T',' ').slice(0,19);
+            }
+            return d.toLocaleString('id-ID', {hour12:false});
+        }
+
+        function fmtTimeOnly(isoStr, tz) {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '--:--';
+            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            if (offset !== null) {
+                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                const local = new Date(utc + (offset * 3600000));
+                return local.toISOString().slice(11,16);
+            }
+            return d.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',hour12:false});
+        }
+
+        function getDayLabel(isoStr, tz) {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            let localDate;
+            if (offset !== null) {
+                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                localDate = new Date(utc + (offset * 3600000));
+            } else {
+                localDate = d;
+            }
+            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            return `${days[localDate.getDay()]}, ${localDate.getDate()} ${months[localDate.getMonth()]} ${localDate.getFullYear()}`;
+        }
+
+        function getDayKey(isoStr, tz) {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            let localDate;
+            if (offset !== null) {
+                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                localDate = new Date(utc + (offset * 3600000));
+            } else {
+                localDate = d;
+            }
+            return localDate.toISOString().slice(0,10);
+        }
+
+        function isPast(isoStr) {
+            return new Date(isoStr) < new Date();
+        }
+
+        // ── RENDER CALENDAR ──
+        function renderCalendar() {
+            const tz = document.getElementById('filterTz').value;
+            const cur = document.getElementById('filterCurrency').value;
+            const imp = document.getElementById('filterImpact').value;
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+
+            let filtered = calendarData.filter(e => {
+                if (cur !== 'ALL' && e.country !== cur) return false;
+                if (imp !== 'ALL' && e.impact !== imp) return false;
+                if (search && !e.title.toLowerCase().includes(search) && !e.country.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            // Sort by date
+            filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            // Group by day
+            const groups = {};
+            filtered.forEach(e => {
+                const key = getDayKey(e.date, tz);
+                if (!groups[key]) groups[key] = { label: getDayLabel(e.date, tz), events: [] };
+                groups[key].events.push(e);
+            });
+
+            const container = document.getElementById('calendar-content');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="loading">No events match filter.</div>';
+                return;
+            }
+
+            let html = '<table class="cal-table"><thead><tr><th>Waktu</th><th>Mata Uang</th><th>Event</th><th>Dampak</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>';
+
+            Object.keys(groups).sort().forEach(key => {
+                const group = groups[key];
+                html += `<tr class="day-group"><td colspan="6">📅 ${group.label}</td></tr>`;
+                group.events.forEach(e => {
+                    const pastClass = isPast(e.date) ? ' past-event' : '';
+                    const impactClass = 'impact-' + e.impact.toLowerCase();
+                    html += `<tr class="${pastClass}">
+                        <td>${fmtTimeOnly(e.date, tz)}</td>
+                        <td>${COUNTRY_MAP[e.country] || e.country}</td>
+                        <td style="text-align:left;">${e.title}</td>
+                        <td><span class="impact ${impactClass}">${e.impact}</span></td>
+                        <td>${e.forecast || '-'}</td>
+                        <td>${e.previous || '-'}</td>
+                    </tr>`;
+                });
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ── RENDER NEWS ──
+        function renderNews() {
+            const search = document.getElementById('filterNewsSearch')?.value?.toLowerCase() || '';
+            const container = document.getElementById('news-content');
+
+            let filtered = newsData;
+            if (search) {
+                filtered = newsData.filter(item =>
+                    item.title.toLowerCase().includes(search) ||
+                    (item.description && item.description.toLowerCase().includes(search))
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="loading">No news articles found.</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(item => {
+                const snippet = (item.description || '').replace(/\n/g,' ').trim().slice(0, 200);
+                const pubDate = item.pubDate ? new Date(item.pubDate).toLocaleString('id-ID', {hour12:false}) : '';
+                html += `
+                <div class="news-card">
+                    <h3>${item.title}</h3>
+                    <div class="meta">${pubDate} ${item.author ? '· '+item.author : ''}</div>
+                    <div class="snippet">${snippet}${snippet.length >= 200 ? '...' : ''}</div>
+                    <a href="${item.link}" target="_blank" rel="noopener">Baca selengkapnya →</a>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
