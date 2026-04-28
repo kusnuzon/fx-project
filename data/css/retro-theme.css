@@ -98,7 +98,7 @@ label {
     font-weight: bold;
 }
 
-input, select {
+input, select, textarea {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -110,9 +110,14 @@ input, select {
     transition: border-color 0.2s;
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
     border-color: #b9a88c;
     outline: none;
+}
+
+textarea {
+    resize: vertical;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 /* Tombol global yang nyaman di mata */
@@ -123,7 +128,7 @@ button {
     font-size: 1rem;
     border: 1px solid #5a5a7a;
     border-radius: 5px;
-    background-color: #3a3a52;          /* abu ungu gelap */
+    background-color: #3a3a52;
     color: #d1d1db;
     font-weight: normal;
     cursor: pointer;
@@ -131,7 +136,7 @@ button {
 }
 
 button:hover {
-    background-color: #4b4b6e;          /* sedikit lebih terang */
+    background-color: #4b4b6e;
     border-color: #8a8aaa;
     transform: translateY(-1px);
 }
