@@ -99,9 +99,9 @@
             margin-bottom: 2rem;
         }
 
-        /* Categories – sekarang dengan tree toggle */
+        /* Categories – tree toggle */
         .category {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
 
         /* Header kategori: judul + tombol toggle */
@@ -112,12 +112,9 @@
             cursor: pointer;
             user-select: none;
             padding: 0.3rem 0;
-            margin-bottom: 0.5rem;
-            border-bottom: 2px solid #4d4d6e;
-            transition: border-color 0.15s;
-        }
-        .category-header:hover {
-            border-bottom-color: #8a8aaa;
+            margin-bottom: 0.4rem;
+            /* Hapus border panjang di header */
+            /* border-bottom: 2px solid #4d4d6e; ⛔ dihapus */
         }
         .category-header:hover .category-title {
             color: #cfba8c;
@@ -130,21 +127,25 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             margin: 0;
-            flex: 1;
-            border-bottom: none;
-            padding-bottom: 0;
-            display: inline;
-            transition: color 0.15s;
+            /* Garis pendek hanya di bawah teks judul */
+            display: inline-block;
+            border-bottom: 2px solid #4d4d6e;
+            padding-bottom: 0.3rem;
+            transition: color 0.15s, border-color 0.15s;
+            line-height: 1.2;
+        }
+        .category-header:hover .category-title {
+            border-bottom-color: #8a8aaa;
         }
 
-        /* Tombol toggle – panah kecil */
+        /* Tombol toggle – panah kecil */ 
         .toggle-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
-            font-size: 0.7rem;
+            width: 28px;              /* diperbesar */
+            height: 28px;             /* diperbesar */
+            font-size: 0.9rem;        /* diperbesar */
             color: #8e8ea0;
             background: transparent;
             border: none;
@@ -165,6 +166,18 @@
         /* Saat kategori tertutup (collapsed), panah menghadap kanan */
         .category.collapsed .toggle-btn {
             transform: rotate(-90deg);
+        }
+
+        /* Badge jumlah item – diperbesar */
+        .item-count {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;        /* diperbesar */
+            color: #7a7a95;
+            margin-left: auto;
+            background: #202030;
+            padding: 0.2rem 0.5rem;   /* sedikit lebih besar */
+            border: 1px solid #3d3d56;
+            border-radius: 2px;
         }
 
         /* Konten kategori – animasi buka/tutup */
@@ -201,7 +214,7 @@
             font-weight: bold;
             font-size: 0.9rem;
             padding: 0.9rem 1rem;
-            text-align: center;
+            text-align: left;          /* ⬅️ rata kiri */
             border: 2px solid #4e4e68;
             box-shadow: 2px 2px 0 #0e0e1a, inset 0 0 0 2px #202030;
             transition: all 0.1s ease;
@@ -253,18 +266,6 @@
             margin: 1rem 0;
         }
 
-        /* Badge jumlah item */
-        .item-count {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.45rem;
-            color: #7a7a95;
-            margin-left: auto;
-            background: #202030;
-            padding: 0.15rem 0.4rem;
-            border: 1px solid #3d3d56;
-            border-radius: 2px;
-        }
-
         /* Footer */
         .dashboard-footer {
             margin-top: 2rem;
@@ -303,8 +304,13 @@
                 flex-wrap: wrap;
             }
             .item-count {
-                font-size: 0.4rem;
-                padding: 0.1rem 0.3rem;
+                font-size: 0.5rem;
+                padding: 0.15rem 0.4rem;
+            }
+            .toggle-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -344,12 +350,15 @@
             const container = document.getElementById('tools-container');
 
             // Baca state collapse dari localStorage
+            // ⭐ Default: jika belum ada data -> tertutup (true)
             function getCollapsedState(categoryName) {
                 try {
                     const val = localStorage.getItem(STORAGE_KEY_PREFIX + categoryName);
-                    return val === 'true';
+                    // Jika 'false' berarti user pernah membuka -> false (expanded)
+                    // Selain itu (null/'true') -> true (collapsed)
+                    return val !== 'false';
                 } catch (e) {
-                    return false;
+                    return true; // tertutup aman jika error
                 }
             }
 
@@ -377,7 +386,7 @@
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'toggle-btn';
                 toggleBtn.setAttribute('aria-label', isCollapsed ? 'Expand category' : 'Collapse category');
-                toggleBtn.innerHTML = '&#9660;'; // ▼
+                toggleBtn.innerHTML = '▼'; // ▼
                 toggleBtn.type = 'button';
 
                 // Judul
@@ -406,7 +415,6 @@
 
                 // Event listener toggle
                 header.addEventListener('click', function(e) {
-                    // Jangan toggle jika klik pada link di dalam header (tidak ada, tapi jaga-jaga)
                     if (e.target.tagName === 'A') return;
 
                     const cat = categoryDiv;
@@ -414,14 +422,12 @@
                     const catName = cat.getAttribute('data-category');
 
                     if (isCurrentlyCollapsed) {
-                        // Buka
                         cat.classList.remove('collapsed');
                         cat.classList.add('expanded');
                         header.setAttribute('aria-expanded', 'true');
                         toggleBtn.setAttribute('aria-label', 'Collapse category');
                         setCollapsedState(catName, false);
                     } else {
-                        // Tutup
                         cat.classList.remove('expanded');
                         cat.classList.add('collapsed');
                         header.setAttribute('aria-expanded', 'false');
@@ -430,7 +436,6 @@
                     }
                 });
 
-                // Keyboard support (Enter / Space)
                 header.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -490,8 +495,8 @@
                         contentHtml = `<ul class="tool-list">${listItemsHtml}</ul>`;
                     }
 
-                    // Ambil state collapse dari localStorage
-                    const isCollapsed = getCollapsedState(category);
+                    // ⭐ Semua kategori pertama kali tertutup
+                    const isCollapsed = getCollapsedState(category); // default true
 
                     const categoryEl = createCategoryElement(
                         displayName,
