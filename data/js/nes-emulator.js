@@ -1,6 +1,5 @@
 // data/js/nes-emulator.js
-// MENGGUNAKAN EMULATORJS – STABIL & TERUJI
-
+// NOSTALGIST.JS – BERFUNGSI
 (function() {
   const NES_GROUPS = {
     dpad: true,
@@ -10,6 +9,7 @@
     r1r2: { buttons: ['r1','r2'] }
   };
 
+  // Button → keyboard key (untuk Nostalgist)
   const BTN_TO_KEY = {
     up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
     a: 'x', b: 'z', x: 'a', y: 's',
@@ -19,15 +19,15 @@
 
   class NESEmulator {
     constructor() {
-      this.emulator = null;
+      this.nostalgist = null;
       this.loaded = false;
+      this.canvas = null;
       this.gamepad = null;
 
       this.dropZone = document.getElementById('dropZone');
       this.subtitle = document.querySelector('.subtitle');
       this.controlsDiv = document.getElementById('controls');
-      this.gameDiv = document.getElementById('game');
-      this.emuContainer = document.querySelector('.emu-container');
+      this.emuContainer = document.getElementById('emuContainer');
       this.virtualGamepad = document.getElementById('virtualGamepad');
       this.statusText = document.getElementById('statusText');
 
@@ -38,6 +38,27 @@
       this._bindDropZone();
       this._bindKeyboard();
       this._bindOrientationChange();
+      this._preUnlockAudio();
+    }
+
+    _preUnlockAudio() {
+      const fn = async () => {
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          const ctx = new AC();
+          if (ctx.state === 'running') { ctx.close(); return; }
+          const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(ctx.destination);
+          src.start(0);
+          await ctx.resume();
+          setTimeout(() => ctx.close(), 500);
+        } catch (_) {}
+      };
+      document.addEventListener('pointerdown', fn, { once: true, passive: true });
+      document.addEventListener('touchstart', fn, { once: true, passive: true });
     }
 
     _bindDropZone() {
@@ -50,112 +71,171 @@
         e.preventDefault();
         this.dropZone.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
-        if (file) this._loadFile(file);
+        if (file) this._handleFile(file);
       });
       this.dropZone.addEventListener('click', () => {
         const inp = document.createElement('input');
         inp.type = 'file';
-        inp.accept = '.nes,.zip,.rar,.7z';
-        inp.onchange = e => { if (e.target.files[0]) this._loadFile(e.target.files[0]); };
+        inp.accept = '.nes,.zip';
+        inp.onchange = e => {
+          if (e.target.files[0]) this._handleFile(e.target.files[0]);
+        };
         inp.click();
       });
     }
 
-    async _loadFile(file) {
-      this.statusText.textContent = 'Loading ROM...';
+    async _handleFile(file) {
+      this.statusText.textContent = 'Processing file...';
       try {
-        // Buat Blob URL untuk EmulatorJS
-        const buffer = await file.arrayBuffer();
-        const blob = new Blob([buffer], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
+        const buf = await file.arrayBuffer();
+        let romData, romName;
+        const lowerName = file.name.toLowerCase();
 
-        // Hentikan game sebelumnya
-        if (this.emulator) {
-          try { this.emulator.exit(); } catch (_) {}
-          this.emulator = null;
+        if (lowerName.endsWith('.nes')) {
+          romData = new Uint8Array(buf);
+          romName = file.name;
+        } else if (lowerName.endsWith('.zip')) {
+          const zip = await JSZip.loadAsync(buf);
+          // Cari .nes di seluruh zip
+          let found = null;
+          zip.forEach((relativePath, fileEntry) => {
+            if (!found && relativePath.toLowerCase().endsWith('.nes')) {
+              found = fileEntry;
+            }
+          });
+          if (!found) throw new Error('No .nes file found inside ZIP');
+          romData = await found.async('uint8array');
+          romName = found.name;
+        } else {
+          throw new Error('Unsupported format. Use .nes or .zip');
         }
 
-        // Reset tampilan
-        this.gameDiv.innerHTML = '';
-        this.gameDiv.style.display = 'block';
-        this.dropZone.style.display = 'none';
-        if (this.subtitle) this.subtitle.style.display = 'none';
-
-        // Luncurkan EmulatorJS
-        this.emulator = new EmulatorJS(this.gameDiv, {
-          system: 'nes',
-          rom: url,
-          // Tidak perlu mengatur canvas, EmulatorJS membuatnya sendiri
-        });
-
-        // Tunggu emulator siap
-        await this.emulator.ready;
-
-        // Tampilkan kontrol dan gamepad
-        this.controlsDiv.style.display = 'flex';
-        this._setupVirtualGamepad();
-        this.virtualGamepad.style.display = 'flex';
-        this.loaded = true;
-        this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
-
-        this._applyOrientation();
-
-        // Bersihkan Blob URL saat halaman ditutup
-        window.addEventListener('beforeunload', () => URL.revokeObjectURL(url), { once: true });
+        await this.loadROM(romData, romName);
       } catch (err) {
         this.statusText.textContent = 'Error: ' + err.message;
         console.error(err);
       }
     }
 
-    _setupVirtualGamepad() {
-      if (this.gamepad) this.gamepad.destroy();
-      this.gamepad = new VirtualGamepad({
-        container: this.virtualGamepad,
-        groups: NES_GROUPS,
-        onButton: ({ button, pressed }) => this._pressButton(button, pressed)
-      });
-      // Pindahkan gamepad ke dalam emu-container (jika belum)
-      if (this.virtualGamepad.parentNode !== this.emuContainer) {
-        this.emuContainer.appendChild(this.virtualGamepad);
+    async loadROM(romData, fileName) {
+      this.stop();
+      this.statusText.textContent = 'Loading emulator...';
+
+      try {
+        const romFile = new File(
+          [new Blob([romData], { type: 'application/octet-stream' })],
+          fileName || 'game.nes'
+        );
+
+        this.nostalgist = await Nostalgist.launch({
+          core: 'fceumm',
+          rom: romFile,
+          retroarchConfig: {
+            audio_enable: 'true',
+            audio_out_rate: '44100',
+            audio_latency: '64',
+            video_smooth: 'false',
+            input_player1_up: 'up',
+            input_player1_down: 'down',
+            input_player1_left: 'left',
+            input_player1_right: 'right',
+            input_player1_a: 'x',
+            input_player1_b: 'z',
+            input_player1_start: 'enter',
+            input_player1_select: 'shift',
+          },
+          respondToGlobalEvents: true,
+        });
+
+        this.canvas = this.nostalgist.getCanvas();
+        this.canvas.classList.add('nes-emulator-canvas');
+        this.canvas.style.position = '';
+        this.canvas.style.top = '';
+        this.canvas.style.left = '';
+        this.canvas.style.width = '';
+        this.canvas.style.height = '';
+
+        // Bersihkan dan isi ulang container
+        this.emuContainer.innerHTML = '';
+        this.emuContainer.appendChild(this.canvas);
+
+        // Setup gamepad
+        this.gamepad = new VirtualGamepad({
+          container: this.virtualGamepad,
+          groups: NES_GROUPS,
+          onButton: ({ button, pressed }) => this._dispatchButton(button, pressed),
+        });
+
+        // Pindahkan gamepad ke dalam emu-container
+        if (!this.emuContainer.contains(this.virtualGamepad)) {
+          this.emuContainer.appendChild(this.virtualGamepad);
+        }
+
+        // Tampilkan semua kontrol
+        this.dropZone.style.display = 'none';
+        if (this.subtitle) this.subtitle.style.display = 'none';
+        this.controlsDiv.style.display = 'flex';
+        this.virtualGamepad.style.display = 'flex';
+        this.loaded = true;
+        this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
+
+        this._applyOrientation();
+      } catch (e) {
+        this.statusText.textContent = 'Error loading ROM: ' + e.message;
+        console.error(e);
       }
     }
 
-    _pressButton(btn, pressed) {
-      if (!this.loaded) return;
+    _dispatchButton(btn, pressed) {
+      if (!this.canvas) return;
       const key = BTN_TO_KEY[btn];
-      if (key) {
-        const eventType = pressed ? 'keydown' : 'keyup';
-        window.dispatchEvent(new KeyboardEvent(eventType, {
-          key: key,
-          code: key,
-          keyCode: this._keyCode(key),
-          which: this._keyCode(key),
-          bubbles: true,
-          cancelable: true
-        }));
-      }
+      if (!key) return;
+
+      const eventType = pressed ? 'keydown' : 'keyup';
+      this.canvas.dispatchEvent(new KeyboardEvent(eventType, {
+        key: key,
+        code: key,
+        keyCode: this._keyCode(key),
+        which: this._keyCode(key),
+        bubbles: true,
+        cancelable: true,
+      }));
     }
 
     _keyCode(key) {
       const map = {
         'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
         'x': 88, 'z': 90, 'a': 65, 's': 83,
-        'Enter': 13, 'Shift': 16, 'q': 81, 'w': 87, 'e': 69, 'r': 82
+        'Enter': 13, 'Shift': 16, 'q': 81, 'w': 87, 'e': 69, 'r': 82,
       };
       return map[key] || 0;
     }
 
     _bindKeyboard() {
       window.addEventListener('keydown', e => {
-        if (!this.loaded) return;
+        if (!this.loaded || !this.canvas) return;
         const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === e.key);
-        if (btn) this.gamepad?.highlight(btn, true);
+        if (btn) {
+          e.preventDefault();
+          this.gamepad?.highlight(btn, true);
+          this.canvas.dispatchEvent(new KeyboardEvent('keydown', {
+            key: e.key, code: e.code, keyCode: e.keyCode, which: e.which,
+            bubbles: true, cancelable: true,
+          }));
+        }
       });
+
       window.addEventListener('keyup', e => {
-        if (!this.loaded) return;
+        if (!this.loaded || !this.canvas) return;
         const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === e.key);
-        if (btn) this.gamepad?.highlight(btn, false);
+        if (btn) {
+          e.preventDefault();
+          this.gamepad?.highlight(btn, false);
+          this.canvas.dispatchEvent(new KeyboardEvent('keyup', {
+            key: e.key, code: e.code, keyCode: e.keyCode, which: e.which,
+            bubbles: true, cancelable: true,
+          }));
+        }
       });
     }
 
@@ -173,18 +253,18 @@
     }
 
     stop() {
-      if (this.emulator) {
-        try { this.emulator.exit(); } catch (_) {}
-        this.emulator = null;
+      if (this.nostalgist) {
+        try { this.nostalgist.exit(); } catch (_) {}
+        this.nostalgist = null;
       }
-      this.gameDiv.innerHTML = '';
-      this.gameDiv.style.display = 'none';
+      this.emuContainer.innerHTML = '';
       this.controlsDiv.style.display = 'none';
       this.virtualGamepad.style.display = 'none';
       this.dropZone.style.display = '';
       if (this.subtitle) this.subtitle.style.display = '';
       this.statusText.textContent = 'Emulator stopped.';
       this.loaded = false;
+      this.canvas = null;
       if (this.gamepad) {
         this.gamepad.destroy();
         this.gamepad = null;
@@ -192,8 +272,8 @@
     }
 
     reset() {
-      if (this.emulator) {
-        try { this.emulator.restart(); } catch (_) {}
+      if (this.nostalgist) {
+        try { this.nostalgist.restart(); } catch (_) {}
         this.statusText.textContent = '🔄 Reset.';
       }
     }
