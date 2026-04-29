@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candlestick Patterns – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .patterns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
+    .pattern-card {
+      background: #2a2a3c;
+      border: 2px solid #4b4b68;
+      padding: 0.8rem;
+      text-align: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+      cursor: default;
+      position: relative;
+    }
+    .pattern-card:hover {
+      border-color: #cfba8c;
+      background: #32324a;
+      transform: translateY(-2px);
+    }
+    .pattern-card canvas {
+      display: block;
+      margin: 0 auto 0.5rem;
+      image-rendering: crisp-edges;
+    }
+    .pattern-name {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.55rem;
+      color: #cfba8c;
+      margin: 0.3rem 0;
+      word-break: break-word;
+    }
+    .pattern-type {
+      font-size: 0.5rem;
+      color: #9da5b4;
+      margin-bottom: 0.2rem;
+      text-transform: uppercase;
+    }
+    /* Tooltip */
+    .pattern-tooltip {
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a0a14;
+      border: 2px solid #cfba8c;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.6rem;
+      color: #cdcdd4;
+      width: 200px;
+      text-align: left;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 20;
+    }
+    .pattern-card:hover .pattern-tooltip {
+      opacity: 1;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+    .filter-row select {
+      padding: 0.4rem;
+      font-size: 0.65rem;
+      font-family: 'Press Start 2P', cursive;
+      background: #2a2a3c;
+      color: #cdcdd4;
+      border: 1px solid #4b4b68;
+      border-radius: 4px;
+    }
+    @media (max-width: 600px) {
+      .patterns-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕯️ CANDLESTICK PATTERNS</h1>
+    <p style="text-align:center;">Kamus pola candlestick ala cartridge</p>
+
+    <div class="filter-row">
+      <label style="font-size:0.6rem; color:#9da5b4;">Filter:</label>
+      <select id="filterType" onchange="renderPatterns()">
+        <option value="all">ALL</option>
+        <option value="bullish">BULLISH</option>
+        <option value="bearish">BEARISH</option>
+        <option value="reversal">REVERSAL</option>
+        <option value="continuation">CONTINUATION</option>
+        <option value="single">SINGLE CANDLE</option>
+        <option value="multi">MULTI CANDLE</option>
+      </select>
+    </div>
+
+    <div id="patternsContainer" class="patterns-grid"></div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    // Data pola (nama, tipe, deskripsi, fungsi gambar)
+    const patterns = [
+      { name: 'Doji', type: 'single neutral', desc: 'Harga buka & tutup hampir sama. Sinyal ketidakpastian pasar.', draw: drawDoji },
+      { name: 'Hammer', type: 'bullish reversal', desc: 'Sumbu bawah panjang, tubuh kecil di atas. Muncul setelah downtrend, potensi reversal naik.', draw: drawHammer },
+      { name: 'Shooting Star', type: 'bearish reversal', desc: 'Sumbu atas panjang, tubuh kecil di bawah. Muncul setelah uptrend, potensi reversal turun.', draw: drawShootingStar },
+      { name: 'Bullish Engulfing', type: 'bullish reversal', desc: 'Candle hijau besar menelan candle merah sebelumnya. Konfirmasi reversal naik.', draw: drawEngulfing(true) },
+      { name: 'Bearish Engulfing', type: 'bearish reversal', desc: 'Candle merah besar menelan candle hijau sebelumnya. Konfirmasi reversal turun.', draw: drawEngulfing(false) },
+      { name: 'Morning Star', type: 'bullish reversal', desc: 'Tiga candle: merah besar, bintang (gap), hijau besar. Sinyal kuat reversal naik.', draw: drawMorningStar },
+      { name: 'Evening Star', type: 'bearish reversal', desc: 'Tiga candle: hijau besar, bintang (gap), merah besar. Sinyal kuat reversal turun.', draw: drawEveningStar },
+      { name: 'Inside Bar', type: 'continuation', desc: 'Candle kedua seluruhnya di dalam rentang candle pertama. Konsolidasi sebelum breakout.', draw: drawInsideBar },
+      { name: 'Bullish Marubozu', type: 'bullish single', desc: 'Candle hijau panjang tanpa sumbu. Dominasi buyer penuh.', draw: drawMarubozu(true) },
+      { name: 'Bearish Marubozu', type: 'bearish single', desc: 'Candle merah panjang tanpa sumbu. Dominasi seller penuh.', draw: drawMarubozu(false) },
+      { name: 'Bullish Harami', type: 'bullish reversal', desc: 'Candle kecil hijau di dalam rentang candle merah besar. Sinyal awal reversal naik.', draw: drawHarami(true) },
+      { name: 'Bearish Harami', type: 'bearish reversal', desc: 'Candle kecil merah di dalam rentang candle hijau besar. Sinyal awal reversal turun.', draw: drawHarami(false) },
+      { name: 'Dark Cloud Cover', type: 'bearish reversal', desc: 'Candle merah turun tajam menutup di bawah tengah candle hijau sebelumnya.', draw: drawDarkCloudCover },
+      { name: 'Piercing Pattern', type: 'bullish reversal', desc: 'Candle hijau naik tajam menutup di atas tengah candle merah sebelumnya.', draw: drawPiercing }
+    ];
+
+    // Ukuran canvas kecil
+    const CW = 100, CH = 60;
+
+    // Helper: gambar candle generik (x, y, width, tinggi tubuh, sumbu atas, sumbu bawah, warna)
+    function drawCandle(ctx, x, bodyTop, bodyH, wickTop, wickBottom, color) {
+      // Badan
+      ctx.fillStyle = color;
+      ctx.fillRect(x, bodyTop, 8, bodyH);
+      // Sumbu
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 4, wickTop);
+      ctx.lineTo(x + 4, bodyTop);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 4, bodyTop + bodyH);
+      ctx.lineTo(x + 4, wickBottom);
+      ctx.stroke();
+    }
+
+    function green() { return '#6c9'; }
+    function red() { return '#e07373'; }
+
+    // Fungsi gambar masing-masing pola (di canvas kecil)
+    function drawDoji(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 46, 28, 4, 20, 40, '#cfba8c'); // warna netral
+      drawCandle(ctx, 46, 28, 4, 20, 40, '#cfba8c');
+    }
+
+    function drawHammer(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 46, 30, 8, 27, 50, green());
+    }
+
+    function drawShootingStar(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 46, 30, 8, 10, 50, red());
+    }
+
+    function drawEngulfing(isBullish) {
+      return function(ctx) {
+        ctx.clearRect(0,0,CW,CH);
+        // candle pertama
+        drawCandle(ctx, 26, isBullish ? 22 : 35, 12, isBullish ? 20 : 15, isBullish ? 35 : 45, isBullish ? red() : green());
+        // candle kedua menelan
+        drawCandle(ctx, 56, isBullish ? 15 : 40, 20, isBullish ? 15 : 10, isBullish ? 45 : 50, isBullish ? green() : red());
+      };
+    }
+
+    function drawMorningStar(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 20, 25, 15, 22, 38, red());
+      drawCandle(ctx, 46, 28, 4, 20, 40, '#cfba8c'); // star (doji kecil)
+      drawCandle(ctx, 72, 20, 20, 18, 45, green());
+    }
+
+    function drawEveningStar(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 20, 20, 20, 18, 45, green());
+      drawCandle(ctx, 46, 28, 4, 20, 40, '#cfba8c');
+      drawCandle(ctx, 72, 25, 15, 22, 38, red());
+    }
+
+    function drawInsideBar(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 30, 20, 20, 18, 42, '#9da5b4'); // candle induk abu-abu
+      drawCandle(ctx, 58, 25, 10, 22, 38, '#cfba8c');
+    }
+
+    function drawMarubozu(isBullish) {
+      return function(ctx) {
+        ctx.clearRect(0,0,CW,CH);
+        drawCandle(ctx, 46, 20, 20, 20, 40, isBullish ? green() : red());
+      };
+    }
+
+    function drawHarami(isBullish) {
+      return function(ctx) {
+        ctx.clearRect(0,0,CW,CH);
+        drawCandle(ctx, 26, isBullish ? 25 : 20, 15, isBullish ? 20 : 18, isBullish ? 40 : 42, isBullish ? red() : green());
+        drawCandle(ctx, 56, isBullish ? 28 : 22, 8, isBullish ? 27 : 30, isBullish ? 35 : 40, isBullish ? green() : red());
+      };
+    }
+
+    function drawDarkCloudCover(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 26, 20, 20, 18, 45, green());
+      drawCandle(ctx, 56, 30, 10, 28, 38, red()); // tubuh merah masuk ke tengah hijau
+    }
+
+    function drawPiercing(ctx) {
+      ctx.clearRect(0,0,CW,CH);
+      drawCandle(ctx, 26, 25, 15, 22, 38, red());
+      drawCandle(ctx, 56, 18, 12, 15, 35, green()); // hijau naik menembus tengah merah
+    }
+
+    // Render semua pola ke grid
+    function renderPatterns() {
+      const filter = document.getElementById('filterType').value;
+      const container = document.getElementById('patternsContainer');
+      container.innerHTML = '';
+
+      const filtered = patterns.filter(p => {
+        if (filter === 'all') return true;
+        if (filter === 'bullish') return p.type.includes('bullish');
+        if (filter === 'bearish') return p.type.includes('bearish');
+        if (filter === 'reversal') return p.type.includes('reversal');
+        if (filter === 'continuation') return p.type.includes('continuation');
+        if (filter === 'single') return p.type.includes('single') || !p.type.includes('multi') && (p.name.includes('Doji') || p.name.includes('Marubozu'));
+        if (filter === 'multi') return p.type.includes('multi') || p.name.includes('Engulfing') || p.name.includes('Star') || p.name.includes('Inside') || p.name.includes('Harami') || p.name.includes('Cloud') || p.name.includes('Piercing');
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="loading" style="grid-column:1/-1;">Tidak ada pola untuk filter ini.</div>';
+        return;
+      }
+
+      filtered.forEach(pattern => {
+        const card = document.createElement('div');
+        card.className = 'pattern-card';
+
+        // Canvas ilustrasi
+        const canvas = document.createElement('canvas');
+        canvas.width = CW;
+        canvas.height = CH;
+        const ctx = canvas.getContext('2d');
+        pattern.draw(ctx);
+
+        // Nama
+        const name = document.createElement('div');
+        name.className = 'pattern-name';
+        name.textContent = pattern.name;
+
+        // Tipe
+        const type = document.createElement('div');
+        type.className = 'pattern-type';
+        type.textContent = pattern.type;
+
+        // Tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'pattern-tooltip';
+        tooltip.textContent = pattern.desc;
+
+        card.appendChild(canvas);
+        card.appendChild(name);
+        card.appendChild(type);
+        card.appendChild(tooltip);
+        container.appendChild(card);
+      });
+    }
+
+    // Render awal
+    renderPatterns();
+  </script>
+</body>
+</html>
