@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Session Clock – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .clock-container { text-align: center; margin: 25px 0; }
+    .clock { font-size: 2.5rem; font-family: 'Press Start 2P', cursive; color: #cfba8c; }
+    .session-row { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; padding: 8px 12px; background: #2a2a3c; border-radius: 6px; }
+    .session-name { font-size:0.8rem; width: 100px; }
+    .session-bar { flex:1; height: 18px; background:#1e1e2e; margin:0 15px; border-radius:9px; overflow:hidden; position:relative; }
+    .session-fill { height:100%; width:0%; background:#4b4b6e; border-radius:9px; transition: width 1s linear; }
+    .session-fill.active { background:#4caf50; }
+    .session-fill.overlap { background:#ff9800; }
+    .time-range { font-size:0.65rem; color:#aaa; width:130px; text-align:right; }
+    .overlap-badge { font-size:0.6rem; color:#ff9800; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 MARKET SESSION</h1>
+    <p style="text-align:center;">Jam sesi & overlap</p>
+
+    <div class="clock-container">
+      <div class="clock" id="liveClock">00:00:00</div>
+      <div style="font-size:0.7rem;" id="timeLabels">UTC | WIB</div>
+    </div>
+
+    <div id="sessionsContainer"></div>
+
+    <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#8a8a9a;" id="overlapNotif"></div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    const sessions = [
+      { name: 'Sydney',  startUTC: 22, endUTC: 7,  icon: '🌏' },
+      { name: 'Tokyo',   startUTC: 0,  endUTC: 9,  icon: '🗾' },
+      { name: 'London',  startUTC: 8,  endUTC: 17, icon: '🇬🇧' },
+      { name: 'New York',startUTC: 13, endUTC: 22, icon: '🇺🇸' }
+    ];
+
+    function getUTCHoursMinutes(date) {
+      return { h: date.getUTCHours(), m: date.getUTCMinutes(), s: date.getUTCSeconds() };
+    }
+
+    function isSessionActive(utcHours, start, end) {
+      // start & end bisa lintas tengah malam (start > end)
+      if (start <= end) {
+        return utcHours >= start && utcHours < end;
+      } else {
+        return utcHours >= start || utcHours < end;
+      }
+    }
+
+    function sessionProgress(utcHours, utcMinutes, start, end) {
+      // Kembalikan persentase progres (0-100)
+      let total, elapsed;
+      if (start <= end) {
+        total = (end - start) * 60;
+        elapsed = (utcHours - start) * 60 + utcMinutes;
+      } else {
+        total = (24 - start + end) * 60;
+        if (utcHours >= start) elapsed = (utcHours - start) * 60 + utcMinutes;
+        else elapsed = (24 - start + utcHours) * 60 + utcMinutes;
+      }
+      return Math.min(100, Math.max(0, (elapsed / total) * 100));
+    }
+
+    function renderSessions() {
+      const now = new Date();
+      const { h, m, s } = getUTCHoursMinutes(now);
+      const container = document.getElementById('sessionsContainer');
+      const activeSessions = [];
+
+      let html = '';
+      sessions.forEach(s => {
+        const active = isSessionActive(h, s.startUTC, s.endUTC);
+        let className = active ? 'active' : '';
+        if (active) activeSessions.push(s.name);
+        // Overlap check: jika lebih dari satu sesi aktif, warnai overlap
+        // Proses nanti setelah kita tahu jumlah aktif
+        const progress = sessionProgress(h, m, s.startUTC, s.endUTC);
+        // Jika tidak aktif, progress 0 (tidak fill)
+        const fillWidth = active ? progress : 0;
+
+        html += `
+          <div class="session-row">
+            <span class="session-name">${s.icon} ${s.name}</span>
+            <div class="session-bar">
+              <div class="session-fill ${className}" style="width:${fillWidth}%;"></div>
+            </div>
+            <span class="time-range">${s.startUTC}:00 - ${s.endUTC}:00 UTC</span>
+          </div>`;
+      });
+
+      // Setelah semua sesi, jika lebih dari 1 aktif, beri kelas overlap ke semuanya
+      if (activeSessions.length > 1) {
+        document.querySelectorAll('.session-fill.active').forEach(el => {
+          el.classList.add('overlap');
+        });
+        document.getElementById('overlapNotif').innerHTML = '⚡ OVERLAP SESSION: ' + activeSessions.join(' & ');
+      } else {
+        document.getElementById('overlapNotif').innerHTML = activeSessions.length ? `Sesi aktif: ${activeSessions[0]}` : '🔴 Tidak ada sesi aktif';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const utcStr = now.toISOString().slice(11,19);
+      const wib = new Date(now.getTime() + 7 * 60 * 60000).toISOString().slice(11,19);
+      document.getElementById('liveClock').textContent = utcStr;
+      document.getElementById('timeLabels').innerHTML = `UTC | WIB: ${wib}`;
+      renderSessions();
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>
