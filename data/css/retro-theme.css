@@ -455,16 +455,16 @@ footer {
 /* Canvas emulator */
 .nes-emulator-canvas {
     display: block;
-    margin: 0 auto;
     image-rendering: pixelated;
     width: 100%;
     height: auto;
+    max-width: 100%;
     border: 4px solid #6e6e8a;
     box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
     background: #000;
 }
 
-/* Kontrol (start/stop/fullscreen) */
+/* Kontrol (tombol stop/reset/fullscreen) */
 .nes-controls {
     display: flex;
     flex-wrap: wrap;
@@ -493,47 +493,46 @@ footer {
     border-color: #b9a88c !important;
 }
 
-/* Wrapper utama (relative untuk fullscreen) */
+/* Wrapper utama (untuk deteksi orientasi) */
 .nes-emulator-wrapper {
-    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* === KONTAINER ORIENTASI (dibuat oleh JS) === */
+.emu-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
     width: 100%;
 }
 
-/* === LANDSCAPE MODE (default) === */
-.emu-landscape {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: nowrap;
-}
-.emu-landscape .nes-emulator-canvas {
-    max-width: 70%;
-}
-.emu-landscape .virtual-gamepad {
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-/* === PORTRAIT MODE === */
+/* === PORTRAIT MODE (GB style) === */
 .emu-portrait {
-    display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1rem;
 }
 .emu-portrait .nes-emulator-canvas {
     max-width: 100%;
 }
 .emu-portrait .virtual-gamepad {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.5rem;
 }
 
-/* Virtual gamepad container */
+/* === LANDSCAPE MODE (GBA/PSP style) === */
+.emu-landscape {
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+.emu-landscape .nes-emulator-canvas {
+    max-width: 65%;
+}
+.emu-landscape .virtual-gamepad {
+    flex-shrink: 0;
+}
+
+/* Virtual gamepad (selalu terlihat setelah ROM dimuat) */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -542,7 +541,7 @@ footer {
     touch-action: none;
 }
 
-/* GamepadZilla canvas styling */
+/* GamepadZilla / vanilla gamepad styling */
 .gamepad-container {
     display: flex;
     flex-wrap: wrap;
@@ -550,27 +549,60 @@ footer {
     align-items: center;
     justify-content: center;
 }
-.gpz-dpad {
-    width: 140px;
-    height: 140px;
-    border: 2px solid #5a5a7a;
-    border-radius: 12px;
-    background: #1e1e2e;
+
+/* D‑Pad */
+.dpad {
+    display: grid;
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+    gap: 0.3rem;
+    justify-items: center;
+    align-items: center;
 }
-.gpz-btn {
-    width: 55px;
-    height: 55px;
-    border: 2px solid #5a5a7a;
-    border-radius: 50%;
-    background: #2a2a3c;
+.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
 }
-.start-select .gpz-btn {
-    width: 80px;
-    height: 40px;
-    border-radius: 8px;
+.start-select {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    width: 100%;
 }
 
-/* Status bar */
+.gamepad-btn {
+    width: 50px;
+    height: 50px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.45rem;
+    background: #2a2a3c;
+    border: 2px solid #5a5a7a;
+    color: #cdcdd4;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.1s, border-color 0.1s;
+}
+.gamepad-btn:active,
+.gamepad-btn.active {
+    background: #4b4b6e;
+    border-color: #cfba8c;
+    color: #f0e6d2;
+}
+.action-buttons .gamepad-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 0.7rem;
+}
+
 .nes-status {
     text-align: center;
     font-size: 0.6rem;
