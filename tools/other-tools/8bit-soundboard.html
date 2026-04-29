@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Soundboard | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .soundboard-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.5);
+            padding: 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .soundboard-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .soundboard-wrapper > * { position: relative; z-index: 20; }
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            margin-bottom: 1rem;
+        }
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.8rem;
+            margin: 1.5rem 0;
+        }
+        .sound-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            padding: 1rem 0.5rem;
+            background: #2a2a3c;
+            border: 3px solid #4b4b68;
+            color: #d1d1db;
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #0a0a14;
+            transition: all 0.05s ease;
+            text-transform: uppercase;
+            line-height: 1.4;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .sound-btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 1px 1px 0 #0a0a14;
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+        }
+        .sound-btn .emoji {
+            font-size: 1.5rem;
+        }
+        .volume-control {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+        .volume-control label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 120px;
+            height: 10px;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #cfba8c;
+            border: 2px solid #4a3e2c;
+        }
+        @media (max-width: 400px) {
+            .sound-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="soundboard-wrapper">
+        <h2>🔊 8-BIT SOUNDBOARD</h2>
+        <div class="sound-grid" id="soundGrid">
+            <!-- Tombol akan diisi oleh JS -->
+        </div>
+        <div class="volume-control">
+            <label>VOL</label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.3">
+        </div>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.8rem;">PRESS BUTTONS TO PLAY</p>
+    </div>
+
+    <script>
+        (function() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.3;
+            masterGain.connect(audioCtx.destination);
+
+            const sounds = [
+                { name: 'Coin', emoji: '🪙', freq: 800, type: 'square', duration: 0.15, sweep: 200 },
+                { name: 'Jump', emoji: '⬆️', freq: 400, type: 'square', duration: 0.2, sweep: 300 },
+                { name: 'Laser', emoji: '🔫', freq: 1200, type: 'sawtooth', duration: 0.15, sweep: -600 },
+                { name: 'Explosion', emoji: '💥', freq: 100, type: 'sawtooth', duration: 0.5, sweep: -80 },
+                { name: 'Power Up', emoji: '⚡', freq: 300, type: 'square', duration: 0.3, sweep: 500 },
+                { name: 'Hurt', emoji: '💔', freq: 200, type: 'sawtooth', duration: 0.3, sweep: -100 },
+                { name: 'Select', emoji: '✅', freq: 600, type: 'square', duration: 0.1, sweep: 0 },
+                { name: 'Cancel', emoji: '❌', freq: 500, type: 'square', duration: 0.1, sweep: -100 },
+                { name: 'Victory', emoji: '🏆', freq: 500, type: 'square', duration: 0.6, sweep: 400 },
+                { name: 'Click', emoji: '👆', freq: 1000, type: 'square', duration: 0.05, sweep: 0 },
+                { name: 'Error', emoji: '⚠️', freq: 200, type: 'sawtooth', duration: 0.4, sweep: -50 },
+                { name: 'Alarm', emoji: '⏰', freq: 800, type: 'square', duration: 0.3, sweep: 0 },
+            ];
+
+            const grid = document.getElementById('soundGrid');
+            const volumeSlider = document.getElementById('volumeSlider');
+
+            volumeSlider.addEventListener('input', (e) => {
+                masterGain.gain.value = parseFloat(e.target.value);
+            });
+
+            // Buat tombol
+            sounds.forEach(sound => {
+                const btn = document.createElement('button');
+                btn.className = 'sound-btn';
+                btn.innerHTML = `<span class="emoji">${sound.emoji}</span> ${sound.name}`;
+                btn.addEventListener('click', () => playSound(sound));
+                grid.appendChild(btn);
+            });
+
+            function playSound(sound) {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = sound.type;
+                osc.frequency.setValueAtTime(sound.freq, now);
+                if (sound.sweep) {
+                    osc.frequency.linearRampToValueAtTime(sound.freq + sound.sweep, now + sound.duration);
+                }
+                
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + sound.duration);
+                
+                osc.connect(gain);
+                gain.connect(masterGain);
+                
+                osc.start(now);
+                osc.stop(now + sound.duration);
+            }
+        })();
+    </script>
+</body>
+</html>
