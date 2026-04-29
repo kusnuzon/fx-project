@@ -1,0 +1,165 @@
+/* =============================================
+   NES EMULATOR – RESPONSIVE & FULLSCREEN
+   ============================================= */
+
+/* Dropzone */
+.nes-dropzone {
+    border: 2px dashed #5a5a7a;
+    padding: 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+    color: #8e8ea0;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    transition: border-color 0.2s;
+    background: rgba(0,0,0,0.3);
+}
+.nes-dropzone.drag-over {
+    border-color: #cfba8c;
+    color: #cfba8c;
+}
+
+/* Canvas */
+.nes-emulator-canvas {
+    display: block;
+    image-rendering: pixelated;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border: 4px solid #6e6e8a;
+    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
+    background: #000;
+}
+
+/* Kontrol bar */
+.nes-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin: 1rem 0 0.5rem;
+}
+.nes-controls button {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    background: #3a3a52;
+    color: #d1d1db;
+    border: 2px solid #5a5a7a;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.nes-controls button:hover {
+    background: #4b4b6e;
+    border-color: #b9a88c;
+    color: #f0e6d2;
+}
+.fullscreen-btn {
+    background: #5a5a7a !important;
+    border-color: #b9a88c !important;
+}
+
+/* Wrapper */
+.nes-emulator-wrapper {
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* === Konteiner Orientasi === */
+.emu-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+/* PORTRAIT (Game Boy style) */
+.emu-portrait {
+    flex-direction: column;
+}
+.emu-portrait .nes-emulator-canvas {
+    max-width: 100%;
+}
+.emu-portrait .virtual-gamepad {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* LANDSCAPE (GBA/PSP style) */
+.emu-landscape {
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+.emu-landscape .nes-emulator-canvas {
+    max-width: 65%;
+}
+.emu-landscape .virtual-gamepad {
+    flex-shrink: 0;
+}
+
+/* Virtual Gamepad */
+.virtual-gamepad {
+    display: flex;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.gamepad-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+}
+
+/* D‑Pad */
+.dpad {
+    display: grid;
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+    gap: 0.3rem;
+    justify-items: center;
+    align-items: center;
+}
+.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
+
+.action-buttons { display: flex; gap: 0.5rem; }
+.start-select { display: flex; gap: 0.5rem; justify-content: center; width: 100%; }
+
+.gamepad-btn {
+    width: 50px;
+    height: 50px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.45rem;
+    background: #2a2a3c;
+    border: 2px solid #5a5a7a;
+    color: #cdcdd4;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.1s, border-color 0.1s;
+}
+.gamepad-btn:active,
+.gamepad-btn.active {
+    background: #4b4b6e;
+    border-color: #cfba8c;
+    color: #f0e6d2;
+}
+.action-buttons .gamepad-btn { width: 55px; height: 55px; font-size: 0.7rem; }
+
+.nes-status {
+    text-align: center;
+    font-size: 0.6rem;
+    color: #7a7a95;
+    margin-top: 0.5rem;
+}
