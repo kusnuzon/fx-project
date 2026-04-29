@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>NES Emulator – CARTRIDGE VAULT</title>
 
-    <!-- Global Theme -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <!-- Nostalgist.js & JSZip -->
     <script src="https://unpkg.com/nostalgist"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -26,47 +24,24 @@
         </div>
 
         <div class="nes-controls" id="controls" style="display:none;">
-            <button onclick="nesEmulator.stop()">⏹️ STOP</button>
-            <button onclick="nesEmulator.reset()">🔄 RESET</button>
-            <button class="fullscreen-btn" onclick="nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
+            <button onclick="emu.stop()">⏹️ STOP</button>
+            <button onclick="emu.reset()">🔄 RESET</button>
+            <button class="fullscreen-btn" onclick="emu.toggleFullscreen()">📺 FULLSCREEN</button>
         </div>
 
-        <div id="emulatorWrapper" class="nes-emulator-wrapper"></div>
-
-        <!-- Virtual Gamepad (vanilla) -->
-        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
-            <div class="gamepad-container">
-                <div class="dpad">
-                    <div class="gamepad-btn" data-btn="up">▲</div>
-                    <div class="gamepad-btn" data-btn="left">◀</div>
-                    <div class="gamepad-btn" data-btn="right">▶</div>
-                    <div class="gamepad-btn" data-btn="down">▼</div>
-                </div>
-                <div class="action-buttons">
-                    <div class="gamepad-btn" data-btn="a">A</div>
-                    <div class="gamepad-btn" data-btn="b">B</div>
-                </div>
-                <div class="start-select">
-                    <div class="gamepad-btn" data-btn="start">START</div>
-                    <div class="gamepad-btn" data-btn="select">SELECT</div>
-                </div>
-            </div>
-        </div>
-
+        <div class="nes-emulator-wrapper" id="emuWrapper"></div>
         <div class="nes-status" id="statusText"></div>
     </div>
 
     <footer>🛠️ CARTRIDGE VAULT</footer>
 
     <script>
-        // Mapping keyboard ke button virtual
         const KEY_MAP = {
             'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
-            'z': 'a', 'x': 'b',
-            'Enter': 'start', 'Shift': 'select'
+            'z': 'a', 'x': 'b', 'Enter': 'start', 'Shift': 'select'
         };
 
-        const nesEmulator = {
+        const emu = {
             nostalgist: null,
             loaded: false,
 
@@ -75,74 +50,96 @@
                 document.getElementById('statusText').textContent = 'Loading...';
                 try {
                     if (this.nostalgist) { try { this.nostalgist.exit(); } catch(e) {} }
-
-                    const romBlob = new Blob([romData], { type: 'application/octet-stream' });
-                    const romFile = new File([romBlob], fileName || 'game.nes');
-
-                    this.nostalgist = await Nostalgist.nes(romFile);
+                    const blob = new Blob([romData], { type: 'application/octet-stream' });
+                    const file = new File([blob], fileName || 'game.nes');
+                    this.nostalgist = await Nostalgist.nes(file);
                     const canvas = this.nostalgist.getCanvas();
                     canvas.classList.add('nes-emulator-canvas');
-
                     this.buildUI(canvas);
                     this.loaded = true;
                     document.getElementById('controls').style.display = 'flex';
-                    document.getElementById('virtualGamepad').style.display = 'flex';
-                    document.getElementById('statusText').textContent = 'ROM loaded • Keyboard / Gamepad ready';
+                    document.getElementById('statusText').textContent = 'ROM loaded';
                 } catch (e) {
                     document.getElementById('statusText').textContent = 'Error: ' + e.message;
                 }
             },
 
             buildUI(canvas) {
-                const wrapper = document.getElementById('emulatorWrapper');
+                const wrapper = document.getElementById('emuWrapper');
                 wrapper.innerHTML = '';
 
-                // Buat container orientasi
                 const container = document.createElement('div');
-                container.id = 'emuContainer';
                 container.className = 'emu-container';
                 container.appendChild(canvas);
 
-                // Pindahkan virtual gamepad ke dalam container
-                const gamepad = document.getElementById('virtualGamepad');
+                // Virtual Gamepad
+                const gamepad = document.createElement('div');
+                gamepad.className = 'virtual-gamepad';
+                gamepad.innerHTML = `
+                    <div class="gamepad-container">
+                        <div class="dpad">
+                            <div class="gamepad-btn" data-btn="up">▲</div>
+                            <div class="gamepad-btn" data-btn="left">◀</div>
+                            <div class="gamepad-btn" data-btn="right">▶</div>
+                            <div class="gamepad-btn" data-btn="down">▼</div>
+                        </div>
+                        <div class="action-buttons">
+                            <div class="gamepad-btn" data-btn="a">A</div>
+                            <div class="gamepad-btn" data-btn="b">B</div>
+                        </div>
+                        <div class="start-select">
+                            <div class="gamepad-btn" data-btn="start">START</div>
+                            <div class="gamepad-btn" data-btn="select">SELECT</div>
+                        </div>
+                    </div>
+                `;
                 container.appendChild(gamepad);
-
                 wrapper.appendChild(container);
-
+                this.bindGamepad(gamepad);
                 this.applyLayout();
                 window.addEventListener('resize', () => this.applyLayout());
             },
 
+            bindGamepad(gamepad) {
+                gamepad.querySelectorAll('.gamepad-btn').forEach(btn => {
+                    const dataBtn = btn.dataset.btn;
+                    if (!dataBtn) return;
+                    const press = (e) => {
+                        e.preventDefault();
+                        btn.classList.add('active');
+                        const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === dataBtn);
+                        if (key && this.nostalgist) {
+                            const canvas = this.nostalgist.getCanvas();
+                            if (canvas) canvas.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+                        }
+                    };
+                    const release = (e) => {
+                        e.preventDefault();
+                        btn.classList.remove('active');
+                        const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === dataBtn);
+                        if (key && this.nostalgist) {
+                            const canvas = this.nostalgist.getCanvas();
+                            if (canvas) canvas.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+                        }
+                    };
+                    btn.addEventListener('pointerdown', press);
+                    btn.addEventListener('pointerup', release);
+                    btn.addEventListener('pointerleave', release);
+                });
+            },
+
             applyLayout() {
-                const container = document.getElementById('emuContainer');
+                const container = document.querySelector('.emu-container');
                 if (!container) return;
                 const isPortrait = window.innerHeight > window.innerWidth;
                 container.classList.toggle('emu-portrait', isPortrait);
                 container.classList.toggle('emu-landscape', !isPortrait);
             },
 
-            sendKey(key, type) {
-                if (!this.nostalgist) return;
-                const canvas = this.nostalgist.getCanvas();
-                if (!canvas) return;
-                canvas.dispatchEvent(new KeyboardEvent(type, { key, bubbles: true }));
-            },
-
-            pressButton(btn) {
-                const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === btn);
-                if (key) this.sendKey(key, 'keydown');
-            },
-
-            releaseButton(btn) {
-                const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === btn);
-                if (key) this.sendKey(key, 'keyup');
-            },
-
             stop() {
-                document.getElementById('emulatorWrapper').innerHTML = '';
+                document.getElementById('emuWrapper').innerHTML = '';
                 document.getElementById('controls').style.display = 'none';
-                document.getElementById('virtualGamepad').style.display = 'none';
-                document.getElementById('statusText').textContent = 'Emulator stopped.';
+                document.getElementById('statusText').textContent = 'Stopped.';
                 this.loaded = false;
                 if (this.nostalgist) { try { this.nostalgist.exit(); } catch(e) {} }
             },
@@ -153,7 +150,7 @@
             },
 
             toggleFullscreen() {
-                const wrapper = document.getElementById('emulatorWrapper');
+                const wrapper = document.getElementById('emuWrapper');
                 if (!document.fullscreenElement) {
                     wrapper.requestFullscreen();
                 } else {
@@ -162,75 +159,41 @@
             }
         };
 
-        // ── Virtual Gamepad Setup ──
-        function setupVirtualGamepad() {
-            const buttons = document.querySelectorAll('.gamepad-btn');
-            buttons.forEach(btn => {
-                const dataBtn = btn.dataset.btn;
-                if (!dataBtn) return;
-
-                const press = (e) => {
-                    e.preventDefault();
-                    btn.classList.add('active');
-                    nesEmulator.pressButton(dataBtn);
-                };
-                const release = (e) => {
-                    e.preventDefault();
-                    btn.classList.remove('active');
-                    nesEmulator.releaseButton(dataBtn);
-                };
-
-                btn.addEventListener('pointerdown', press);
-                btn.addEventListener('pointerup', release);
-                btn.addEventListener('pointerleave', release);
+        // Drag & Drop
+        (function() {
+            const drop = document.getElementById('dropZone');
+            drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+            drop.addEventListener('dragleave', e => { drop.classList.remove('drag-over'); });
+            drop.addEventListener('drop', async e => {
+                e.preventDefault(); drop.classList.remove('drag-over');
+                if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
             });
-        }
-
-        // ── Drag & Drop / Click ──
-        (function setupDropZone() {
-            const dropZone = document.getElementById('dropZone');
-            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-            dropZone.addEventListener('dragleave', e => { dropZone.classList.remove('drag-over'); });
-            dropZone.addEventListener('drop', async e => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (!file) return;
-                handleFile(file);
-            });
-            dropZone.addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.nes,.zip';
-                input.onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
-                input.click();
+            drop.addEventListener('click', () => {
+                const inp = document.createElement('input'); inp.type='file'; inp.accept='.nes,.zip';
+                inp.onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+                inp.click();
             });
         })();
 
         async function handleFile(file) {
-            const statusEl = document.getElementById('statusText');
-            statusEl.textContent = 'Processing...';
+            const status = document.getElementById('statusText');
+            status.textContent = 'Processing...';
             try {
-                const buffer = await file.arrayBuffer();
-                let romData, romName;
+                const buf = await file.arrayBuffer();
+                let data, name;
                 if (file.name.toLowerCase().endsWith('.zip')) {
-                    const zip = await JSZip.loadAsync(buffer);
-                    const nesFile = Object.keys(zip.files).find(f => f.toLowerCase().endsWith('.nes'));
-                    if (!nesFile) throw new Error('No .nes file inside ZIP.');
-                    romData = await zip.files[nesFile].async('uint8array');
-                    romName = nesFile;
+                    const zip = await JSZip.loadAsync(buf);
+                    const nFile = Object.keys(zip.files).find(f => f.toLowerCase().endsWith('.nes'));
+                    if (!nFile) throw new Error('No .nes in zip');
+                    data = await zip.files[nFile].async('uint8array');
+                    name = nFile;
                 } else {
-                    romData = new Uint8Array(buffer);
-                    romName = file.name;
+                    data = new Uint8Array(buf);
+                    name = file.name;
                 }
-                await nesEmulator.loadROM(romData, romName);
-            } catch (err) {
-                statusEl.textContent = 'Error: ' + err.message;
-            }
+                await emu.loadROM(data, name);
+            } catch(e) { status.textContent = 'Error: ' + e.message; }
         }
-
-        // ── Init ──
-        setupVirtualGamepad();
     </script>
 </body>
 </html>
