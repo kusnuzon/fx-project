@@ -44,6 +44,7 @@
                 </select>
             </div>
             <div id="calendar-content"><div class="loading">Loading calendar...</div></div>
+            <div id="calendar-status" style="text-align:center; margin-top:10px; font-size:0.65rem; color:#8a8a9a;"></div>
         </div>
 
         <div id="view-news" style="display:none;">
@@ -60,6 +61,8 @@
     <script>
         let calendarData = [];
         let newsData = [];
+        let isUsingMockData = false;
+
         const CALENDAR_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
         const NEWS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https://www.forexlive.com/feed/';
 
@@ -69,38 +72,111 @@
             CNY:'🇨🇳 CNY'
         };
 
+        // --- INISIALISASI ---
         (async function init() {
             await Promise.all([fetchCalendar(), fetchNews()]);
         })();
 
+        // --- FETCH CALENDAR (FALLBACK TO MOCK) ---
         async function fetchCalendar() {
             try {
-                const r = await fetch(CALENDAR_URL);
-                if (!r.ok) throw new Error('Calendar fetch failed');
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                const r = await fetch(CALENDAR_URL, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (!r.ok) throw new Error('Status: ' + r.status);
                 calendarData = await r.json();
+                if (!Array.isArray(calendarData) || calendarData.length === 0) throw new Error('Empty data');
+                isUsingMockData = false;
+            } catch(e) {
+                console.warn('⚠️ API kalender gagal, menggunakan data simulasi:', e.message);
+                calendarData = generateMockCalendar();
+                isUsingMockData = true;
+            } finally {
+                updateStatusLabel();
                 populateCurrencyFilter();
                 renderCalendar();
-            } catch(e) {
-                document.getElementById('calendar-content').innerHTML =
-                    '<div class="error">⚠️ Gagal memuat kalender. Coba refresh.</div>';
             }
         }
 
+        function updateStatusLabel() {
+            const el = document.getElementById('calendar-status');
+            if (!el) return;
+            if (isUsingMockData) {
+                el.innerHTML = '🔸 Data simulasi – API tidak terjangkau. Event berikutnya adalah ilustrasi.';
+            } else {
+                el.innerHTML = '✅ Data kalender real-time berhasil dimuat.';
+            }
+        }
+
+        // --- GENERATE MOCK CALENDAR (7 hari ke depan) ---
+        function generateMockCalendar() {
+            const now = new Date();
+            const events = [];
+            const templates = [
+                { title: 'Non-Farm Payrolls', country: 'USD', impact: 'High', forecast: '185K', previous: '215K' },
+                { title: 'Unemployment Rate', country: 'USD', impact: 'High', forecast: '3.8%', previous: '3.9%' },
+                { title: 'CPI m/m', country: 'EUR', impact: 'High', forecast: '0.3%', previous: '0.2%' },
+                { title: 'CPI m/m', country: 'USD', impact: 'High', forecast: '0.2%', previous: '0.1%' },
+                { title: 'GDP q/q', country: 'GBP', impact: 'High', forecast: '0.4%', previous: '0.5%' },
+                { title: 'Retail Sales m/m', country: 'USD', impact: 'High', forecast: '0.6%', previous: '0.4%' },
+                { title: 'Interest Rate Decision', country: 'AUD', impact: 'High', forecast: '4.35%', previous: '4.35%' },
+                { title: 'Interest Rate Decision', country: 'JPY', impact: 'High', forecast: '0.10%', previous: '0.10%' },
+                { title: 'Empire State Manufacturing Index', country: 'USD', impact: 'Medium', forecast: '-2.5', previous: '-4.0' },
+                { title: 'Industrial Production m/m', country: 'EUR', impact: 'Medium', forecast: '0.5%', previous: '0.3%' },
+                { title: 'Trade Balance', country: 'CAD', impact: 'Medium', forecast: '2.1B', previous: '1.8B' },
+                { title: 'PPI m/m', country: 'USD', impact: 'Medium', forecast: '0.2%', previous: '0.1%' },
+                { title: 'Consumer Confidence', country: 'USD', impact: 'Medium', forecast: '104.5', previous: '103.2' },
+                { title: 'NZD Visitor Arrivals m/m', country: 'NZD', impact: 'Low', forecast: '1.2%', previous: '0.9%' },
+                { title: 'BOE Gov Bailey Speaks', country: 'GBP', impact: 'Medium', forecast: '-', previous: '-' },
+                { title: 'OPEC Monthly Report', country: 'USD', impact: 'Medium', forecast: '-', previous: '-' },
+                { title: 'Building Permits m/m', country: 'USD', impact: 'Low', forecast: '1.2%', previous: '0.8%' },
+                { title: 'Treasury Currency Report', country: 'USD', impact: 'Low', forecast: '-', previous: '-' },
+            ];
+
+            const hoursUTC = [1, 6, 8, 10, 12, 14, 16, 18, 20, 23];
+
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(now);
+                day.setDate(day.getDate() + i);
+                const dayStr = day.toISOString().slice(0, 10);
+
+                const dayEvents = templates.filter(() => Math.random() > 0.6);
+                const chosen = dayEvents.length >= 2 ? dayEvents.slice(0, 3) : templates.slice(i * 2, (i * 2) + 2);
+
+                chosen.forEach((tpl, idx) => {
+                    const hour = hoursUTC[Math.floor(Math.random() * hoursUTC.length)];
+                    const date = new Date(`${dayStr}T${String(hour).padStart(2,'0')}:00:00Z`);
+                    events.push({
+                        date: date.toISOString(),
+                        country: tpl.country,
+                        title: tpl.title,
+                        impact: tpl.impact,
+                        forecast: tpl.forecast,
+                        previous: tpl.previous
+                    });
+                });
+            }
+            return events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        // --- FETCH NEWS ---
         async function fetchNews() {
             try {
                 const r = await fetch(NEWS_URL);
                 if (!r.ok) throw new Error('News fetch failed');
                 const json = await r.json();
                 newsData = json.items || [];
-                renderNews();
             } catch(e) {
-                document.getElementById('news-content').innerHTML =
-                    '<div class="error">⚠️ Gagal memuat berita. Coba refresh.</div>';
+                console.warn('⚠️ Gagal memuat berita:', e.message);
+                newsData = [];
+            } finally {
+                renderNews();
             }
         }
 
         function populateCurrencyFilter() {
-            const currencies = [...new Set(calendarData.map(e=>e.country))].sort();
+            const currencies = [...new Set(calendarData.map(e => e.country))].sort();
             const sel = document.getElementById('filterCurrency');
             sel.innerHTML = '<option value="ALL">ALL</option>';
             currencies.forEach(c => {
@@ -110,28 +186,28 @@
         }
 
         function switchTab(tab) {
-            document.getElementById('view-calendar').style.display = tab==='calendar'?'block':'none';
-            document.getElementById('view-news').style.display = tab==='news'?'block':'none';
-            document.getElementById('tab-calendar').classList.toggle('active', tab==='calendar');
-            document.getElementById('tab-news').classList.toggle('active', tab==='news');
+            document.getElementById('view-calendar').style.display = tab === 'calendar' ? 'block' : 'none';
+            document.getElementById('view-news').style.display = tab === 'news' ? 'block' : 'none';
+            document.getElementById('tab-calendar').classList.toggle('active', tab === 'calendar');
+            document.getElementById('tab-news').classList.toggle('active', tab === 'news');
         }
 
         function fmtTimeOnly(isoStr, tz) {
             const d = new Date(isoStr);
             if (isNaN(d.getTime())) return '--:--';
-            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            const offset = tz === 'WIB' ? 7 : (tz === 'UTC' ? 0 : null);
             if (offset !== null) {
                 const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
                 const local = new Date(utc + (offset * 3600000));
-                return local.toISOString().slice(11,16);
+                return local.toISOString().slice(11, 16);
             }
-            return d.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',hour12:false});
+            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
         function getDayLabel(isoStr, tz) {
             const d = new Date(isoStr);
             if (isNaN(d.getTime())) return '';
-            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            const offset = tz === 'WIB' ? 7 : (tz === 'UTC' ? 0 : null);
             let localDate;
             if (offset !== null) {
                 const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
@@ -139,15 +215,15 @@
             } else {
                 localDate = d;
             }
-            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-            const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
             return `${days[localDate.getDay()]}, ${localDate.getDate()} ${months[localDate.getMonth()]} ${localDate.getFullYear()}`;
         }
 
         function getDayKey(isoStr, tz) {
             const d = new Date(isoStr);
             if (isNaN(d.getTime())) return '';
-            const offset = tz==='WIB'?7:(tz==='UTC'?0:null);
+            const offset = tz === 'WIB' ? 7 : (tz === 'UTC' ? 0 : null);
             let localDate;
             if (offset !== null) {
                 const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
@@ -155,7 +231,7 @@
             } else {
                 localDate = d;
             }
-            return localDate.toISOString().slice(0,10);
+            return localDate.toISOString().slice(0, 10);
         }
 
         function isPast(isoStr) {
@@ -171,11 +247,12 @@
             let filtered = calendarData.filter(e => {
                 if (cur !== 'ALL' && e.country !== cur) return false;
                 if (imp !== 'ALL' && e.impact !== imp) return false;
-                if (search && !e.title.toLowerCase().includes(search) && !e.country.toLowerCase().includes(search)) return false;
+                if (search && !e.title.toLowerCase().includes(search) && !e.country.toLowerCase().includes(search))
+                    return false;
                 return true;
             });
 
-            filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             const groups = {};
             filtered.forEach(e => {
@@ -185,24 +262,25 @@
             });
 
             const container = document.getElementById('calendar-content');
-            if (filtered.length === 0) {
-                container.innerHTML = '<div class="loading">No events match filter.</div>';
+            if (!filtered.length) {
+                container.innerHTML = '<div class="loading">Tidak ada event yang cocok dengan filter.</div>';
                 return;
             }
 
-            let html = '<table class="cal-table"><thead><tr><th>Waktu</th><th>Mata Uang</th><th>Event</th><th>Dampak</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>';
+            let html =
+                '<table class="cal-table"><thead><tr><th>Waktu</th><th>Mata Uang</th><th>Event</th><th>Dampak</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>';
 
             Object.keys(groups).sort().forEach(key => {
                 const group = groups[key];
                 html += `<tr class="day-group"><td colspan="6">📅 ${group.label}</td></tr>`;
                 group.events.forEach(e => {
                     const pastClass = isPast(e.date) ? ' past-event' : '';
-                    const impactClass = 'impact-' + e.impact.toLowerCase();
+                    const impactClass = 'impact-' + (e.impact || 'low').toLowerCase();
                     html += `<tr class="${pastClass}">
                         <td>${fmtTimeOnly(e.date, tz)}</td>
                         <td>${COUNTRY_MAP[e.country] || e.country}</td>
                         <td style="text-align:left;">${e.title}</td>
-                        <td><span class="impact ${impactClass}">${e.impact}</span></td>
+                        <td><span class="impact ${impactClass}">${e.impact || 'Low'}</span></td>
                         <td>${e.forecast || '-'}</td>
                         <td>${e.previous || '-'}</td>
                     </tr>`;
@@ -219,25 +297,29 @@
 
             let filtered = newsData;
             if (search) {
-                filtered = newsData.filter(item =>
-                    item.title.toLowerCase().includes(search) ||
-                    (item.description && item.description.toLowerCase().includes(search))
+                filtered = newsData.filter(
+                    item =>
+                        item.title.toLowerCase().includes(search) ||
+                        (item.description && item.description.toLowerCase().includes(search))
                 );
             }
 
             if (filtered.length === 0) {
-                container.innerHTML = '<div class="loading">No news articles found.</div>';
+                container.innerHTML =
+                    '<div class="loading">Tidak ada artikel berita. Mungkin API sedang terbatas.</div>';
                 return;
             }
 
             let html = '';
             filtered.forEach(item => {
-                const snippet = (item.description || '').replace(/\n/g,' ').trim().slice(0, 200);
-                const pubDate = item.pubDate ? new Date(item.pubDate).toLocaleString('id-ID', {hour12:false}) : '';
+                const snippet = (item.description || '').replace(/\n/g, ' ').trim().slice(0, 200);
+                const pubDate = item.pubDate
+                    ? new Date(item.pubDate).toLocaleString('id-ID', { hour12: false })
+                    : '';
                 html += `
                 <div class="news-card">
                     <h3>${item.title}</h3>
-                    <div class="meta">${pubDate} ${item.author ? '· '+item.author : ''}</div>
+                    <div class="meta">${pubDate} ${item.author ? '· ' + item.author : ''}</div>
                     <div class="snippet">${snippet}${snippet.length >= 200 ? '...' : ''}</div>
                     <a href="${item.link}" target="_blank" rel="noopener">Baca selengkapnya →</a>
                 </div>`;
