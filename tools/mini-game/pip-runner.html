@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pip Runner – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .game-wrapper { text-align: center; margin: 1rem auto; }
+    canvas { border: 3px solid #5a5a7a; box-shadow: 0 0 0 4px #1a1a2e, 0 8px 20px rgba(0,0,0,0.7); background: #101018; display: block; margin: 0 auto; image-rendering: crisp-edges; }
+    .game-hud { display: flex; justify-content: center; gap: 2rem; font-size: 0.7rem; margin: 1rem 0 0.5rem; color: #cfba8c; }
+    .game-instruction { font-size: 0.55rem; color: #7a7a95; margin-top: 0.8rem; }
+    button.game-btn { width: auto; padding: 0.4rem 1.2rem; margin: 0.5rem; font-size: 0.6rem; background: #3a3a52; color: #d1d1db; border: 1px solid #5a5a7a; cursor: pointer; font-family: 'Press Start 2P', cursive; }
+    button.game-btn:hover { background: #4b4b6e; border-color: #8a8aaa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏃 PIP RUNNER</h1>
+    <p style="text-align:center;">Lari di atas chart, hindari gap!</p>
+    <div class="game-wrapper">
+      <canvas id="gameCanvas" width="600" height="300"></canvas>
+      <div class="game-hud">
+        <span>📏 Pips: <span id="scoreDisplay">0</span></span>
+        <span>👑 Best: <span id="highScoreDisplay">0</span></span>
+      </div>
+      <div class="game-instruction">Spasi / Klik / Tap untuk lompat</div>
+      <button class="game-btn" id="restartButton">MULAI ULANG</button>
+    </div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+  <script>
+    (function() {
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const GROUND_Y = 240;
+      const PLAYER_X = 100;
+      const PLAYER_SIZE = 24;
+      const GRAVITY = 0.5;
+      const JUMP_FORCE = -7;
+      const SCROLL_SPEED = 3;
+      const GAP_MIN = 40;
+      const GAP_MAX = 80;
+
+      let player = { y: GROUND_Y - PLAYER_SIZE, vy: 0 };
+      let segments = []; // { x, width, isGap }
+      let score = 0;
+      let highScore = 0;
+      let gameOver = false;
+      let paused = false;
+      let frame = 0;
+      let walkFrame = 0;
+
+      try {
+        const saved = localStorage.getItem('pipRunner_high');
+        if (saved) highScore = parseInt(saved, 10) || 0;
+      } catch(e) {}
+
+      function updateHUD() {
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('highScoreDisplay').textContent = highScore;
+      }
+
+      function resetGame() {
+        player.y = GROUND_Y - PLAYER_SIZE;
+        player.vy = 0;
+        segments = [];
+        score = 0;
+        gameOver = false;
+        paused = false;
+        frame = 0;
+        // Inisialisasi lantai
+        for (let x = 0; x < canvas.width + 200; x += 40) {
+          segments.push({ x: x, width: 40, isGap: false });
+        }
+        updateHUD();
+      }
+
+      function jump() {
+        if (gameOver) { resetGame(); return; }
+        if (paused) { paused = false; return; }
+        if (player.y >= GROUND_Y - PLAYER_SIZE - 2) {
+          player.vy = JUMP_FORCE;
+        }
+      }
+
+      function update() {
+        if (gameOver || paused) return;
+        frame++;
+
+        // Fisika pemain
+        player.vy += GRAVITY;
+        player.y += player.vy;
+        if (player.y >= GROUND_Y - PLAYER_SIZE) {
+          player.y = GROUND_Y - PLAYER_SIZE;
+          player.vy = 0;
+        }
+
+        // Update segmen
+        for (let i = segments.length - 1; i >= 0; i--) {
+          segments[i].x -= SCROLL_SPEED;
+          if (segments[i].x + segments[i].width < 0) {
+            segments.splice(i, 1);
+            // Tambah segmen baru di kanan
+            const lastX = segments.length ? segments[segments.length-1].x + segments[segments.length-1].width : canvas.width;
+            const isGap = Math.random() < 0.25;
+            const width = isGap ? Math.floor(Math.random() * (GAP_MAX - GAP_MIN)) + GAP_MIN : 40;
+            segments.push({ x: lastX, width: width, isGap: isGap });
+            if (!isGap) score += 5;
+          }
+        }
+
+        // Deteksi tabrakan dengan gap
+        const playerLeft = PLAYER_X;
+        const playerRight = PLAYER_X + PLAYER_SIZE;
+        let onGround = false;
+        for (let seg of segments) {
+          if (!seg.isGap && playerRight > seg.x && playerLeft < seg.x + seg.width) {
+            if (player.y >= GROUND_Y - PLAYER_SIZE - 2) {
+              onGround = true;
+            }
+          }
+        }
+        if (!onGround && player.y >= GROUND_Y - PLAYER_SIZE - 2) {
+          gameOver = true;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('pipRunner_high', highScore);
+          }
+          updateHUD();
+        }
+
+        if (player.y > GROUND_Y) gameOver = true; // jatuh total
+
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem('pipRunner_high', highScore);
+        }
+        updateHUD();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Grid background
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#2a2a3c';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < canvas.width; i += 30) {
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let j = 0; j < canvas.height; j += 30) {
+          ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+        }
+
+        // Gambar segmen lantai
+        ctx.fillStyle = '#4b4b6e';
+        segments.forEach(seg => {
+          if (!seg.isGap) {
+            ctx.fillRect(seg.x, GROUND_Y, seg.width, 10);
+            // Detail candle kecil
+            ctx.fillStyle = '#6a6a8a';
+            ctx.fillRect(seg.x + 5, GROUND_Y - 10, 4, 10);
+            ctx.fillRect(seg.x + 15, GROUND_Y - 15, 4, 15);
+            ctx.fillStyle = '#4b4b6e';
+          } else {
+            // Gap visual (hanya garis bawah retak)
+            ctx.strokeStyle = '#e07373';
+            ctx.beginPath();
+            ctx.moveTo(seg.x, GROUND_Y + 5);
+            ctx.lineTo(seg.x + seg.width, GROUND_Y + 5);
+            ctx.stroke();
+            ctx.strokeStyle = '#2a2a3c';
+          }
+        });
+
+        // Gambar player (karakter berjalan)
+        walkFrame = frame % 20 < 10 ? 0 : 1;
+        ctx.fillStyle = '#cfba8c';
+        ctx.fillRect(PLAYER_X, player.y, PLAYER_SIZE, PLAYER_SIZE);
+        // Mata
+        ctx.fillStyle = '#101018';
+        ctx.fillRect(PLAYER_X + 6, player.y + 6, 5, 5);
+        ctx.fillRect(PLAYER_X + 14, player.y + 6, 5, 5);
+        // Kaki (animasi)
+        ctx.fillStyle = '#b9a88c';
+        if (walkFrame === 0) {
+          ctx.fillRect(PLAYER_X + 4, player.y + PLAYER_SIZE, 6, 4);
+          ctx.fillRect(PLAYER_X + 14, player.y + PLAYER_SIZE, 6, 4);
+        } else {
+          ctx.fillRect(PLAYER_X + 6, player.y + PLAYER_SIZE, 6, 4);
+          ctx.fillRect(PLAYER_X + 12, player.y + PLAYER_SIZE, 6, 4);
+        }
+
+        // Overlay game over
+        if (gameOver) {
+          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#e07373';
+          ctx.font = '20px "Press Start 2P", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 20);
+          ctx.fillStyle = '#cfba8c';
+          ctx.font = '12px "Press Start 2P", cursive';
+          ctx.fillText('Pips: ' + score, canvas.width/2, canvas.height/2 + 20);
+        }
+      }
+
+      function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); jump(); }
+        if (e.key === 'p' || e.key === 'P') { if (!gameOver) paused = !paused; }
+      });
+      canvas.addEventListener('click', jump);
+      canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+      document.getElementById('restartButton').addEventListener('click', resetGame);
+
+      resetGame(); gameLoop();
+    })();
+  </script>
+</body>
+</html>
