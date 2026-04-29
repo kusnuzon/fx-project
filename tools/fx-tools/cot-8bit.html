@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COT 8-Bit Visualizer | Cartridge Vault</title>
+
+    <!-- Google Pixel Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- Global Retro Theme -->
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        /* ========== COT 8-BIT SPECIFIC ========== */
+        .cot-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            backdrop-filter: blur(4px);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow:
+                0 0 0 4px #1e1e2f,
+                0 0 0 8px #0a0a14,
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.4);
+            padding: 2rem;
+            border-radius: 4px;
+        }
+
+        .cot-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.04) 0px,
+                rgba(0,0,0,0.04) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+        .cot-wrapper > * {
+            position: relative;
+            z-index: 20;
+        }
+
+        h2.pixel-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
+        }
+
+        .sub-pixel {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #8e8ea0;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .pair-selector {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .pair-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            background: #2a2a3c;
+            color: #9da5b4;
+            border: 2px solid #4b4b68;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #0a0a14;
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+
+        .pair-btn.active {
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+            box-shadow: 0 0 8px rgba(207,186,140,0.4);
+        }
+
+        .histogram-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .trader-group {
+            background: #1e1e2e;
+            border: 2px solid #3f3f5c;
+            padding: 1.2rem;
+            border-radius: 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .trader-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: #b9a88c;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            border-bottom: 2px solid #4d4d6e;
+            padding-bottom: 0.4rem;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .bar-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #9da5b4;
+            width: 110px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 24px;
+            background: #0e0e1a;
+            border: 2px solid #4b4b68;
+            position: relative;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+            image-rendering: pixelated;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+            position: relative;
+            box-shadow: inset 0 0 6px rgba(255,255,255,0.2);
+        }
+
+        .bar-fill.long {
+            background: repeating-linear-gradient(
+                90deg,
+                #6c9 0px,
+                #6c9 4px,
+                #5a8a5a 4px,
+                #5a8a5a 8px
+            );
+        }
+
+        .bar-fill.short {
+            background: repeating-linear-gradient(
+                90deg,
+                #e07373 0px,
+                #e07373 4px,
+                #b85a5a 4px,
+                #b85a5a 8px
+            );
+        }
+
+        .bar-fill.net {
+            background: repeating-linear-gradient(
+                90deg,
+                #6a8caf 0px,
+                #6a8caf 4px,
+                #4a6c8f 4px,
+                #4a6c8f 8px
+            );
+        }
+
+        .bar-value {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #f0e6d2;
+            text-shadow: 1px 1px 0 #000;
+            z-index: 5;
+        }
+
+        .net-position {
+            margin-top: 0.8rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            text-align: center;
+            color: #cdcdd4;
+            background: #2a2a3c;
+            padding: 0.5rem;
+            border: 2px solid #4b4b68;
+        }
+
+        .net-position span {
+            color: #cfba8c;
+        }
+
+        .loading-8bit {
+            text-align: center;
+            color: #9a9ab0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            animation: blink 1.5s infinite;
+            padding: 2rem;
+        }
+
+        @media (max-width: 600px) {
+            .bar-label {
+                width: 70px;
+                font-size: 0.35rem;
+            }
+            .pair-btn {
+                font-size: 0.4rem;
+                padding: 0.4rem 0.6rem;
+            }
+            .trader-label {
+                font-size: 0.45rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cot-wrapper">
+        <h2 class="pixel-title">⚔️ COT VISUALIZER</h2>
+        <p class="sub-pixel">8-BIT HISTOGRAM / COMMITMENT OF TRADERS</p>
+
+        <div class="pair-selector" id="pairSelector">
+            <!-- Ditempatkan dinamis oleh JS -->
+        </div>
+
+        <div id="cotDisplay">
+            <div class="loading-8bit">> FETCHING COT DATA...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ========== DATA COT DUMMY (bisa diganti fetch API) ==========
+            const cotData = {
+                "EUR/USD": {
+                    commercial: { long: 245000, short: 220000 },
+                    nonCommercial: { long: 180000, short: 195000 }
+                },
+                "GBP/USD": {
+                    commercial: { long: 120000, short: 135000 },
+                    nonCommercial: { long: 95000, short: 88000 }
+                },
+                "USD/JPY": {
+                    commercial: { long: 190000, short: 170000 },
+                    nonCommercial: { long: 150000, short: 160000 }
+                },
+                "AUD/USD": {
+                    commercial: { long: 85000, short: 92000 },
+                    nonCommercial: { long: 72000, short: 68000 }
+                }
+            };
+
+            const pairs = Object.keys(cotData);
+            let currentPair = pairs[0];
+
+            const pairSelector = document.getElementById('pairSelector');
+            const cotDisplay = document.getElementById('cotDisplay');
+
+            // Render tombol pair
+            function renderPairButtons() {
+                pairSelector.innerHTML = '';
+                pairs.forEach(pair => {
+                    const btn = document.createElement('button');
+                    btn.className = 'pair-btn';
+                    btn.textContent = pair;
+                    if (pair === currentPair) btn.classList.add('active');
+                    btn.addEventListener('click', () => {
+                        currentPair = pair;
+                        renderPairButtons();
+                        renderHistogram();
+                    });
+                    pairSelector.appendChild(btn);
+                });
+            }
+
+            // Render histogram untuk pair terpilih
+            function renderHistogram() {
+                const data = cotData[currentPair];
+                if (!data) {
+                    cotDisplay.innerHTML = `<div class="loading-8bit">NO DATA FOR ${currentPair}</div>`;
+                    return;
+                }
+
+                // Hitung max untuk skala persentase
+                const allValues = [
+                    data.commercial.long,
+                    data.commercial.short,
+                    data.nonCommercial.long,
+                    data.nonCommercial.short
+                ];
+                const maxVal = Math.max(...allValues);
+
+                const getPercent = (val) => ((val / maxVal) * 100).toFixed(1);
+
+                // Hitung net positions
+                const commNet = data.commercial.long - data.commercial.short;
+                const nonCommNet = data.nonCommercial.long - data.nonCommercial.short;
+
+                const html = `
+                    <div class="histogram-grid">
+                        <!-- Commercial -->
+                        <div class="trader-group">
+                            <div class="trader-label">🏢 COMMERCIAL</div>
+                            <div class="bar-row">
+                                <span class="bar-label">LONG</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill long" style="width:0%" data-width="${getPercent(data.commercial.long)}%">
+                                        <span class="bar-value">${data.commercial.long.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bar-row">
+                                <span class="bar-label">SHORT</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill short" style="width:0%" data-width="${getPercent(data.commercial.short)}%">
+                                        <span class="bar-value">${data.commercial.short.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="net-position">
+                                NET: <span>${commNet >= 0 ? 'LONG' : 'SHORT'} ${Math.abs(commNet).toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <!-- Non-Commercial -->
+                        <div class="trader-group">
+                            <div class="trader-label">🐺 LARGE SPECS</div>
+                            <div class="bar-row">
+                                <span class="bar-label">LONG</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill long" style="width:0%" data-width="${getPercent(data.nonCommercial.long)}%">
+                                        <span class="bar-value">${data.nonCommercial.long.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bar-row">
+                                <span class="bar-label">SHORT</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill short" style="width:0%" data-width="${getPercent(data.nonCommercial.short)}%">
+                                        <span class="bar-value">${data.nonCommercial.short.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="net-position">
+                                NET: <span>${nonCommNet >= 0 ? 'LONG' : 'SHORT'} ${Math.abs(nonCommNet).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                cotDisplay.innerHTML = html;
+
+                // Animasi pengisian bar setelah render
+                requestAnimationFrame(() => {
+                    const bars = document.querySelectorAll('.bar-fill[data-width]');
+                    bars.forEach(bar => {
+                        bar.style.width = bar.getAttribute('data-width');
+                    });
+                });
+            }
+
+            // Inisialisasi
+            renderPairButtons();
+            renderHistogram();
+        })();
+    </script>
+</body>
+</html>
