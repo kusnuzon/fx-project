@@ -1,5 +1,6 @@
 // data/js/nes-emulator.js
-// NES Emulator – No Layout Editor
+// NES Emulator – Full Virtual Gamepad (A,B,X,Y,L1,L2,R1,R2)
+// Input hanya via Nostalgist API (tidak dispatch keyboard event)
 
 (function() {
   'use strict';
@@ -7,11 +8,17 @@
   const NES_GROUPS = {
     dpad: true,
     abxy: {
-      buttons: ['a','b'],
-      order: ['a','b']
+      buttons: ['x','a','b','y'],   // X, A, B, Y
+      order: ['x','a','b','y']      // render order: kiri-atas X, kanan-atas A, kiri-bawah Y, kanan-bawah B
     },
     startselect: {
       buttons: ['start','select']
+    },
+    l1l2: {
+      buttons: ['l1','l2']
+    },
+    r1r2: {
+      buttons: ['r1','r2']
     }
   };
 
@@ -22,7 +29,6 @@
       this.canvas = null;
       this.gamepad = null;
 
-      // DOM
       this.dropZone       = document.getElementById('dropZone');
       this.subtitle       = document.querySelector('.subtitle');
       this.controlsDiv    = document.getElementById('controls');
@@ -30,7 +36,6 @@
       this.virtualGamepad = document.getElementById('virtualGamepad');
       this.statusText     = document.getElementById('statusText');
 
-      // Controls
       document.getElementById('btnStop').onclick = () => this.stop();
       document.getElementById('btnReset').onclick = () => this.reset();
       document.getElementById('btnFullscreen').onclick = () => this.toggleFullscreen();
@@ -113,14 +118,6 @@
             audio_out_rate:      '44100',
             audio_latency:       '64',
             video_smooth:        'false',
-            input_player1_a:     'x',
-            input_player1_b:     'z',
-            input_player1_start: 'enter',
-            input_player1_select:'shift',
-            input_player1_up:    'up',
-            input_player1_down:  'down',
-            input_player1_left:  'left',
-            input_player1_right: 'right',
           },
           respondToGlobalEvents: true,
         });
@@ -139,7 +136,6 @@
         container.className = 'emu-container';
         container.appendChild(this.canvas);
 
-        // Virtual Gamepad
         this.gamepad = new VirtualGamepad({
           container: this.virtualGamepad,
           groups: NES_GROUPS,
@@ -161,38 +157,87 @@
     }
 
     _handleGamepadButton(btn, pressed) {
-      if (!this.nostalgist || !this.canvas) return;
-      const key = this._btnToKey(btn);
-      if (key) {
-        const type = pressed ? 'keydown' : 'keyup';
-        this.canvas.dispatchEvent(new KeyboardEvent(type, {
-          key, code: key, keyCode: this._keyCode(key),
-          bubbles: true, cancelable: true
-        }));
-      }
-      try {
-        const nesBtn = this._btnToNes(btn);
-        if (nesBtn) {
-          pressed ? this.nostalgist.pressButton(nesBtn, 0) : this.nostalgist.releaseButton(nesBtn, 0);
+      if (!this.nostalgist) return;
+
+      // Gunakan Nostalgist API untuk semua tombol
+      const nesBtn = this._btnToNostalgistButton(btn);
+      if (nesBtn) {
+        try {
+          if (pressed) {
+            this.nostalgist.pressButton(nesBtn, 0);
+          } else {
+            this.nostalgist.releaseButton(nesBtn, 0);
+          }
+        } catch (e) {
+          console.warn('Nostalgist button error:', e);
         }
-      } catch (_) {}
+      }
     }
 
-    _btnToKey(b) { const m = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', a:'x', b:'z', start:'Enter', select:'Shift' }; return m[b] || ''; }
-    _keyCode(k) { const m = { ArrowUp:38, ArrowDown:40, ArrowLeft:37, ArrowRight:39, x:88, z:90, Enter:13, Shift:16 }; return m[k] || 0; }
-    _btnToNes(b) { const m = { up:'up', down:'down', left:'left', right:'right', a:'a', b:'b', start:'start', select:'select' }; return m[b] || null; }
+    // Mapping tombol virtual → Nostalgist button name (libretro)
+    _btnToNostalgistButton(btn) {
+      const map = {
+        up:     'up',
+        down:   'down',
+        left:   'left',
+        right:  'right',
+        a:      'a',
+        b:      'b',
+        x:      'x',
+        y:      'y',
+        start:  'start',
+        select: 'select',
+        l1:     'l',
+        l2:     'l2',
+        r1:     'r',
+        r2:     'r2',
+      };
+      return map[btn] || null;
+    }
 
     _bindKeyboard() {
-      const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', x:'a', z:'b', Enter:'start', Shift:'select' };
+      // Keyboard fisik juga via Nostalgist API
+      const keyMap = {
+        'ArrowUp':    'up',
+        'ArrowDown':  'down',
+        'ArrowLeft':  'left',
+        'ArrowRight': 'right',
+        'z':          'a',
+        'x':          'b',
+        'a':          'x',
+        's':          'y',
+        'Enter':      'start',
+        'Shift':      'select',
+        'q':          'l1',
+        'w':          'l2',
+        'e':          'r1',
+        'r':          'r2',
+      };
+
       window.addEventListener('keydown', e => {
         if (!this.loaded) return;
-        const btn = map[e.key];
-        if (btn) { e.preventDefault(); this.gamepad?.highlight(btn, true); }
+        const btn = keyMap[e.key];
+        if (btn) {
+          e.preventDefault();
+          this.gamepad?.highlight(btn, true);
+          const nesBtn = this._btnToNostalgistButton(btn);
+          if (nesBtn) {
+            try { this.nostalgist.pressButton(nesBtn, 0); } catch (_) {}
+          }
+        }
       });
+
       window.addEventListener('keyup', e => {
         if (!this.loaded) return;
-        const btn = map[e.key];
-        if (btn) { e.preventDefault(); this.gamepad?.highlight(btn, false); }
+        const btn = keyMap[e.key];
+        if (btn) {
+          e.preventDefault();
+          this.gamepad?.highlight(btn, false);
+          const nesBtn = this._btnToNostalgistButton(btn);
+          if (nesBtn) {
+            try { this.nostalgist.releaseButton(nesBtn, 0); } catch (_) {}
+          }
+        }
       });
     }
 
