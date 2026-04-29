@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Spike Dodge – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .game-panel { text-align: center; }
+    .position-indicator { font-size: 1.5rem; margin: 1rem 0; padding: 0.5rem; border-radius: 4px; }
+    .long { background: #2a5c2a; color: #a0d0a0; }
+    .short { background: #5c2a2a; color: #f0a0a0; }
+    .timer { font-size: 2rem; font-family: 'Press Start 2P', cursive; color: #cfba8c; margin: 1rem 0; }
+    .action-btns { margin: 1.5rem 0; display: flex; justify-content: center; gap: 2rem; }
+    .action-btn { padding: 0.8rem 1.8rem; font-size: 0.8rem; cursor: pointer; font-family: 'Press Start 2P', cursive; border: 2px solid; border-radius: 4px; }
+    .btn-stay { background: #4a4a6e; color: #d1d1db; border-color: #6a6a8a; }
+    .btn-switch { background: #8a6a3a; color: #f0d0a0; border-color: #aa8a5a; }
+    .round-result { font-size: 0.8rem; margin: 1rem 0; min-height: 2rem; }
+    .stats { font-size: 0.6rem; color: #9da5b4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📰 NEWS SPIKE</h1>
+    <p style="text-align:center;">Pilih posisi sebelum berita rilis!</p>
+    <div class="game-panel">
+      <div class="stats">Round: <span id="roundDisplay">1</span> | Score: <span id="scoreDisplay">0</span> | Best: <span id="highScoreDisplay">0</span></div>
+      <div class="position-indicator" id="positionBox">LONG</div>
+      <div class="timer" id="timerDisplay">5.0</div>
+      <div class="action-btns">
+        <button class="action-btn btn-stay" id="stayBtn">STAY</button>
+        <button class="action-btn btn-switch" id="switchBtn">SWITCH</button>
+      </div>
+      <div class="round-result" id="resultText"></div>
+      <div style="font-size:0.6rem; color:#7a7a95;">Berita akan rilis dalam 5 detik!</div>
+      <button class="game-btn" id="restartBtn" style="margin-top:1.5rem;">MULAI ULANG</button>
+    </div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+  <script>
+    (function() {
+      let round = 1;
+      let score = 0;
+      let highScore = 0;
+      let currentPosition = 'long'; // 'long' or 'short'
+      let marketMove = 'up'; // 'up' or 'down'
+      let timeLeft = 5.0;
+      let timerInterval = null;
+      let acceptingInput = false;
+
+      const positionBox = document.getElementById('positionBox');
+      const timerDisplay = document.getElementById('timerDisplay');
+      const resultText = document.getElementById('resultText');
+      const roundDisplay = document.getElementById('roundDisplay');
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      const highScoreDisplay = document.getElementById('highScoreDisplay');
+      const stayBtn = document.getElementById('stayBtn');
+      const switchBtn = document.getElementById('switchBtn');
+
+      try {
+        const saved = localStorage.getItem('newsSpike_high');
+        if (saved) highScore = parseInt(saved, 10) || 0;
+      } catch(e) {}
+
+      function updateHUD() {
+        roundDisplay.textContent = round;
+        scoreDisplay.textContent = score;
+        highScoreDisplay.textContent = highScore;
+        positionBox.textContent = currentPosition.toUpperCase();
+        positionBox.className = 'position-indicator ' + (currentPosition === 'long' ? 'long' : 'short');
+      }
+
+      function startRound() {
+        clearInterval(timerInterval);
+        acceptingInput = true;
+        timeLeft = 5.0;
+        timerDisplay.textContent = timeLeft.toFixed(1);
+        resultText.textContent = '';
+        // Acak pergerakan pasar
+        marketMove = Math.random() < 0.5 ? 'up' : 'down';
+        updateHUD();
+
+        timerInterval = setInterval(() => {
+          timeLeft -= 0.1;
+          timerDisplay.textContent = timeLeft.toFixed(1);
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            acceptingInput = false;
+            resolveRound(); // jika tidak memilih, anggap stay
+          }
+        }, 100);
+      }
+
+      function resolveRound(playerAction = 'stay') {
+        clearInterval(timerInterval);
+        acceptingInput = false;
+        let finalPosition = currentPosition;
+        if (playerAction === 'switch') {
+          finalPosition = currentPosition === 'long' ? 'short' : 'long';
+        }
+
+        const isWin = (finalPosition === 'long' && marketMove === 'up') ||
+                      (finalPosition === 'short' && marketMove === 'down');
+        
+        if (isWin) {
+          score++;
+          resultText.innerHTML = '✅ Profit! Pasar ' + (marketMove === 'up' ? 'NAIK' : 'TURUN') + '.';
+          resultText.style.color = '#6c9';
+        } else {
+          resultText.innerHTML = '❌ Loss! Pasar ' + (marketMove === 'up' ? 'NAIK' : 'TURUN') + '.';
+          resultText.style.color = '#e07373';
+          // Reset skor atau kurangi? Biar adil, reset skor tapi simpan high score
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('newsSpike_high', highScore);
+          }
+          score = 0;
+        }
+        updateHUD();
+        // Lanjut ke ronde berikutnya setelah 2 detik
+        setTimeout(() => {
+          round++;
+          startRound();
+        }, 1800);
+      }
+
+      function resetGame() {
+        clearInterval(timerInterval);
+        round = 1;
+        score = 0;
+        currentPosition = 'long';
+        startRound();
+      }
+
+      stayBtn.addEventListener('click', () => {
+        if (acceptingInput) resolveRound('stay');
+      });
+      switchBtn.addEventListener('click', () => {
+        if (acceptingInput) {
+          currentPosition = currentPosition === 'long' ? 'short' : 'long';
+          resolveRound('switch');
+        }
+      });
+      document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+      startRound();
+      updateHUD();
+    })();
+  </script>
+</body>
+</html>
