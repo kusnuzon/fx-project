@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Pet | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .pet-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 450px;
+            margin: 2rem auto;
+            background: #1a1a2e;
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        .pet-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .pet-wrapper > * { position: relative; z-index: 20; }
+        h2 { font-family: 'Press Start 2P', cursive; font-size: 0.9rem; color: #cfba8c; text-align: center; }
+        .pet-screen {
+            background: #0f380f;
+            border: 6px solid #3b3b52;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+        }
+        .pet-avatar {
+            font-size: 4rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 10px #6c9);
+            animation: floatPet 2s infinite ease-in-out;
+        }
+        @keyframes floatPet {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .stat-bar { margin: 0.5rem 0; text-align: left; }
+        .stat-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #9bbc0f;
+            margin-bottom: 0.2rem;
+        }
+        .stat-container {
+            height: 12px;
+            background: #0a1a0a;
+            border: 1px solid #306230;
+        }
+        .stat-fill {
+            height: 100%;
+            width: 50%;
+            background: #6c9;
+            transition: width 0.3s;
+        }
+        .pet-controls {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pet-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            padding: 0.6rem 1rem;
+            background: #3a3a52;
+            color: #cfba8c;
+            border: 2px solid #5a5a7a;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #0a0a14;
+            transition: 0.1s;
+        }
+        .pet-btn:hover { background: #4b4b6e; border-color: #cfba8c; }
+    </style>
+</head>
+<body>
+<div class="pet-wrapper">
+    <h2>🐣 PIXEL PET</h2>
+    <div class="pet-screen">
+        <div class="pet-avatar" id="petAvatar">🐣</div>
+        <div class="stat-bar">
+            <div class="stat-label">HUNGER</div>
+            <div class="stat-container"><div class="stat-fill" id="hungerFill" style="width:80%"></div></div>
+        </div>
+        <div class="stat-bar">
+            <div class="stat-label">HAPPINESS</div>
+            <div class="stat-container"><div class="stat-fill" id="happyFill" style="width:70%"></div></div>
+        </div>
+        <div class="stat-bar">
+            <div class="stat-label">ENERGY</div>
+            <div class="stat-container"><div class="stat-fill" id="energyFill" style="width:90%"></div></div>
+        </div>
+    </div>
+    <div class="pet-controls">
+        <button class="pet-btn" id="feedBtn">🍞 FEED</button>
+        <button class="pet-btn" id="playBtn">⚽ PLAY</button>
+        <button class="pet-btn" id="sleepBtn">💤 SLEEP</button>
+    </div>
+</div>
+<script>
+    (function() {
+        let stats = { hunger: 80, happiness: 70, energy: 90 };
+        const storageKey = 'pixel_pet_stats';
+        function load() {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) try { stats = JSON.parse(saved); } catch(e) {}
+        }
+        function save() { localStorage.setItem(storageKey, JSON.stringify(stats)); }
+        function updateUI() {
+            document.getElementById('hungerFill').style.width = stats.hunger + '%';
+            document.getElementById('happyFill').style.width = stats.happiness + '%';
+            document.getElementById('energyFill').style.width = stats.energy + '%';
+            const avatar = document.getElementById('petAvatar');
+            if (stats.happiness > 80) avatar.textContent = '😊';
+            else if (stats.hunger < 30) avatar.textContent = '😢';
+            else avatar.textContent = '🐣';
+        }
+        function decay() {
+            stats.hunger = Math.max(0, stats.hunger - 1);
+            stats.happiness = Math.max(0, stats.happiness - 0.5);
+            stats.energy = Math.max(0, stats.energy - 0.3);
+            save(); updateUI();
+        }
+        document.getElementById('feedBtn').addEventListener('click', () => {
+            stats.hunger = Math.min(100, stats.hunger + 15);
+            save(); updateUI();
+        });
+        document.getElementById('playBtn').addEventListener('click', () => {
+            stats.happiness = Math.min(100, stats.happiness + 20);
+            stats.energy = Math.max(0, stats.energy - 5);
+            save(); updateUI();
+        });
+        document.getElementById('sleepBtn').addEventListener('click', () => {
+            stats.energy = Math.min(100, stats.energy + 25);
+            save(); updateUI();
+        });
+        load(); updateUI();
+        setInterval(decay, 5000); // decay setiap 5 detik
+    })();
+</script>
+</body>
+</html>
