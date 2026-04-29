@@ -1,7 +1,8 @@
 /* =============================================
-   NES EMULATOR – FULL CSS + LAYOUT EDITOR
+   NES EMULATOR – REWRITE
    ============================================= */
 
+/* Dropzone */
 .nes-dropzone {
     border: 2px dashed #5a5a7a;
     padding: 1.5rem;
@@ -14,11 +15,9 @@
     background: rgba(0,0,0,0.3);
     cursor: pointer;
 }
-.nes-dropzone.drag-over {
-    border-color: #cfba8c;
-    color: #cfba8c;
-}
+.nes-dropzone.drag-over { border-color: #cfba8c; color: #cfba8c; }
 
+/* Canvas */
 .nes-emulator-canvas {
     display: block !important;
     position: relative !important;
@@ -33,6 +32,7 @@
     background: #000;
 }
 
+/* Controls */
 .nes-controls {
     display: flex;
     flex-wrap: wrap;
@@ -59,17 +59,11 @@
     border-color: #b9a88c;
     color: #f0e6d2;
 }
-.fullscreen-btn {
-    background: #5a5a7a !important;
-    border-color: #b9a88c !important;
-}
 
-.nes-emulator-wrapper {
-    width: 100%;
-    margin: 0 auto;
-}
+/* Wrapper */
+.nes-emulator-wrapper { width: 100%; margin: 0 auto; }
 
-/* Virtual gamepad */
+/* ── GAMEPAD DEFAULT ────────────── */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -80,27 +74,41 @@
 }
 
 .gamepad-container {
-    gap: 0.6rem;
+    display: grid;
+    gap: 0.8rem;
     align-items: center;
-    justify-content: center;
+    justify-items: center;
 }
 
+/* D-Pad 3x3 grid */
 .dpad {
     display: grid;
     grid-template-columns: 54px 54px 54px;
     grid-template-rows: 54px 54px 54px;
-    gap: 0.25rem;
+    gap: 2px;
     justify-items: center;
     align-items: center;
+    grid-area: dpad;
 }
 .dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
 .dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
 .dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
 .dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
 
-.action-buttons { display: flex; gap: 0.5rem; align-items: center; }
-.start-select { display: flex; gap: 0.5rem; justify-content: center; }
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    grid-area: actions;
+}
+.start-select {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    grid-area: startsel;
+}
 
+/* Gamepad button base */
 .gamepad-btn {
     width: 54px;
     height: 54px;
@@ -117,7 +125,7 @@
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.08s, border-color 0.08s, transform 0.05s;
+    transition: background 0.05s, border-color 0.05s, transform 0.05s;
 }
 .gamepad-btn:active,
 .gamepad-btn.active {
@@ -127,6 +135,7 @@
     transform: scale(0.93);
 }
 
+/* A & B buttons */
 .action-buttons .gamepad-btn {
     width: 60px;
     height: 60px;
@@ -134,26 +143,21 @@
     border-radius: 50%;
 }
 .action-buttons .gamepad-btn[data-btn="a"] {
-    background: #1e3a4c;
-    border-color: #4a8cb8;
-    color: #a8d4f0;
+    background: #1e3a4c; border-color: #4a8cb8; color: #a8d4f0;
 }
 .action-buttons .gamepad-btn[data-btn="b"] {
-    background: #3a1e2a;
-    border-color: #b85a7a;
-    color: #f0a8c4;
+    background: #3a1e2a; border-color: #b85a7a; color: #f0a8c4;
 }
-.action-buttons .gamepad-btn[data-btn="a"].active,
-.action-buttons .gamepad-btn[data-btn="a"]:active {
-    background: #2a5470;
-    border-color: #7ab8e0;
+.action-buttons .gamepad-btn[data-btn="a"]:active,
+.action-buttons .gamepad-btn[data-btn="a"].active {
+    background: #2a5470; border-color: #7ab8e0;
 }
-.action-buttons .gamepad-btn[data-btn="b"].active,
-.action-buttons .gamepad-btn[data-btn="b"]:active {
-    background: #5a2a40;
-    border-color: #e07aa0;
+.action-buttons .gamepad-btn[data-btn="b"]:active,
+.action-buttons .gamepad-btn[data-btn="b"].active {
+    background: #5a2a40; border-color: #e07aa0;
 }
 
+/* Start & Select */
 .start-select .gamepad-btn {
     width: auto;
     min-width: 56px;
@@ -170,27 +174,70 @@
     margin-top: 0.5rem;
 }
 
-/* ── LAYOUT EDITOR MODAL ───────────── */
+/* ── PORTRAIT (Game Boy style) ───── */
+.emu-container.portrait-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+.emu-container.portrait-layout .nes-emulator-canvas {
+    max-width: 100%;
+    max-height: 45vh;
+}
+.emu-container.portrait-layout .virtual-gamepad {
+    width: 100%;
+}
+.emu-container.portrait-layout .gamepad-container {
+    grid-template-areas:
+        "dpad actions"
+        "startsel startsel";
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 1rem;
+}
+
+/* ── LANDSCAPE (GBA/PSP style) ───── */
+.emu-container.landscape-layout {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+.emu-container.landscape-layout .nes-emulator-canvas {
+    max-width: 55%;
+    max-height: 75vh;
+    flex: 1 1 auto;
+}
+.emu-container.landscape-layout .virtual-gamepad {
+    flex: 0 0 auto;
+}
+.emu-container.landscape-layout .gamepad-container {
+    grid-template-areas:
+        "dpad actions"
+        "startsel startsel";
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.5rem 1rem;
+}
+
+/* ── LAYOUT EDITOR MODAL ──────────── */
 .layout-editor-modal {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     z-index: 1000;
     align-items: center;
     justify-content: center;
 }
-.layout-editor-modal.active {
-    display: flex;
-}
+.layout-editor-modal.active { display: flex; }
 .layout-editor-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0,0,0,0.85);
 }
 .layout-editor-content {
@@ -200,17 +247,17 @@
     border-radius: 8px;
     padding: 1.5rem;
     max-width: 90vw;
-    max-height: 90vh;
     width: 500px;
     z-index: 1001;
-    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.8);
+    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
+    max-height: 90vh;
     overflow-y: auto;
 }
 .layout-editor-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 .layout-editor-header h3 {
     font-family: 'Press Start 2P', cursive;
@@ -221,15 +268,14 @@
     background: #3a3a52;
     border: 1px solid #5a5a7a;
     color: #aaa;
-    width: 30px;
-    height: 30px;
+    width: 30px; height: 30px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
 }
 .orientation-tabs {
     display: flex;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
 }
 .orientation-tabs button {
     flex: 1;
@@ -247,7 +293,7 @@
 }
 .editor-canvas-area {
     width: 100%;
-    height: 300px;
+    height: 280px;
     background: #0a0a14;
     border: 2px solid #4b4b68;
     position: relative;
@@ -279,31 +325,24 @@
 }
 .editor-canvas-area .draggable-btn[data-btn="a"],
 .editor-canvas-area .draggable-btn[data-btn="b"] {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 60px; height: 60px; border-radius: 50%;
 }
 .editor-canvas-area .draggable-btn[data-btn="start"],
 .editor-canvas-area .draggable-btn[data-btn="select"] {
-    width: auto;
-    min-width: 60px;
-    height: 34px;
-    padding: 0 0.5rem;
-    font-size: 0.4rem;
-    border-radius: 17px;
+    width: auto; min-width: 60px; height: 34px; border-radius: 17px; padding: 0 0.5rem; font-size: 0.4rem;
 }
 .editor-info {
-    margin: 0.8rem 0;
     text-align: center;
     font-size: 0.55rem;
     color: #9da5b4;
     font-family: 'Press Start 2P', cursive;
+    margin: 0.8rem 0;
 }
 .coord-inputs {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.5rem;
     justify-content: center;
+    margin-top: 0.4rem;
 }
 .coord-inputs label {
     font-size: 0.5rem;
@@ -331,7 +370,7 @@
     font-family: 'Press Start 2P', cursive;
 }
 
-/* ── RESPONSIVE ─────────────────────── */
+/* ── RESPONSIVE ───────────────────── */
 @media (max-width: 480px) {
     .dpad {
         grid-template-columns: 46px 46px 46px;
@@ -339,6 +378,5 @@
     }
     .gamepad-btn { width: 46px; height: 46px; font-size: 0.4rem; }
     .action-buttons .gamepad-btn { width: 52px; height: 52px; font-size: 0.65rem; }
-    .layout-editor-content { max-width: 95vw; padding: 1rem; }
-    .editor-canvas-area { height: 250px; }
+    .emu-container.landscape-layout .nes-emulator-canvas { max-width: 50%; }
 }
