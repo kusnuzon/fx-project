@@ -99,9 +99,28 @@
             margin-bottom: 2rem;
         }
 
-        /* Categories – tanpa garis panjang mengganggu */
+        /* Categories – sekarang dengan tree toggle */
         .category {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Header kategori: judul + tombol toggle */
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            padding: 0.3rem 0;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #4d4d6e;
+            transition: border-color 0.15s;
+        }
+        .category-header:hover {
+            border-bottom-color: #8a8aaa;
+        }
+        .category-header:hover .category-title {
+            color: #cfba8c;
         }
 
         .category-title {
@@ -109,11 +128,60 @@
             font-size: 0.7rem;
             color: #9da5b4;
             text-transform: uppercase;
-            border-bottom: 2px solid #4d4d6e;
-            padding-bottom: 0.3rem;
-            margin-bottom: 1rem;
             letter-spacing: 1px;
-            display: inline-block; /* garis hanya sepanjang teks */
+            margin: 0;
+            flex: 1;
+            border-bottom: none;
+            padding-bottom: 0;
+            display: inline;
+            transition: color 0.15s;
+        }
+
+        /* Tombol toggle – panah kecil */
+        .toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            color: #8e8ea0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.25s ease, color 0.15s;
+            padding: 0;
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1;
+        }
+        .toggle-btn:hover {
+            color: #cfba8c;
+        }
+
+        /* Saat kategori terbuka (expanded), panah menghadap bawah */
+        .category.expanded .toggle-btn {
+            transform: rotate(0deg);
+        }
+        /* Saat kategori tertutup (collapsed), panah menghadap kanan */
+        .category.collapsed .toggle-btn {
+            transform: rotate(-90deg);
+        }
+
+        /* Konten kategori – animasi buka/tutup */
+        .category-content {
+            overflow: hidden;
+            max-height: 2000px;
+            opacity: 1;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.3s ease,
+                        margin 0.3s ease;
+            margin-top: 0.5rem;
+        }
+        .category.collapsed .category-content {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            margin-bottom: 0;
         }
 
         /* Grid cartridge */
@@ -185,6 +253,18 @@
             margin: 1rem 0;
         }
 
+        /* Badge jumlah item */
+        .item-count {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #7a7a95;
+            margin-left: auto;
+            background: #202030;
+            padding: 0.15rem 0.4rem;
+            border: 1px solid #3d3d56;
+            border-radius: 2px;
+        }
+
         /* Footer */
         .dashboard-footer {
             margin-top: 2rem;
@@ -219,6 +299,13 @@
             .tool-list {
                 grid-template-columns: 1fr;
             }
+            .category-header {
+                flex-wrap: wrap;
+            }
+            .item-count {
+                font-size: 0.4rem;
+                padding: 0.1rem 0.3rem;
+            }
         }
     </style>
 </head>
@@ -252,8 +339,107 @@
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
             const TOOLS_PARENT_FOLDER = 'tools';
+            const STORAGE_KEY_PREFIX = 'cartridge_vault_collapsed_';
 
             const container = document.getElementById('tools-container');
+
+            // Baca state collapse dari localStorage
+            function getCollapsedState(categoryName) {
+                try {
+                    const val = localStorage.getItem(STORAGE_KEY_PREFIX + categoryName);
+                    return val === 'true';
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function setCollapsedState(categoryName, collapsed) {
+                try {
+                    localStorage.setItem(STORAGE_KEY_PREFIX + categoryName, collapsed ? 'true' : 'false');
+                } catch (e) {
+                    // localStorage tidak tersedia atau penuh
+                }
+            }
+
+            function createCategoryElement(categoryName, toolsCount, contentHtml, isCollapsed) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category' + (isCollapsed ? ' collapsed' : ' expanded');
+                categoryDiv.setAttribute('data-category', categoryName);
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.setAttribute('role', 'button');
+                header.setAttribute('tabindex', '0');
+                header.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+
+                // Toggle button (panah)
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'toggle-btn';
+                toggleBtn.setAttribute('aria-label', isCollapsed ? 'Expand category' : 'Collapse category');
+                toggleBtn.innerHTML = '&#9660;'; // ▼
+                toggleBtn.type = 'button';
+
+                // Judul
+                const title = document.createElement('h2');
+                title.className = 'category-title';
+                title.textContent = categoryName;
+
+                // Badge jumlah
+                const badge = document.createElement('span');
+                badge.className = 'item-count';
+                badge.textContent = toolsCount + (toolsCount === 1 ? ' tool' : ' tools');
+
+                // Susun header
+                header.appendChild(toggleBtn);
+                header.appendChild(title);
+                header.appendChild(badge);
+
+                // Konten
+                const content = document.createElement('div');
+                content.className = 'category-content';
+                content.innerHTML = contentHtml;
+
+                // Gabungkan
+                categoryDiv.appendChild(header);
+                categoryDiv.appendChild(content);
+
+                // Event listener toggle
+                header.addEventListener('click', function(e) {
+                    // Jangan toggle jika klik pada link di dalam header (tidak ada, tapi jaga-jaga)
+                    if (e.target.tagName === 'A') return;
+
+                    const cat = categoryDiv;
+                    const isCurrentlyCollapsed = cat.classList.contains('collapsed');
+                    const catName = cat.getAttribute('data-category');
+
+                    if (isCurrentlyCollapsed) {
+                        // Buka
+                        cat.classList.remove('collapsed');
+                        cat.classList.add('expanded');
+                        header.setAttribute('aria-expanded', 'true');
+                        toggleBtn.setAttribute('aria-label', 'Collapse category');
+                        setCollapsedState(catName, false);
+                    } else {
+                        // Tutup
+                        cat.classList.remove('expanded');
+                        cat.classList.add('collapsed');
+                        header.setAttribute('aria-expanded', 'false');
+                        toggleBtn.setAttribute('aria-label', 'Expand category');
+                        setCollapsedState(catName, true);
+                    }
+                });
+
+                // Keyboard support (Enter / Space)
+                header.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        header.click();
+                    }
+                });
+
+                return categoryDiv;
+            }
 
             try {
                 const parentApiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${TOOLS_PARENT_FOLDER}`;
@@ -287,42 +473,34 @@
                 container.innerHTML = '';
 
                 categoryResults.forEach(({ category, tools }) => {
-                    const categoryDiv = document.createElement('div');
-                    categoryDiv.className = 'category';
-
                     const displayName = category.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    const title = document.createElement('h2');
-                    title.className = 'category-title';
-                    title.textContent = displayName;
-                    categoryDiv.appendChild(title);
+
+                    let contentHtml = '';
 
                     if (tools.length === 0) {
-                        const empty = document.createElement('p');
-                        empty.className = 'empty-folder';
-                        empty.textContent = '- No cartridges yet -';
-                        categoryDiv.appendChild(empty);
+                        contentHtml = '<p class="empty-folder">- No cartridges yet -</p>';
                     } else {
-                        const list = document.createElement('ul');
-                        list.className = 'tool-list';
-
+                        let listItemsHtml = '';
                         tools.forEach(file => {
                             const rawName = file.name.replace('.html', '');
                             const toolName = rawName.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-                            const li = document.createElement('li');
-                            const link = document.createElement('a');
-                            link.href = `${TOOLS_PARENT_FOLDER}/${category}/${file.name}`;
-                            link.target = "_blank";
-                            link.rel = "noopener noreferrer";
-                            link.textContent = toolName;
-                            li.appendChild(link);
-                            list.appendChild(li);
+                            const href = `${TOOLS_PARENT_FOLDER}/${category}/${file.name}`;
+                            listItemsHtml += `<li><a href="${href}" target="_blank" rel="noopener noreferrer">${toolName}</a></li>`;
                         });
-
-                        categoryDiv.appendChild(list);
+                        contentHtml = `<ul class="tool-list">${listItemsHtml}</ul>`;
                     }
 
-                    container.appendChild(categoryDiv);
+                    // Ambil state collapse dari localStorage
+                    const isCollapsed = getCollapsedState(category);
+
+                    const categoryEl = createCategoryElement(
+                        displayName,
+                        tools.length,
+                        contentHtml,
+                        isCollapsed
+                    );
+
+                    container.appendChild(categoryEl);
                 });
 
             } catch (error) {
