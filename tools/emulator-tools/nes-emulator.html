@@ -62,14 +62,16 @@
         // ── NES Emulator Core ──
         const nes = {
             instance: null,
-            frameTimer: null,
+            rafId: null,
+            lastFrameTime: 0,
+            frameDuration: 1000 / 60, // 60 FPS
             paused: false,
             loaded: false,
 
             init() {
                 this.instance = new jsnes.NES({
                     onFrame: (buffer) => this.drawFrame(buffer),
-                    onAudioSample: () => {}
+                    onAudioSample: () => {} // audio kosong
                 });
 
                 // Keyboard controller (Player 1)
@@ -102,7 +104,12 @@
 
             loadROM(romData) {
                 this.stop();
-                this.instance.loadROM(romData);
+                try {
+                    this.instance.loadROM(romData);
+                } catch (err) {
+                    document.getElementById('statusText').textContent = 'Invalid ROM file.';
+                    return;
+                }
                 this.loaded = true;
                 this.paused = false;
                 document.getElementById('nesCanvas').style.display = 'block';
@@ -114,17 +121,25 @@
 
             startFrameLoop() {
                 this.stopFrameLoop();
-                this.frameTimer = setInterval(() => {
-                    if (!this.paused) {
-                        this.instance.frame();
+                this.lastFrameTime = performance.now();
+                const loop = (timestamp) => {
+                    if (!this.loaded) return;
+                    const delta = timestamp - this.lastFrameTime;
+                    if (delta >= this.frameDuration) {
+                        this.lastFrameTime = timestamp - (delta % this.frameDuration);
+                        if (!this.paused) {
+                            this.instance.frame();
+                        }
                     }
-                }, 1000 / 60);
+                    this.rafId = requestAnimationFrame(loop);
+                };
+                this.rafId = requestAnimationFrame(loop);
             },
 
             stopFrameLoop() {
-                if (this.frameTimer) {
-                    clearInterval(this.frameTimer);
-                    this.frameTimer = null;
+                if (this.rafId) {
+                    cancelAnimationFrame(this.rafId);
+                    this.rafId = null;
                 }
             },
 
@@ -132,8 +147,18 @@
                 const canvas = document.getElementById('nesCanvas');
                 const ctx = canvas.getContext('2d');
                 const imageData = ctx.createImageData(256, 240);
-                for (let i = 0; i < buffer.length; i++) {
-                    imageData.data[i] = buffer[i];
+
+                // Salin seluruh buffer (RGBA) ke imageData
+                const size = 256 * 240 * 4;
+                if (buffer.length >= size) {
+                    for (let i = 0; i < size; i++) {
+                        imageData.data[i] = buffer[i];
+                    }
+                } else {
+                    // fallback kalau buffer kurang (tidak seharusnya)
+                    for (let i = 0; i < buffer.length; i++) {
+                        imageData.data[i] = buffer[i];
+                    }
                 }
                 ctx.putImageData(imageData, 0, 0);
             },
@@ -192,7 +217,6 @@
                     }
                 };
 
-                // Pointer events (work with touch and mouse)
                 btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     press();
