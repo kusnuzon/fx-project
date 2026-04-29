@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Pixel – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .game-wrapper {
+      text-align: center;
+      margin: 1rem auto;
+    }
+    canvas {
+      border: 3px solid #5a5a7a;
+      box-shadow: 0 0 0 4px #1a1a2e, 0 8px 20px rgba(0,0,0,0.7);
+      image-rendering: crisp-edges;
+      background: #1a1a2e;
+      display: block;
+      margin: 0 auto;
+    }
+    .game-hud {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      font-size: 0.7rem;
+      margin: 1rem 0 0.5rem;
+      color: #cfba8c;
+    }
+    .game-instruction {
+      font-size: 0.55rem;
+      color: #7a7a95;
+      margin-top: 0.8rem;
+    }
+    button.game-btn {
+      width: auto;
+      padding: 0.4rem 1.2rem;
+      margin: 0.5rem;
+      font-size: 0.6rem;
+      background: #3a3a52;
+      color: #d1d1db;
+      border: 1px solid #5a5a7a;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+      transition: background-color 0.2s;
+    }
+    button.game-btn:hover {
+      background: #4b4b6e;
+      border-color: #8a8aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐤 FLAPPY PIXEL</h1>
+    <p style="text-align:center;">Terbang melewati pipa, hindari tabrakan!</p>
+
+    <div class="game-wrapper">
+      <canvas id="gameCanvas" width="420" height="600"></canvas>
+      <div class="game-hud">
+        <span>🏆 <span id="scoreDisplay">0</span></span>
+        <span>👑 <span id="highScoreDisplay">0</span></span>
+      </div>
+      <div class="game-instruction">
+        Spasi / Klik / Tap untuk terbang | P untuk pause
+      </div>
+      <button class="game-btn" id="restartButton">MULAI ULANG</button>
+    </div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // --- Konstanta game ---
+      const GRAVITY = 0.18;
+      const FLAP_FORCE = -4.2;
+      const PIPE_WIDTH = 40;
+      const PIPE_GAP = 130;
+      const PIPE_SPEED = 1.6;
+      const BIRD_SIZE = 24; // burung kotak pixel
+
+      // --- State game ---
+      let bird = {
+        x: 80,
+        y: canvas.height / 2,
+        vy: 0,
+        size: BIRD_SIZE
+      };
+
+      let pipes = [];
+      let score = 0;
+      let highScore = 0;
+      let gameOver = false;
+      let paused = false;
+      let frameCounter = 0;
+      let spawnInterval = 110; // frame antara setiap pipa
+
+      // --- Load high score ---
+      try {
+        const saved = localStorage.getItem('flappyPixel_high');
+        if (saved) highScore = parseInt(saved, 10) || 0;
+      } catch(e) {}
+
+      function updateHUD() {
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('highScoreDisplay').textContent = highScore;
+      }
+
+      function resetGame() {
+        bird.y = canvas.height / 2;
+        bird.vy = 0;
+        pipes = [];
+        score = 0;
+        gameOver = false;
+        paused = false;
+        frameCounter = 0;
+        updateHUD();
+      }
+
+      // --- Spawn pipa baru ---
+      function spawnPipe() {
+        const minTop = 60;
+        const maxTop = canvas.height - PIPE_GAP - 60;
+        const topHeight = Math.floor(Math.random() * (maxTop - minTop)) + minTop;
+        pipes.push({
+          x: canvas.width,
+          topHeight: topHeight,
+          bottomY: topHeight + PIPE_GAP,
+          passed: false
+        });
+      }
+
+      // --- Update logic ---
+      function update() {
+        if (gameOver || paused) return;
+
+        // Fisika burung
+        bird.vy += GRAVITY;
+        bird.y += bird.vy;
+
+        // Batas atas / bawah
+        if (bird.y < 0) {
+          bird.y = 0;
+          bird.vy = 0;
+        }
+        if (bird.y + bird.size > canvas.height) {
+          gameOver = true;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('flappyPixel_high', highScore);
+          }
+          updateHUD();
+          return;
+        }
+
+        // Spawn pipa
+        frameCounter++;
+        if (frameCounter >= spawnInterval) {
+          frameCounter = 0;
+          spawnPipe();
+          // Tingkatkan interval spawn seiring skor (makin rapat)
+          spawnInterval = Math.max(70, 110 - score);
+        }
+
+        // Update posisi pipa
+        for (let i = pipes.length - 1; i >= 0; i--) {
+          const pipe = pipes[i];
+          pipe.x -= PIPE_SPEED;
+
+          // Cek tabrakan
+          const birdLeft = bird.x;
+          const birdRight = bird.x + bird.size;
+          const birdTop = bird.y;
+          const birdBottom = bird.y + bird.size;
+          const pipeRight = pipe.x + PIPE_WIDTH;
+
+          // Tabrakan horizontal: pipa masih di area burung
+          if (pipeRight > birdLeft && pipe.x < birdRight) {
+            // Tabrakan dengan pipa atas
+            if (birdTop < pipe.topHeight) {
+              gameOver = true;
+            }
+            // Tabrakan dengan pipa bawah
+            if (birdBottom > pipe.bottomY) {
+              gameOver = true;
+            }
+          }
+
+          // Hapus pipa yang sudah lewat layar
+          if (pipe.x + PIPE_WIDTH < 0) {
+            pipes.splice(i, 1);
+            continue;
+          }
+
+          // Cek passing (penambahan skor)
+          if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
+            pipe.passed = true;
+            score++;
+            updateHUD();
+          }
+        }
+
+        if (gameOver) {
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('flappyPixel_high', highScore);
+          }
+          updateHUD();
+        }
+      }
+
+      // --- Gambar semua ---
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Latar belakang grid retro
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#2a2a3c';
+        ctx.lineWidth = 0.7;
+        for (let i = 0; i < canvas.width; i += 30) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, canvas.height);
+          ctx.stroke();
+        }
+        for (let j = 0; j < canvas.height; j += 30) {
+          ctx.beginPath();
+          ctx.moveTo(0, j);
+          ctx.lineTo(canvas.width, j);
+          ctx.stroke();
+        }
+
+        // Gambar pipa
+        ctx.fillStyle = '#4b4b6e';
+        ctx.shadowColor = '#0a0a14';
+        ctx.shadowBlur = 4;
+        pipes.forEach(pipe => {
+          // Pipa atas
+          ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
+          // Pipa bawah
+          ctx.fillRect(pipe.x, pipe.bottomY, PIPE_WIDTH, canvas.height - pipe.bottomY);
+          // Outline pixel di tepi
+          ctx.fillStyle = '#6a6a8a';
+          ctx.fillRect(pipe.x - 2, pipe.topHeight - 10, PIPE_WIDTH + 4, 10); // bibir atas
+          ctx.fillRect(pipe.x - 2, pipe.bottomY, PIPE_WIDTH + 4, 10); // bibir bawah
+          ctx.fillStyle = '#4b4b6e';
+        });
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+
+        // Gambar burung (kotak pixel dengan mata)
+        ctx.fillStyle = '#cfba8c';
+        ctx.fillRect(bird.x, bird.y, bird.size, bird.size);
+        // Sayap (animasi naik turun berdasarkan frame)
+        const wingOffset = Math.sin(frameCounter * 0.2) * 4;
+        ctx.fillStyle = '#b9a88c';
+        ctx.fillRect(bird.x + 8, bird.y + 10 + wingOffset, 10, 6);
+        // Mata
+        ctx.fillStyle = '#101018';
+        ctx.fillRect(bird.x + 16, bird.y + 6, 5, 5);
+        // Paruh
+        ctx.fillStyle = '#e07373';
+        ctx.fillRect(bird.x + 20, bird.y + 10, 6, 3);
+
+        // Skor di tengah layar saat game over
+        if (gameOver) {
+          ctx.fillStyle = 'rgba(0,0,0,0.65)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#e07373';
+          ctx.font = '22px "Press Start 2P", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 25);
+          ctx.fillStyle = '#cfba8c';
+          ctx.font = '13px "Press Start 2P", cursive';
+          ctx.fillText('Score: ' + score, canvas.width/2, canvas.height/2 + 25);
+          ctx.font = '10px "Press Start 2P", cursive';
+          ctx.fillText('SPACE / TAP to restart', canvas.width/2, canvas.height/2 + 65);
+        } else if (paused) {
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#cfba8c';
+          ctx.font = '18px "Press Start 2P", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+        }
+      }
+
+      // --- Game loop ---
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
+      // --- Kontrol ---
+      function flapBird() {
+        if (gameOver) {
+          resetGame();
+          return;
+        }
+        if (paused) {
+          paused = false;
+          return;
+        }
+        bird.vy = FLAP_FORCE;
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          flapBird();
+        }
+        if (e.key === 'p' || e.key === 'P') {
+          if (!gameOver) {
+            paused = !paused;
+          }
+        }
+      });
+
+      canvas.addEventListener('click', () => {
+        flapBird();
+      });
+
+      // Touch support
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        flapBird();
+      });
+
+      document.getElementById('restartButton').addEventListener('click', resetGame);
+
+      // Start
+      resetGame();
+      updateHUD();
+      gameLoop();
+    })();
+  </script>
+</body>
+</html>
