@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Margin & Leverage Calc – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📊 MARGIN CALC</h1>
+    <p style="text-align:center;">Hitung margin sebelum buka posisi</p>
+
+    <form id="marginForm">
+      <label>Pair</label>
+      <select id="pair">
+        <option value="EURUSD">EUR/USD</option>
+        <option value="GBPUSD">GBP/USD</option>
+        <option value="USDJPY">USD/JPY</option>
+        <option value="USDCAD">USD/CAD</option>
+        <option value="USDCHF">USD/CHF</option>
+        <option value="AUDUSD">AUD/USD</option>
+        <option value="NZDUSD">NZD/USD</option>
+      </select>
+
+      <label>Lot (Standar)</label>
+      <input type="number" id="lots" value="0.10" step="0.01" min="0.01" required>
+
+      <label>Leverage</label>
+      <select id="leverage">
+        <option value="100">1:100</option>
+        <option value="200">1:200</option>
+        <option value="400" selected>1:400</option>
+        <option value="500">1:500</option>
+        <option value="1000">1:1000</option>
+      </select>
+
+      <label>Harga Saat Ini (opsional, untuk pair non-USD counter)</label>
+      <input type="number" id="currentPrice" step="0.001" placeholder="Contoh: 150.00">
+
+      <label>Equity / Balance ($)</label>
+      <input type="number" id="equity" value="1000" step="0.01">
+
+      <button type="button" onclick="calculateMargin()">HITUNG MARGIN</button>
+    </form>
+
+    <div id="result" class="result-box" style="display:none;"></div>
+    <div id="marginLevelWarning" class="risk-status" style="display:none;"></div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    const pairConfig = {
+      EURUSD: { contractSize: 100000, baseCurrency: 'EUR', counterCurrency: 'USD' },
+      GBPUSD: { contractSize: 100000, baseCurrency: 'GBP', counterCurrency: 'USD' },
+      AUDUSD: { contractSize: 100000, baseCurrency: 'AUD', counterCurrency: 'USD' },
+      NZDUSD: { contractSize: 100000, baseCurrency: 'NZD', counterCurrency: 'USD' },
+      USDJPY: { contractSize: 100000, baseCurrency: 'USD', counterCurrency: 'JPY' },
+      USDCAD: { contractSize: 100000, baseCurrency: 'USD', counterCurrency: 'CAD' },
+      USDCHF: { contractSize: 100000, baseCurrency: 'USD', counterCurrency: 'CHF' },
+    };
+
+    function calculateMargin() {
+      const pair = document.getElementById('pair').value;
+      const lots = parseFloat(document.getElementById('lots').value);
+      const leverage = parseInt(document.getElementById('leverage').value);
+      const equity = parseFloat(document.getElementById('equity').value) || 0;
+      const currentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
+
+      if (!pair || isNaN(lots) || lots <= 0 || isNaN(leverage)) {
+        alert('Mohon isi semua field yang diperlukan.');
+        return;
+      }
+
+      const config = pairConfig[pair];
+      let marginRequired;
+
+      if (config.baseCurrency === 'USD') {
+        // contractSize * lots / leverage (dalam USD)
+        marginRequired = (config.contractSize * lots) / leverage;
+      } else if (config.counterCurrency === 'USD') {
+        // contractSize * lots * currentPrice / leverage
+        if (currentPrice <= 0) {
+          alert('Masukkan harga saat ini untuk pair ini.');
+          return;
+        }
+        marginRequired = (config.contractSize * lots * currentPrice) / leverage;
+      } else {
+        // fallback, perlu cross rate
+        marginRequired = (config.contractSize * lots * currentPrice) / leverage;
+      }
+
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').innerHTML = `
+        <strong>Margin Dibutuhkan:</strong> $${marginRequired.toFixed(2)}<br>
+        <small>Kontrak: ${config.contractSize} × ${lots} lot / ${leverage}</small>
+      `;
+
+      // Margin level jika ada equity
+      const warningDiv = document.getElementById('marginLevelWarning');
+      if (equity > 0) {
+        const marginLevel = (equity / marginRequired) * 100;
+        warningDiv.style.display = 'block';
+        if (marginLevel > 100) {
+          warningDiv.className = 'risk-status risk-safe';
+          warningDiv.innerHTML = `✅ Margin Level: ${marginLevel.toFixed(0)}% (AMAN)`;
+        } else if (marginLevel > 50) {
+          warningDiv.className = 'risk-status risk-safe';
+          warningDiv.innerHTML = `⚠️ Margin Level: ${marginLevel.toFixed(0)}% (WASPADA)`;
+        } else {
+          warningDiv.className = 'risk-status risk-danger';
+          warningDiv.innerHTML = `🚫 Margin Level: ${marginLevel.toFixed(0)}% (BAHAYA MARGIN CALL)`;
+        }
+      } else {
+        warningDiv.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
