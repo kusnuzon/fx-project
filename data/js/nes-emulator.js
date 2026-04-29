@@ -1,5 +1,5 @@
 // data/js/nes-emulator.js
-// PASTI BERFUNGSI – menggunakan Nostalgist API langsung
+// PASTI BERFUNGSI – dispatch keyboard event ke canvas
 (function() {
   const NES_GROUPS = {
     dpad: true,
@@ -7,6 +7,14 @@
     startselect: { buttons: ['start','select'] },
     l1l2: { buttons: ['l1','l2'] },
     r1r2: { buttons: ['r1','r2'] }
+  };
+
+  // Mapping tombol virtual → keyboard key
+  const BTN_TO_KEY = {
+    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
+    a: 'x', b: 'z', x: 'a', y: 's',
+    start: 'Enter', select: 'Shift',
+    l1: 'q', l2: 'w', r1: 'e', r2: 'r'
   };
 
   class NESEmulator {
@@ -76,7 +84,7 @@
         this.nostalgist = await Nostalgist.launch({
           core:'fceumm', rom:romFile,
           retroarchConfig: { audio_enable:'true', audio_out_rate:'44100', audio_latency:'64', video_smooth:'false' },
-          respondToGlobalEvents: false   // penting: kita kendalikan input manual
+          respondToGlobalEvents: false
         });
         this.canvas=this.nostalgist.getCanvas();
         this.canvas.classList.add('nes-emulator-canvas');
@@ -93,7 +101,7 @@
         this.gamepad = new VirtualGamepad({
           container: this.virtualGamepad,
           groups: NES_GROUPS,
-          onButton: ({button,pressed}) => this._buttonAction(button,pressed)
+          onButton: ({button,pressed}) => this._dispatchButton(button,pressed)
         });
         container.appendChild(this.virtualGamepad);
         this.emuWrapper.appendChild(container);
@@ -106,44 +114,65 @@
       }catch(e){ this.statusText.textContent='Error: '+e.message; }
     }
 
-    // Fungsi tunggal untuk mengirim tombol ke emulator
-    _buttonAction(btn, pressed) {
-      if(!this.nostalgist) return;
+    // Kirim keyboard event ke canvas (cara yang TERBUKTI berfungsi)
+    _dispatchButton(btn, pressed) {
+      if (!this.canvas) return;
+      const key = BTN_TO_KEY[btn];
+      if (!key) return;
+      const eventType = pressed ? 'keydown' : 'keyup';
+      const event = new KeyboardEvent(eventType, {
+        key: key,
+        code: key,
+        keyCode: this._keyCode(key),
+        which: this._keyCode(key),
+        bubbles: true,
+        cancelable: true
+      });
+      this.canvas.dispatchEvent(event);
+    }
+
+    _keyCode(key) {
       const map = {
-        up:'up', down:'down', left:'left', right:'right',
-        a:'a', b:'b', x:'x', y:'y',
-        start:'start', select:'select',
-        l1:'l', l2:'l2', r1:'r', r2:'r2'
+        'ArrowUp':38, 'ArrowDown':40, 'ArrowLeft':37, 'ArrowRight':39,
+        'x':88, 'z':90, 'a':65, 's':83,
+        'Enter':13, 'Shift':16,
+        'q':81, 'w':87, 'e':69, 'r':82
       };
-      const nesBtn = map[btn];
-      if(nesBtn){
-        try {
-          if(pressed) this.nostalgist.pressButton(nesBtn, 0);
-          else this.nostalgist.releaseButton(nesBtn, 0);
-        }catch(e){ console.warn('Button error:', e); }
-      }
+      return map[key] || 0;
     }
 
     _bindKeyboard() {
-      const keyMap={
-        'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right',
-        'z':'a','x':'b','a':'x','s':'y',
-        'Enter':'start','Shift':'select',
-        'q':'l1','w':'l2','e':'r1','r':'r2'
-      };
       window.addEventListener('keydown',e=>{
-        if(!this.loaded)return;
-        const btn=keyMap[e.key]; if(!btn)return;
-        e.preventDefault();
-        this.gamepad?.highlight(btn,true);
-        this._buttonAction(btn,true);
+        if(!this.loaded||!this.canvas)return;
+        // Keyboard fisik sudah ditangani oleh respondToGlobalEvents? Tidak, karena false.
+        // Jadi kita harus meneruskan keyboard fisik ke canvas juga.
+        const key = e.key;
+        if (Object.values(BTN_TO_KEY).includes(key)) {
+          e.preventDefault();
+          // Teruskan event keyboard asli ke canvas
+          const event = new KeyboardEvent('keydown', {
+            key: key, code: e.code, keyCode: e.keyCode, which: e.which,
+            bubbles: true, cancelable: true
+          });
+          this.canvas.dispatchEvent(event);
+          // Highlight tombol virtual
+          const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === key);
+          if (btn) this.gamepad?.highlight(btn, true);
+        }
       });
       window.addEventListener('keyup',e=>{
-        if(!this.loaded)return;
-        const btn=keyMap[e.key]; if(!btn)return;
-        e.preventDefault();
-        this.gamepad?.highlight(btn,false);
-        this._buttonAction(btn,false);
+        if(!this.loaded||!this.canvas)return;
+        const key = e.key;
+        if (Object.values(BTN_TO_KEY).includes(key)) {
+          e.preventDefault();
+          const event = new KeyboardEvent('keyup', {
+            key: key, code: e.code, keyCode: e.keyCode, which: e.which,
+            bubbles: true, cancelable: true
+          });
+          this.canvas.dispatchEvent(event);
+          const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === key);
+          if (btn) this.gamepad?.highlight(btn, false);
+        }
       });
     }
 
