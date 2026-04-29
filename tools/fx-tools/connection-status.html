@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connection Status – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .status-card {
+      background: #1e1e2e;
+      border: 2px solid #4b4b68;
+      padding: 1rem;
+      text-align: center;
+      border-radius: 4px;
+    }
+    .status-card .label {
+      font-size: 0.6rem;
+      color: #8e8ea0;
+      margin-bottom: 0.5rem;
+    }
+    .status-card .indicator {
+      font-size: 2rem;
+      margin: 0.3rem 0;
+      font-family: 'Press Start 2P', cursive;
+    }
+    .status-card .detail {
+      font-size: 0.55rem;
+      color: #9da5b4;
+    }
+    .indicator.live { color: #6c9; }
+    .indicator.fallback, .indicator.simulasi { color: #f0a040; }
+    .indicator.cache { color: #f0a040; }
+    .indicator.offline { color: #e07373; }
+    .global-status {
+      text-align: center;
+      font-size: 0.7rem;
+      margin: 1rem 0;
+      color: #cfba8c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📶 STATUS KONEKSI</h1>
+    <p style="text-align:center;">Indikator data feed & kalender</p>
+
+    <div class="global-status" id="globalStatus">Memeriksa koneksi...</div>
+
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="label">📡 PRICE FEED</div>
+        <div class="indicator" id="priceIndicator">--</div>
+        <div class="detail" id="priceDetail">--</div>
+      </div>
+      <div class="status-card">
+        <div class="label">📅 KALENDER</div>
+        <div class="indicator" id="calendarIndicator">--</div>
+        <div class="detail" id="calendarDetail">--</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.55rem; text-align:center; color:#6a6a7a; margin-top:1.5rem;">
+      Data real-time membutuhkan koneksi internet & API key valid.
+    </p>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script src="../../data/js/connection-indicator.js"></script>
+  <script>
+    const priceEl = document.getElementById('priceIndicator');
+    const calendarEl = document.getElementById('calendarIndicator');
+    const priceDetailEl = document.getElementById('priceDetail');
+    const calendarDetailEl = document.getElementById('calendarDetail');
+    const globalStatusEl = document.getElementById('globalStatus');
+
+    const emojiMap = {
+      live: '🟢', fallback: '🟠', simulasi: '🟠', cache: '🟠', offline: '🔴'
+    };
+
+    function updateUI(status) {
+      // Price
+      priceEl.textContent = emojiMap[status.price] || '⚪';
+      priceEl.className = 'indicator ' + status.price;
+      priceDetailEl.textContent = VaultConnection.getStatusLabel('price');
+
+      // Calendar
+      calendarEl.textContent = emojiMap[status.calendar] || '⚪';
+      calendarEl.className = 'indicator ' + status.calendar;
+      calendarDetailEl.textContent = VaultConnection.getStatusLabel('calendar');
+
+      // Global
+      const bothLive = status.price === 'live' && status.calendar === 'live';
+      const anyLive = status.price === 'live' || status.calendar === 'live';
+      const bothOffline = status.price === 'offline' && status.calendar === 'offline';
+
+      if (bothLive) {
+        globalStatusEl.innerHTML = '✅ SEMUA LIVE';
+        globalStatusEl.style.color = '#6c9';
+      } else if (anyLive) {
+        globalStatusEl.innerHTML = '⚠️ SEBAGIAN LIVE';
+        globalStatusEl.style.color = '#f0a040';
+      } else if (bothOffline) {
+        globalStatusEl.innerHTML = '🔴 OFFLINE';
+        globalStatusEl.style.color = '#e07373';
+      } else {
+        globalStatusEl.innerHTML = '🟠 MENGGUNAKAN DATA SIMULASI / CACHE';
+        globalStatusEl.style.color = '#f0a040';
+      }
+    }
+
+    // Tunggu sebentar untuk memastikan VaultPrice & VaultCalendar sudah terdeteksi
+    setTimeout(() => {
+      VaultConnection.init();
+      updateUI(VaultConnection.getStatus());
+      VaultConnection.onChange(updateUI);
+    }, 500);
+  </script>
+</body>
+</html>
