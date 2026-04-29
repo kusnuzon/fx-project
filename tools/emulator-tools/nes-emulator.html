@@ -9,11 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-    <!-- Global Theme + NES Emulator CSS -->
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
     <link rel="stylesheet" href="../../data/css/nes-emulator.css">
 
-    <!-- JSZip & Nostalgist.js & Emulator Core -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/nostalgist"></script>
     <script src="../../data/js/nes-emulator.js"></script>
@@ -32,11 +30,40 @@
             <button onclick="window.nesEmulator.stop()">⏹️ STOP</button>
             <button onclick="window.nesEmulator.reset()">🔄 RESET</button>
             <button class="fullscreen-btn" onclick="window.nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
+            <button onclick="window.nesEmulator.toggleLayoutEditor()" title="Gamepad Layout">⚙️</button>
+        </div>
+
+        <!-- Layout Editor Modal -->
+        <div class="layout-editor-modal" id="layoutEditorModal">
+            <div class="layout-editor-overlay" onclick="window.nesEmulator.toggleLayoutEditor()"></div>
+            <div class="layout-editor-content">
+                <div class="layout-editor-header">
+                    <h3>🎮 GAMEPAD LAYOUT</h3>
+                    <button class="close-btn" onclick="window.nesEmulator.toggleLayoutEditor()">✕</button>
+                </div>
+                <div class="orientation-tabs">
+                    <button id="tabPortrait" class="active" onclick="window.nesEmulator.switchOrientation('portrait')">📱 PORTRAIT</button>
+                    <button id="tabLandscape" onclick="window.nesEmulator.switchOrientation('landscape')">🖥️ LANDSCAPE</button>
+                </div>
+                <div class="editor-canvas-area" id="editorCanvasArea"></div>
+                <div class="editor-info">
+                    <span id="selectedName">Click a button to select</span>
+                    <div class="coord-inputs">
+                        <label>X% <input type="number" id="posX" min="0" max="100" step="0.5" onchange="window.nesEmulator.updateSelectedPosition()"></label>
+                        <label>Y% <input type="number" id="posY" min="0" max="100" step="0.5" onchange="window.nesEmulator.updateSelectedPosition()"></label>
+                    </div>
+                </div>
+                <div class="editor-actions">
+                    <button onclick="window.nesEmulator.exportLayoutJSON()">📋 EXPORT</button>
+                    <button onclick="window.nesEmulator.importLayoutJSON()">📥 IMPORT</button>
+                    <button onclick="window.nesEmulator.resetLayout()">🔄 RESET</button>
+                </div>
+            </div>
         </div>
 
         <div class="nes-emulator-wrapper" id="emuWrapper"></div>
 
-        <!-- Virtual Gamepad (akan ditampilkan oleh JS) -->
+        <!-- Virtual Gamepad -->
         <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
             <div class="gamepad-container">
                 <div class="dpad">
