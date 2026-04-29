@@ -9,7 +9,6 @@ class NESEmulator {
     this._gamepadInContainer = false;
     this._orientationHandler = null;
 
-    // Elemen UI
     this.dropZone       = document.getElementById('dropZone');
     this.subtitle       = document.querySelector('.subtitle');
     this.controlsDiv    = document.getElementById('controls');
@@ -17,7 +16,6 @@ class NESEmulator {
     this.virtualGamepad = document.getElementById('virtualGamepad');
     this.statusText     = document.getElementById('statusText');
 
-    // Simpan referensi asli gamepad
     this._gamepadOriginalParent  = this.virtualGamepad.parentNode;
     this._gamepadOriginalNext    = this.virtualGamepad.nextSibling;
 
@@ -26,9 +24,10 @@ class NESEmulator {
     this._bindKeyboard();
     this._setupAudioUnlock();
     this._bindOrientationChange();
+    this._bindFullscreenChange();
   }
 
-  /* ── Audio Unlock ──────────────────────────────────── */
+  /* ── Audio Unlock ─────────────────── */
   _setupAudioUnlock() {
     const unlock = async () => { await this._unlockAudio(); };
     document.addEventListener('pointerdown', unlock, { once: true, passive: true });
@@ -51,7 +50,7 @@ class NESEmulator {
     } catch (_) {}
   }
 
-  /* ── Drop Zone ─────────────────────────────────────── */
+  /* ── Drop Zone ────────────────────── */
   _bindDropZone() {
     this.dropZone.addEventListener('dragover', e => {
       e.preventDefault();
@@ -101,7 +100,7 @@ class NESEmulator {
     }
   }
 
-  /* ── Load ROM ──────────────────────────────────────── */
+  /* ── Load ROM ─────────────────────── */
   async loadROM(romData, fileName) {
     this.stop();
     this.statusText.textContent = 'Loading emulator...';
@@ -119,14 +118,23 @@ class NESEmulator {
           audio_out_rate: '44100',
           audio_latency:  '64',
           video_smooth:   'false',
+          input_player1_joypad_index: '0',
+          input_player1_a: 'x',
+          input_player1_b: 'z',
+          input_player1_start: 'enter',
+          input_player1_select: 'shift',
+          input_player1_up: 'up',
+          input_player1_down: 'down',
+          input_player1_left: 'left',
+          input_player1_right: 'right',
         },
-        respondToGlobalEvents: false,
+        respondToGlobalEvents: true,
       });
 
       this.canvas = this.nostalgist.getCanvas();
       this.canvas.classList.add('nes-emulator-canvas');
-      
-      // Reset styling bawaan Nostalgist
+
+      // Reset styling
       this.canvas.style.position = '';
       this.canvas.style.top = '';
       this.canvas.style.left = '';
@@ -137,7 +145,7 @@ class NESEmulator {
       this.dropZone.style.display = 'none';
       if (this.subtitle) this.subtitle.style.display = 'none';
 
-      // Bersihkan wrapper & buat container orientasi
+      // Buat container orientasi
       this.emuWrapper.innerHTML = '';
       const container = document.createElement('div');
       container.className = 'emu-container';
@@ -154,17 +162,15 @@ class NESEmulator {
       this.virtualGamepad.style.display = 'flex';
       this.loaded = true;
       this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
-      
-      // Terapkan orientasi sekarang
+
       this._applyOrientation();
-      
     } catch (e) {
       this.statusText.textContent = 'Error: ' + e.message;
       console.error('[NES] loadROM:', e);
     }
   }
 
-  /* ── Virtual Gamepad ───────────────────────────────── */
+  /* ── Virtual Gamepad ──────────────── */
   _bindVirtualGamepad() {
     this.virtualGamepad.querySelectorAll('.gamepad-btn').forEach(btn => {
       const dataBtn = btn.dataset.btn;
@@ -172,45 +178,63 @@ class NESEmulator {
 
       const press = e => {
         e.preventDefault();
+        e.stopPropagation();
         btn.classList.add('active');
         this._sendButton(dataBtn, true);
       };
       const release = e => {
         e.preventDefault();
+        e.stopPropagation();
         btn.classList.remove('active');
         this._sendButton(dataBtn, false);
       };
 
-      btn.addEventListener('pointerdown',  press);
-      btn.addEventListener('pointerup',    release);
+      btn.addEventListener('pointerdown', press);
+      btn.addEventListener('pointerup', release);
       btn.addEventListener('pointerleave', release);
       btn.addEventListener('pointercancel', release);
+      btn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        btn.classList.add('active');
+        this._sendButton(dataBtn, true);
+      });
+      btn.addEventListener('touchend', e => {
+        e.preventDefault();
+        btn.classList.remove('active');
+        this._sendButton(dataBtn, false);
+      });
     });
   }
 
   _sendButton(btn, isPress) {
     if (!this.nostalgist) return;
-    const nesBtn = this._btnToNostalgistBtn(btn);
-    if (nesBtn) {
-      try {
+
+    // ✅ Metode 1: Kirim keyboard event ke canvas
+    const key = this._btnToKey(btn);
+    if (key && this.canvas) {
+      const eventType = isPress ? 'keydown' : 'keyup';
+      const event = new KeyboardEvent(eventType, {
+        key: key,
+        code: this._keyToCode(key),
+        keyCode: this._keyToKeyCode(key),
+        which: this._keyToKeyCode(key),
+        bubbles: true,
+        cancelable: true
+      });
+      this.canvas.dispatchEvent(event);
+    }
+
+    // ✅ Metode 2: Nostalgist API
+    try {
+      const nesBtn = this._btnToNostalgistBtn(btn);
+      if (nesBtn) {
         if (isPress) {
           this.nostalgist.pressButton(nesBtn, 0);
         } else {
           this.nostalgist.releaseButton(nesBtn, 0);
         }
-        return;
-      } catch (_) {}
-    }
-    // Fallback keyboard event
-    const key  = this._btnToKey(btn);
-    const type = isPress ? 'keydown' : 'keyup';
-    if (key) {
-      window.dispatchEvent(new KeyboardEvent(type, {
-        key, code: this._keyToCode(key),
-        keyCode: this._keyToKeyCode(key),
-        bubbles: true, cancelable: true
-      }));
-    }
+      }
+    } catch (_) {}
   }
 
   _btnToNostalgistBtn(btn) {
@@ -231,21 +255,21 @@ class NESEmulator {
 
   _keyToCode(key) {
     const m = {
-      'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
-      'x':'KeyX','z':'KeyZ','Enter':'Enter','Shift':'ShiftLeft'
+      'ArrowUp': 'ArrowUp', 'ArrowDown': 'ArrowDown', 'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight',
+      'x': 'KeyX', 'z': 'KeyZ', 'Enter': 'Enter', 'Shift': 'ShiftLeft'
     };
     return m[key] || key;
   }
 
   _keyToKeyCode(key) {
     const m = {
-      'ArrowUp':38,'ArrowDown':40,'ArrowLeft':37,'ArrowRight':39,
-      'x':88,'z':90,'Enter':13,'Shift':16
+      'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
+      'x': 88, 'z': 90, 'Enter': 13, 'Shift': 16
     };
     return m[key] || 0;
   }
 
-  /* ── Keyboard Fisik ────────────────────────────────── */
+  /* ── Keyboard Fisik ───────────────── */
   _bindKeyboard() {
     const handler = e => {
       if (!this.loaded) return;
@@ -253,16 +277,15 @@ class NESEmulator {
       if (!btn) return;
       e.preventDefault();
       this._highlightButton(btn, e.type === 'keydown');
-      this._sendButton(btn, e.type === 'keydown');
     };
     window.addEventListener('keydown', handler);
-    window.addEventListener('keyup',   handler);
+    window.addEventListener('keyup', handler);
   }
 
   _keyToBtn(key) {
     const map = {
-      'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right',
-      'x':'a','z':'b','Enter':'start','Shift':'select'
+      'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
+      'x': 'a', 'z': 'b', 'Enter': 'start', 'Shift': 'select'
     };
     return map[key] || null;
   }
@@ -272,12 +295,12 @@ class NESEmulator {
     if (el) el.classList.toggle('active', active);
   }
 
-  /* ── Orientasi ─────────────────────────────────────── */
+  /* ── Orientasi ────────────────────── */
   _bindOrientationChange() {
     this._orientationHandler = () => this._applyOrientation();
     window.addEventListener('resize', this._orientationHandler);
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => this._applyOrientation(), 100);
+      setTimeout(() => this._applyOrientation(), 150);
     });
   }
 
@@ -285,34 +308,35 @@ class NESEmulator {
     const container = this.emuWrapper.querySelector('.emu-container');
     if (!container) return;
     const isPortrait = window.innerHeight > window.innerWidth;
-    container.classList.toggle('emu-portrait',  isPortrait);
+    container.classList.toggle('emu-portrait', isPortrait);
     container.classList.toggle('emu-landscape', !isPortrait);
   }
 
-  /* ── Kontrol ───────────────────────────────────────── */
+  /* ── Fullscreen ───────────────────── */
+  _bindFullscreenChange() {
+    document.addEventListener('fullscreenchange', () => {
+      setTimeout(() => this._applyOrientation(), 200);
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+      setTimeout(() => this._applyOrientation(), 200);
+    });
+  }
+
+  /* ── Kontrol ──────────────────────── */
   stop() {
     if (this.nostalgist) {
       try { this.nostalgist.exit(); } catch (_) {}
       this.nostalgist = null;
     }
-
-    // Kembalikan gamepad ke posisi asli
     if (this._gamepadInContainer) {
-      this._gamepadOriginalParent.insertBefore(
-        this.virtualGamepad,
-        this._gamepadOriginalNext
-      );
+      this._gamepadOriginalParent.insertBefore(this.virtualGamepad, this._gamepadOriginalNext);
       this._gamepadInContainer = false;
     }
-
     this.emuWrapper.innerHTML = '';
     this.controlsDiv.style.display = 'none';
     this.virtualGamepad.style.display = 'none';
-    
-    // Tampilkan kembali dropzone & subtitle
     this.dropZone.style.display = '';
     if (this.subtitle) this.subtitle.style.display = '';
-    
     this.statusText.textContent = 'Emulator stopped.';
     this.loaded = false;
     this.canvas = null;
@@ -326,14 +350,12 @@ class NESEmulator {
   }
 
   toggleFullscreen() {
-    // ✅ Fullscreen pada emuWrapper agar gamepad ikut masuk layar penuh
     const wrapper = document.getElementById('emuWrapper');
-    if (!document.fullscreenElement) {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
       (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)?.call(wrapper);
     } else {
       (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
     }
-    // Re-apply orientasi setelah transisi fullscreen
     setTimeout(() => this._applyOrientation(), 300);
   }
 }
