@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Hours CRT Globe | Cartridge Vault</title>
+
+    <!-- Google Pixel Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- Global Retro Theme -->
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        /* ========== CRT GLOBE SPECIFIC ========== */
+        .crt-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 2rem auto;
+            background: #0b0b14;
+            /* CRT bezel */
+            border: 6px solid #3d3d56;
+            outline: 4px solid #1a1a2e;
+            outline-offset: 6px;
+            box-shadow:
+                0 0 0 6px #0a0a14,
+                0 0 20px rgba(207,186,140,0.2),
+                inset 0 0 40px rgba(0,0,0,0.8);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .crt-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.08) 0px,
+                rgba(0,0,0,0.08) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+        .crt-wrapper > * {
+            position: relative;
+            z-index: 20;
+        }
+
+        h2.globe-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
+        }
+
+        .sub-globe {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #8e8ea0;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .globe-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .globe-screen {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, rgba(20,20,40,0.8), #0a0a14);
+            box-shadow: 0 0 20px rgba(78,78,104,0.4), inset 0 0 30px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        .globe-screen::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 40%, rgba(207,186,140,0.05) 0%, transparent 60%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* SVG Globe */
+        .globe-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .globe-grid {
+            transform-origin: 110px 110px; /* pusat svg 220x220, (110,110) */
+            animation: spinGlobe 20s linear infinite;
+        }
+
+        @keyframes spinGlobe {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sesi indicator di bawah globe */
+        .session-panel {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .session-badge {
+            background: #1a1a2e;
+            border: 2px solid #3f3f5c;
+            padding: 0.7rem 1rem;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: #8e8ea0;
+            box-shadow: 2px 2px 0 #0a0a14;
+            transition: all 0.15s;
+            min-width: 100px;
+        }
+
+        .session-badge .led {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #3f3f5c;
+            border-radius: 0;
+            margin-right: 6px;
+            box-shadow: 0 0 4px currentColor;
+        }
+
+        .session-badge.active {
+            color: #f0e6d2;
+            border-color: #7a8cbf;
+            background: #202030;
+            box-shadow: 0 0 12px rgba(122,140,191,0.4), 2px 2px 0 #0a0a14;
+        }
+
+        .session-badge.active .led {
+            background: #7a8cbf;
+            box-shadow: 0 0 10px #7a8cbf;
+        }
+
+        /* Slider Time Control */
+        .time-slider-group {
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .time-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 200px;
+            height: 12px;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #cfba8c;
+            border: 2px solid #4a3e2c;
+            box-shadow: 0 0 6px rgba(207,186,140,0.5);
+            cursor: pointer;
+        }
+
+        .utc-display {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: #cfba8c;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: #1e1e2e;
+            padding: 0.5rem;
+            border: 1px solid #4b4b68;
+            display: inline-block;
+            margin: 0 auto;
+        }
+
+        /* Responsif */
+        @media (max-width: 480px) {
+            .session-panel {
+                gap: 0.8rem;
+            }
+            .session-badge {
+                font-size: 0.45rem;
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-wrapper">
+        <h2 class="globe-title">🌍 CRT GLOBE</h2>
+        <p class="sub-globe">MARKET HOURS / SESSION OVERLAY</p>
+
+        <div class="globe-stage">
+            <!-- CRT Globe Screen -->
+            <div class="globe-screen">
+                <svg class="globe-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer ring glow -->
+                    <defs>
+                        <radialGradient id="glowGrad" cx="50%" cy="40%" r="50%">
+                            <stop offset="0%" stop-color="rgba(207,186,140,0.08)" />
+                            <stop offset="100%" stop-color="rgba(207,186,140,0)" />
+                        </radialGradient>
+                    </defs>
+                    <!-- Globe base circle -->
+                    <circle cx="110" cy="110" r="90" fill="url(#glowGrad)" stroke="#4e4e68" stroke-width="3" />
+                    <circle cx="110" cy="110" r="92" fill="none" stroke="#6e6e8a" stroke-width="1" stroke-dasharray="4 6" />
+
+                    <!-- Rotating grid group -->
+                    <g class="globe-grid">
+                        <!-- Longitude lines (vertical ellipses rotated) -->
+                        <ellipse cx="110" cy="110" rx="20" ry="90" fill="none" stroke="#4e4e68" stroke-width="1.5" />
+                        <ellipse cx="110" cy="110" rx="40" ry="90" fill="none" stroke="#4e4e68" stroke-width="1.2" />
+                        <ellipse cx="110" cy="110" rx="60" ry="90" fill="none" stroke="#4e4e68" stroke-width="1" />
+                        <ellipse cx="110" cy="110" rx="80" ry="90" fill="none" stroke="#4e4e68" stroke-width="0.8" />
+                        <ellipse cx="110" cy="110" rx="90" ry="30" fill="none" stroke="#4e4e68" stroke-width="1.2" />
+                        <ellipse cx="110" cy="110" rx="90" ry="50" fill="none" stroke="#4e4e68" stroke-width="1" />
+                        <ellipse cx="110" cy="110" rx="90" ry="70" fill="none" stroke="#4e4e68" stroke-width="0.8" />
+
+                        <!-- Latitude lines (horizontal) -->
+                        <ellipse cx="110" cy="60" rx="70" ry="8" fill="none" stroke="#5a5a7a" stroke-width="1" />
+                        <ellipse cx="110" cy="80" rx="85" ry="6" fill="none" stroke="#5a5a7a" stroke-width="0.8" />
+                        <line x1="20" y1="110" x2="200" y2="110" stroke="#5a5a7a" stroke-width="1.5" />
+                        <ellipse cx="110" cy="140" rx="85" ry="6" fill="none" stroke="#5a5a7a" stroke-width="0.8" />
+                        <ellipse cx="110" cy="160" rx="70" ry="8" fill="none" stroke="#5a5a7a" stroke-width="1" />
+
+                        <!-- Pixel "continents" - beberapa blok kecil -->
+                        <rect x="80" y="70" width="8" height="8" fill="#3d3d56" />
+                        <rect x="88" y="78" width="8" height="8" fill="#3d3d56" />
+                        <rect x="96" y="82" width="8" height="8" fill="#3d3d56" />
+                        <rect x="120" y="90" width="8" height="8" fill="#3d3d56" />
+                        <rect x="128" y="98" width="8" height="8" fill="#3d3d56" />
+                        <rect x="136" y="104" width="8" height="8" fill="#3d3d56" />
+                        <rect x="60" y="130" width="8" height="8" fill="#3d3d56" />
+                        <rect x="68" y="138" width="8" height="8" fill="#3d3d56" />
+                        <rect x="150" y="150" width="8" height="8" fill="#3d3d56" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Session Indicators -->
+            <div class="session-panel">
+                <div class="session-badge" id="asiaBadge">
+                    <span class="led"></span> ASIA
+                </div>
+                <div class="session-badge" id="londonBadge">
+                    <span class="led"></span> LONDON
+                </div>
+                <div class="session-badge" id="nyBadge">
+                    <span class="led"></span> NEW YORK
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Slider -->
+        <div class="utc-display" id="utcDisplay">UTC 12:00</div>
+        <div class="time-slider-group">
+            <span class="time-label">00:00</span>
+            <input type="range" id="timeSlider" min="0" max="24" step="0.25" value="12">
+            <span class="time-label">24:00</span>
+        </div>
+        <p style="text-align:center;font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.5rem;">
+            ◀ DRAG SLIDER TO CHANGE UTC HOUR ▶
+        </p>
+    </div>
+
+    <script>
+        (function() {
+            const slider = document.getElementById('timeSlider');
+            const utcDisplay = document.getElementById('utcDisplay');
+            const asiaBadge = document.getElementById('asiaBadge');
+            const londonBadge = document.getElementById('londonBadge');
+            const nyBadge = document.getElementById('nyBadge');
+
+            function updateSessions(value) {
+                // value dalam jam (0-24), bisa pecahan
+                const hour = value; // 0..24
+
+                // Reset all
+                asiaBadge.classList.remove('active');
+                londonBadge.classList.remove('active');
+                nyBadge.classList.remove('active');
+
+                // Asia: 0 <= hour < 9 UTC (Tokyo)
+                if (hour >= 0 && hour < 9) {
+                    asiaBadge.classList.add('active');
+                }
+                // London: 8 <= hour < 17 UTC
+                if (hour >= 8 && hour < 17) {
+                    londonBadge.classList.add('active');
+                }
+                // New York: 13 <= hour < 22 UTC
+                if (hour >= 13 && hour < 22) {
+                    nyBadge.classList.add('active');
+                }
+            }
+
+            function formatTime(value) {
+                const totalMinutes = Math.round(value * 60);
+                const h = Math.floor(totalMinutes / 60) % 24;
+                const m = totalMinutes % 60;
+                return `UTC ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+            }
+
+            function handleSliderChange() {
+                const val = parseFloat(slider.value);
+                utcDisplay.textContent = formatTime(val);
+                updateSessions(val);
+            }
+
+            slider.addEventListener('input', handleSliderChange);
+            // Initial call
+            handleSliderChange();
+        })();
+    </script>
+</body>
+</html>
