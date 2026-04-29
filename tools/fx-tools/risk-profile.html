@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk Profile – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ RISK PROFILE</h1>
+    <p style="text-align:center;">Profil risiko terpakai di semua tools</p>
+
+    <form id="profileForm">
+      <label>Balance ($)</label>
+      <input type="number" id="balance" step="0.01" required>
+
+      <label>Risk per Trade (%)</label>
+      <input type="number" id="riskPercent" step="0.1" min="0.1" max="100" required>
+
+      <label>Leverage</label>
+      <select id="leverage">
+        <option value="100">1:100</option>
+        <option value="200">1:200</option>
+        <option value="400">1:400</option>
+        <option value="500">1:500</option>
+        <option value="1000">1:1000</option>
+      </select>
+
+      <label>Max Daily Loss (%)</label>
+      <input type="number" id="maxDailyLoss" step="0.1" min="0.1" max="100" required>
+
+      <label>Preferred Pair</label>
+      <select id="preferredPair">
+        <option>EUR/USD</option>
+        <option>GBP/USD</option>
+        <option>USD/JPY</option>
+        <option>AUD/USD</option>
+        <option>NZD/USD</option>
+        <option>USD/CAD</option>
+        <option>USD/CHF</option>
+      </select>
+
+      <button type="button" id="saveBtn">💾 SIMPAN PROFIL</button>
+      <button type="button" id="resetBtn" style="margin-top:0;">🔄 RESET KE DEFAULT</button>
+    </form>
+
+    <div id="liveStatus" class="result-box" style="display:none; margin-top:1rem;">
+      <span id="statusMsg"></span>
+    </div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script src="../../data/js/vault-state.js"></script>
+  <script>
+    const form = document.getElementById('profileForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusDiv = document.getElementById('liveStatus');
+    const statusMsg = document.getElementById('statusMsg');
+
+    function loadForm() {
+      document.getElementById('balance').value = VaultState.get('balance');
+      document.getElementById('riskPercent').value = VaultState.get('riskPercent');
+      document.getElementById('leverage').value = VaultState.get('leverage');
+      document.getElementById('maxDailyLoss').value = VaultState.get('maxDailyLoss');
+      document.getElementById('preferredPair').value = VaultState.get('preferredPair');
+    }
+
+    function saveProfile() {
+      const balance = parseFloat(document.getElementById('balance').value);
+      const riskPercent = parseFloat(document.getElementById('riskPercent').value);
+      const leverage = parseInt(document.getElementById('leverage').value);
+      const maxDailyLoss = parseFloat(document.getElementById('maxDailyLoss').value);
+      const preferredPair = document.getElementById('preferredPair').value;
+
+      if (isNaN(balance) || balance <= 0 || isNaN(riskPercent) || riskPercent <= 0 ||
+          isNaN(maxDailyLoss) || maxDailyLoss <= 0) {
+        alert('Mohon isi semua angka dengan benar.');
+        return;
+      }
+
+      VaultState.set({
+        balance,
+        riskPercent,
+        leverage,
+        maxDailyLoss,
+        preferredPair
+      });
+
+      statusDiv.style.display = 'block';
+      statusMsg.textContent = '✅ Profil disimpan! Semua alat akan menggunakannya.';
+      setTimeout(() => statusDiv.style.display = 'none', 2500);
+    }
+
+    function resetProfile() {
+      if (confirm('Kembalikan ke pengaturan default?')) {
+        VaultState.reset();
+        loadForm();
+        statusDiv.style.display = 'block';
+        statusMsg.textContent = '🔄 Profil direset ke default.';
+        setTimeout(() => statusDiv.style.display = 'none', 2500);
+      }
+    }
+
+    saveBtn.addEventListener('click', saveProfile);
+    resetBtn.addEventListener('click', resetProfile);
+
+    // Dengarkan perubahan dari luar (misal diubah oleh tools lain)
+    VaultState.subscribe(() => {
+      loadForm();
+    });
+
+    // Inisialisasi form
+    loadForm();
+  </script>
+</body>
+</html>
