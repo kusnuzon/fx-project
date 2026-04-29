@@ -6,44 +6,36 @@ class NESEmulator {
     this.nostalgist = null;
     this.loaded = false;
     this.canvas = null;
-    this._gamepadInContainer = false; // track posisi gamepad
+    this._gamepadInContainer = false;
+    this._orientationHandler = null;
 
     // Elemen UI
-    this.dropZone     = document.getElementById('dropZone');
-    this.controlsDiv  = document.getElementById('controls');
-    this.emuWrapper   = document.getElementById('emuWrapper');
+    this.dropZone       = document.getElementById('dropZone');
+    this.subtitle       = document.querySelector('.subtitle');
+    this.controlsDiv    = document.getElementById('controls');
+    this.emuWrapper     = document.getElementById('emuWrapper');
     this.virtualGamepad = document.getElementById('virtualGamepad');
-    this.statusText   = document.getElementById('statusText');
+    this.statusText     = document.getElementById('statusText');
 
-    // Simpan parent asal gamepad agar bisa dikembalikan saat stop()
+    // Simpan referensi asli gamepad
     this._gamepadOriginalParent  = this.virtualGamepad.parentNode;
-    this._gamepadOriginalSibling = this.virtualGamepad.nextSibling;
+    this._gamepadOriginalNext    = this.virtualGamepad.nextSibling;
 
     this._bindDropZone();
     this._bindVirtualGamepad();
     this._bindKeyboard();
-    this._bindOrientationChange();
-
-    // ✅ FIX #1 – Unlock AudioContext sedini mungkin saat ada sentuhan pertama
-    //    iOS Safari & Chrome mobile memblokir AudioContext hingga ada user gesture.
-    //    Listener ini memastikan audio bisa langsung jalan saat ROM diload.
     this._setupAudioUnlock();
+    this._bindOrientationChange();
   }
 
-  /* ── Audio Unlock ─────────────────────────────────────────────────────── */
-
+  /* ── Audio Unlock ──────────────────────────────────── */
   _setupAudioUnlock() {
-    // Pasang listener sekali pada interaksi pertama apapun
-    const unlock = async () => {
-      await this._unlockAudio();
-    };
+    const unlock = async () => { await this._unlockAudio(); };
     document.addEventListener('pointerdown', unlock, { once: true, passive: true });
     document.addEventListener('touchstart',  unlock, { once: true, passive: true });
   }
 
   async _unlockAudio() {
-    // Membuat AudioContext sementara lalu resume-nya membuka "audio gate"
-    // di browser sehingga AudioContext internal Nostalgist pun ikut terbuka.
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -56,11 +48,10 @@ class NESEmulator {
       src.start(0);
       await ctx.resume();
       setTimeout(() => ctx.close(), 500);
-    } catch (_) { /* ignore */ }
+    } catch (_) {}
   }
 
-  /* ── Drop Zone ────────────────────────────────────────────────────────── */
-
+  /* ── Drop Zone ─────────────────────────────────────── */
   _bindDropZone() {
     this.dropZone.addEventListener('dragover', e => {
       e.preventDefault();
@@ -72,7 +63,7 @@ class NESEmulator {
     this.dropZone.addEventListener('drop', async e => {
       e.preventDefault();
       this.dropZone.classList.remove('drag-over');
-      await this._unlockAudio(); // drop = user gesture → unlock audio sekarang
+      await this._unlockAudio();
       const file = e.dataTransfer.files[0];
       if (file) this.handleFile(file);
     });
@@ -81,7 +72,7 @@ class NESEmulator {
       inp.type   = 'file';
       inp.accept = '.nes,.zip';
       inp.onchange = async e => {
-        await this._unlockAudio(); // file select = user gesture
+        await this._unlockAudio();
         if (e.target.files[0]) this.handleFile(e.target.files[0]);
       };
       inp.click();
@@ -110,8 +101,7 @@ class NESEmulator {
     }
   }
 
-  /* ── Load ROM ─────────────────────────────────────────────────────────── */
-
+  /* ── Load ROM ──────────────────────────────────────── */
   async loadROM(romData, fileName) {
     this.stop();
     this.statusText.textContent = 'Loading emulator...';
@@ -121,12 +111,8 @@ class NESEmulator {
         fileName || 'game.nes'
       );
 
-      // ✅ FIX #2 – Gunakan Nostalgist.launch() dengan options yang BENAR.
-      //    Nostalgist.nes(file, options) tidak mendukung parameter kedua.
-      //    emulateAudio & sampleRate bukan opsi valid → diam-diam diabaikan.
-      //    Konfigurasi audio yang benar ada di retroarchConfig.
       this.nostalgist = await Nostalgist.launch({
-        core: 'fceumm',          // core libretro NES
+        core: 'fceumm',
         rom:  romFile,
         retroarchConfig: {
           audio_enable:   'true',
@@ -134,45 +120,51 @@ class NESEmulator {
           audio_latency:  '64',
           video_smooth:   'false',
         },
-        // ✅ FIX #3 – respondToGlobalEvents: false agar keyboard global
-        //    tidak ditangkap Nostalgist sendiri (kita handle via virtual pad).
-        //    Ini mencegah konflik input antara virtual gamepad dan Nostalgist.
         respondToGlobalEvents: false,
       });
 
       this.canvas = this.nostalgist.getCanvas();
       this.canvas.classList.add('nes-emulator-canvas');
+      
+      // Reset styling bawaan Nostalgist yang mungkin absolute
+      this.canvas.style.position = '';
+      this.canvas.style.top = '';
+      this.canvas.style.left = '';
+      this.canvas.style.width = '';
+      this.canvas.style.height = '';
 
-      // Buat container baru
+      // ✅ Sembunyikan dropzone & subtitle
+      this.dropZone.style.display = 'none';
+      if (this.subtitle) this.subtitle.style.display = 'none';
+
+      // ✅ Bersihkan wrapper & buat container orientasi
       this.emuWrapper.innerHTML = '';
       const container = document.createElement('div');
       container.className = 'emu-container';
       container.appendChild(this.canvas);
 
-      // ✅ FIX #4 – Pindahkan virtualGamepad KE DALAM container.
-      //    Sebelumnya gamepad berada di luar emuWrapper, sehingga CSS rules
-      //    ".emu-landscape .virtual-gamepad" tidak pernah berlaku.
-      //    Dengan memindahkannya ke dalam container, layout landscape (canvas
-      //    + gamepad berdampingan) dan portrait (bertumpuk) bekerja dengan benar.
+      // ✅ Pindahkan gamepad ke dalam container
       container.appendChild(this.virtualGamepad);
       this._gamepadInContainer = true;
 
       this.emuWrapper.appendChild(container);
 
-      // Tampilkan kontrol dan gamepad
+      // ✅ Tampilkan kontrol & gamepad
       this.controlsDiv.style.display = 'flex';
       this.virtualGamepad.style.display = 'flex';
       this.loaded = true;
-      this.statusText.textContent = '🎮 ROM loaded  •  🔊 Audio ON';
+      this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
+      
+      // ✅ Terapkan orientasi sekarang
       this._applyOrientation();
+      
     } catch (e) {
       this.statusText.textContent = 'Error: ' + e.message;
       console.error('[NES] loadROM:', e);
     }
   }
 
-  /* ── Virtual Gamepad ──────────────────────────────────────────────────── */
-
+  /* ── Virtual Gamepad ───────────────────────────────── */
   _bindVirtualGamepad() {
     this.virtualGamepad.querySelectorAll('.gamepad-btn').forEach(btn => {
       const dataBtn = btn.dataset.btn;
@@ -192,34 +184,24 @@ class NESEmulator {
       btn.addEventListener('pointerdown',  press);
       btn.addEventListener('pointerup',    release);
       btn.addEventListener('pointerleave', release);
-      btn.addEventListener('pointercancel', release); // ← tambahan untuk multi-touch
+      btn.addEventListener('pointercancel', release);
     });
   }
 
-  // ✅ FIX #5 – Gunakan Nostalgist pressButton/releaseButton API.
-  //    Sebelumnya dispatch KeyboardEvent ke canvas – ini tidak reliable karena:
-  //    (a) event.isTrusted = false → Emscripten/libretro bisa mengabaikannya,
-  //    (b) canvas perlu punya focus, (c) keyCode tidak di-set.
-  //    pressButton/releaseButton adalah cara resmi Nostalgist untuk input.
   _sendButton(btn, isPress) {
     if (!this.nostalgist) return;
-
     const nesBtn = this._btnToNostalgistBtn(btn);
     if (nesBtn) {
       try {
         if (isPress) {
-          this.nostalgist.pressButton(nesBtn, 0);    // player 0
+          this.nostalgist.pressButton(nesBtn, 0);
         } else {
           this.nostalgist.releaseButton(nesBtn, 0);
         }
-        return; // sukses → selesai
-      } catch (_) {
-        // pressButton tidak tersedia di versi ini → fallback ke keyboard
-      }
+        return;
+      } catch (_) {}
     }
-
-    // Fallback: dispatch ke WINDOW (bukan canvas) agar sampai ke Nostalgist.
-    // Nostalgist listen keyboard events di window/document level.
+    // Fallback keyboard event
     const key  = this._btnToKey(btn);
     const type = isPress ? 'keydown' : 'keyup';
     if (key) {
@@ -232,7 +214,6 @@ class NESEmulator {
   }
 
   _btnToNostalgistBtn(btn) {
-    // Nama button libretro yang didukung Nostalgist
     const map = {
       up: 'up', down: 'down', left: 'left', right: 'right',
       a: 'a', b: 'b', start: 'start', select: 'select'
@@ -264,8 +245,7 @@ class NESEmulator {
     return m[key] || 0;
   }
 
-  /* ── Keyboard Fisik ───────────────────────────────────────────────────── */
-
+  /* ── Keyboard Fisik ────────────────────────────────── */
   _bindKeyboard() {
     const handler = e => {
       if (!this.loaded) return;
@@ -273,7 +253,6 @@ class NESEmulator {
       if (!btn) return;
       e.preventDefault();
       this._highlightButton(btn, e.type === 'keydown');
-      // Kirim ke emulator via Nostalgist API (sama dengan virtual button)
       this._sendButton(btn, e.type === 'keydown');
     };
     window.addEventListener('keydown', handler);
@@ -293,13 +272,13 @@ class NESEmulator {
     if (el) el.classList.toggle('active', active);
   }
 
-  /* ── Orientasi ────────────────────────────────────────────────────────── */
-
+  /* ── Orientasi ─────────────────────────────────────── */
   _bindOrientationChange() {
-    window.addEventListener('resize', () => this._applyOrientation());
-    new MutationObserver(() => {
-      if (this.loaded) this._applyOrientation();
-    }).observe(this.emuWrapper, { childList: true });
+    this._orientationHandler = () => this._applyOrientation();
+    window.addEventListener('resize', this._orientationHandler);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this._applyOrientation(), 100);
+    });
   }
 
   _applyOrientation() {
@@ -310,20 +289,18 @@ class NESEmulator {
     container.classList.toggle('emu-landscape', !isPortrait);
   }
 
-  /* ── Kontrol ──────────────────────────────────────────────────────────── */
-
+  /* ── Kontrol ───────────────────────────────────────── */
   stop() {
     if (this.nostalgist) {
       try { this.nostalgist.exit(); } catch (_) {}
       this.nostalgist = null;
     }
 
-    // ✅ FIX #4 lanjutan – Kembalikan virtualGamepad ke posisi HTML asal
-    //    sebelum emuWrapper di-clear, agar tidak ikut terhapus.
+    // Kembalikan gamepad ke posisi asli
     if (this._gamepadInContainer) {
       this._gamepadOriginalParent.insertBefore(
         this.virtualGamepad,
-        this._gamepadOriginalSibling
+        this._gamepadOriginalNext
       );
       this._gamepadInContainer = false;
     }
@@ -331,6 +308,11 @@ class NESEmulator {
     this.emuWrapper.innerHTML = '';
     this.controlsDiv.style.display = 'none';
     this.virtualGamepad.style.display = 'none';
+    
+    // ✅ Tampilkan kembali dropzone & subtitle
+    this.dropZone.style.display = '';
+    if (this.subtitle) this.subtitle.style.display = '';
+    
     this.statusText.textContent = 'Emulator stopped.';
     this.loaded = false;
     this.canvas = null;
