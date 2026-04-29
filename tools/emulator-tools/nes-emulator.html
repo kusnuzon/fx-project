@@ -9,12 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
+    <!-- Global Theme + NES Emulator CSS -->
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
     <link rel="stylesheet" href="../../data/css/nes-emulator.css">
 
+    <!-- JSZip & Nostalgist.js & Emulator Core -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/nostalgist"></script>
-    <script src="../../data/js/virtual-gamepad.js"></script>
     <script src="../../data/js/nes-emulator.js"></script>
 </head>
 <body>
@@ -28,18 +29,34 @@
         </div>
 
         <div class="nes-controls" id="controls" style="display:none;">
-            <button id="btnStop">⏹️ STOP</button>
-            <button id="btnReset">🔄 RESET</button>
-            <button id="btnFullscreen">📺 FULLSCREEN</button>
+            <button onclick="window.nesEmulator.stop()">⏹️ STOP</button>
+            <button onclick="window.nesEmulator.reset()">🔄 RESET</button>
+            <button class="fullscreen-btn" onclick="window.nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
         </div>
 
-        <div class="nes-emulator-wrapper" id="emuWrapper">
-            <div class="emu-container" id="emuContainer"></div>
+        <div class="nes-emulator-wrapper" id="emuWrapper"></div>
+
+        <!-- Virtual Gamepad (akan ditampilkan oleh JS) -->
+        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
+            <div class="gamepad-container">
+                <div class="dpad">
+                    <div class="gamepad-btn" data-btn="up">▲</div>
+                    <div class="gamepad-btn" data-btn="left">◀</div>
+                    <div class="gamepad-btn" data-btn="right">▶</div>
+                    <div class="gamepad-btn" data-btn="down">▼</div>
+                </div>
+                <div class="action-buttons">
+                    <div class="gamepad-btn" data-btn="a">A</div>
+                    <div class="gamepad-btn" data-btn="b">B</div>
+                </div>
+                <div class="start-select">
+                    <div class="gamepad-btn" data-btn="start">START</div>
+                    <div class="gamepad-btn" data-btn="select">SELECT</div>
+                </div>
+            </div>
         </div>
 
-        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;"></div>
-
-        <div class="nes-status" id="statusText">Ready</div>
+        <div class="nes-status" id="statusText"></div>
     </div>
 
     <footer>🛠️ CARTRIDGE VAULT</footer>
