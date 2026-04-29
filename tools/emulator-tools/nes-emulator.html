@@ -21,46 +21,52 @@
         <h1>🎮 NES EMULATOR</h1>
         <p class="subtitle" style="text-align:center;">Drop .nes / .zip ROM</p>
 
+        <!-- Dropzone -->
         <div class="nes-dropzone" id="dropZone">
             ⬇️ Drop .nes / .zip file here<br>
             <span style="font-size:0.4rem;">or click to select</span>
         </div>
 
+        <!-- Control bar -->
         <div class="nes-controls" id="controls" style="display:none;">
-            <button onclick="window.nesEmulator.stop()">⏹️ STOP</button>
-            <button onclick="window.nesEmulator.reset()">🔄 RESET</button>
-            <button class="fullscreen-btn" onclick="window.nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
-            <button onclick="window.nesEmulator.toggleLayoutEditor()" title="Gamepad Layout">⚙️</button>
+            <button id="btnStop">⏹️ STOP</button>
+            <button id="btnReset">🔄 RESET</button>
+            <button id="btnFullscreen">📺 FULLSCREEN</button>
+            <button id="btnSettings" title="Gamepad Layout">⚙️</button>
         </div>
 
         <!-- Layout Editor Modal -->
         <div class="layout-editor-modal" id="layoutEditorModal">
-            <div class="layout-editor-overlay" onclick="window.nesEmulator.toggleLayoutEditor()"></div>
+            <div class="layout-editor-overlay"></div>
             <div class="layout-editor-content">
                 <div class="layout-editor-header">
                     <h3>🎮 GAMEPAD LAYOUT</h3>
-                    <button class="close-btn" onclick="window.nesEmulator.toggleLayoutEditor()">✕</button>
+                    <button class="close-btn" id="btnCloseEditor">✕</button>
                 </div>
+                <p style="font-size:0.5rem;color:#9da5b4;text-align:center;margin-bottom:0.5rem;">
+                    Drag buttons to set position
+                </p>
                 <div class="orientation-tabs">
-                    <button id="tabPortrait" class="active" onclick="window.nesEmulator.switchOrientation('portrait')">📱 PORTRAIT</button>
-                    <button id="tabLandscape" onclick="window.nesEmulator.switchOrientation('landscape')">🖥️ LANDSCAPE</button>
+                    <button class="active" data-ori="portrait">📱 PORTRAIT</button>
+                    <button data-ori="landscape">🖥️ LANDSCAPE</button>
                 </div>
                 <div class="editor-canvas-area" id="editorCanvasArea"></div>
                 <div class="editor-info">
-                    <span id="selectedName">Click a button to select</span>
+                    <span id="selectedName">Click a button</span>
                     <div class="coord-inputs">
-                        <label>X% <input type="number" id="posX" min="0" max="100" step="0.5" onchange="window.nesEmulator.updateSelectedPosition()"></label>
-                        <label>Y% <input type="number" id="posY" min="0" max="100" step="0.5" onchange="window.nesEmulator.updateSelectedPosition()"></label>
+                        <label>X% <input type="number" id="posX" min="0" max="100" step="0.5"></label>
+                        <label>Y% <input type="number" id="posY" min="0" max="100" step="0.5"></label>
                     </div>
                 </div>
                 <div class="editor-actions">
-                    <button onclick="window.nesEmulator.exportLayoutJSON()">📋 EXPORT</button>
-                    <button onclick="window.nesEmulator.importLayoutJSON()">📥 IMPORT</button>
-                    <button onclick="window.nesEmulator.resetLayout()">🔄 RESET</button>
+                    <button id="btnExport">📋 EXPORT</button>
+                    <button id="btnImport">📥 IMPORT</button>
+                    <button id="btnResetLayout">🔄 RESET</button>
                 </div>
             </div>
         </div>
 
+        <!-- Emulator Wrapper -->
         <div class="nes-emulator-wrapper" id="emuWrapper"></div>
 
         <!-- Virtual Gamepad -->
@@ -83,7 +89,7 @@
             </div>
         </div>
 
-        <div class="nes-status" id="statusText"></div>
+        <div class="nes-status" id="statusText">Ready</div>
     </div>
 
     <footer>🛠️ CARTRIDGE VAULT</footer>
