@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Pomodoro | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .pomodoro-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 500px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            border: 4px solid #6e6e8a;
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .timer-display {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2rem;
+            color: #f0e6d2;
+            background: #0a0a14;
+            padding: 1rem;
+            border: 2px solid #4b4b68;
+            margin: 1rem 0;
+        }
+        .prod-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            background: #3a3a52;
+            color: #cfba8c;
+            border: 2px solid #5a5a7a;
+            cursor: pointer;
+            margin: 0.3rem;
+        }
+        .quest-log {
+            text-align: left;
+            font-size: 0.6rem;
+            color: #9da5b4;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="pomodoro-wrapper">
+    <h2 style="font-family:'Press Start 2P',cursive;font-size:0.9rem;color:#cfba8c;">⏱️ PIXEL POMODORO</h2>
+    <div class="timer-display" id="timerDisplay">25:00</div>
+    <div>
+        <button class="prod-btn" id="startBtn">▶ START</button>
+        <button class="prod-btn" id="resetBtn">↺ RESET</button>
+    </div>
+    <div class="quest-log" id="questLog">
+        <p>Completed quests:</p>
+    </div>
+</div>
+<script>
+    let timer, timeLeft = 25 * 60, running = false;
+    const display = document.getElementById('timerDisplay');
+    const logDiv = document.getElementById('questLog');
+    function updateDisplay() {
+        const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+        display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    document.getElementById('startBtn').addEventListener('click', () => {
+        if (!running) {
+            running = true;
+            timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer); running = false;
+                    const entry = document.createElement('p');
+                    entry.textContent = `✓ Quest completed at ${new Date().toLocaleTimeString()}`;
+                    logDiv.appendChild(entry);
+                    new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=').play().catch(()=>{});
+                    timeLeft = 25 * 60;
+                    updateDisplay();
+                } else {
+                    timeLeft--;
+                    updateDisplay();
+                }
+            }, 1000);
+        }
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        clearInterval(timer); running = false; timeLeft = 25 * 60; updateDisplay();
+    });
+    updateDisplay();
+</script>
+</body>
+</html>
