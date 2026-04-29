@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Margin Call Survival – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .game-panel { text-align: center; }
+    .meter-container { width: 80%; height: 30px; background: #1e1e2e; border: 2px solid #5a5a7a; margin: 1rem auto; border-radius: 4px; overflow: hidden; }
+    .meter-fill { height: 100%; width: 100%; background: #6c9; transition: width 0.1s linear; }
+    .meter-fill.danger { background: #e07373; }
+    .stats { font-size: 0.7rem; margin: 1rem 0; color: #cfba8c; }
+    .big-btn { padding: 1rem 2rem; font-size: 1rem; margin: 1.5rem 0; cursor: pointer; font-family: 'Press Start 2P', cursive; background: #3a3a52; color: #d1d1db; border: 2px solid #5a5a7a; }
+    .big-btn:hover { background: #4b4b6e; border-color: #b9a88c; }
+    .big-btn:active { transform: scale(0.95); }
+    .game-over-overlay { font-size: 1.2rem; color: #e07373; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📉 MARGIN CALL</h1>
+    <p style="text-align:center;">Tutup posisi sebelum kena MC!</p>
+    <div class="game-panel">
+      <div class="stats">Balance: $<span id="balanceDisplay">1000</span> | Equity: $<span id="equityDisplay">1000</span></div>
+      <div>Margin Level</div>
+      <div class="meter-container">
+        <div class="meter-fill" id="marginBar"></div>
+      </div>
+      <div style="font-size:0.8rem; margin:0.5rem 0;" id="marginPercent">200%</div>
+      <button class="big-btn" id="closeBtn">TUTUP POSISI</button>
+      <div id="messageArea" style="font-size:0.6rem; min-height:1.5rem;"></div>
+      <div class="stats">Level: <span id="levelDisplay">1</span> | Saved: <span id="savedCount">0</span></div>
+      <div class="game-over-overlay" id="gameOverMsg" style="display:none;">MARGIN CALL! GAME OVER</div>
+      <button class="game-btn" id="restartBtn" style="margin-top:1rem;">MULAI ULANG</button>
+    </div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+  <script>
+    (function() {
+      let balance = 1000;
+      let equity = 1000;
+      let marginUsed = 200; // tetap
+      let marginLevel = 200; // equity / marginUsed * 100
+      let level = 1;
+      let savedCount = 0;
+      let gameOver = false;
+      let decayInterval = null;
+      let decaySpeed = 0.3; // penurunan margin level per 100ms
+
+      const balanceEl = document.getElementById('balanceDisplay');
+      const equityEl = document.getElementById('equityDisplay');
+      const marginBarEl = document.getElementById('marginBar');
+      const marginPercentEl = document.getElementById('marginPercent');
+      const levelEl = document.getElementById('levelDisplay');
+      const savedEl = document.getElementById('savedCount');
+      const messageEl = document.getElementById('messageArea');
+      const gameOverMsgEl = document.getElementById('gameOverMsg');
+      const closeBtn = document.getElementById('closeBtn');
+
+      function updateUI() {
+        balanceEl.textContent = balance.toFixed(2);
+        equityEl.textContent = equity.toFixed(2);
+        marginLevel = (equity / marginUsed) * 100;
+        marginPercentEl.textContent = marginLevel.toFixed(0) + '%';
+        marginBarEl.style.width = Math.max(0, marginLevel) + '%';
+        marginBarEl.classList.toggle('danger', marginLevel < 50);
+        if (marginLevel <= 0 && !gameOver) {
+          endGame();
+        }
+      }
+
+      function endGame() {
+        gameOver = true;
+        clearInterval(decayInterval);
+        gameOverMsgEl.style.display = 'block';
+        messageEl.textContent = 'Akun terkena Margin Call!';
+      }
+
+      function closePosition() {
+        if (gameOver) return;
+        if (marginLevel <= 0) return;
+        // Simulasi profit kecil
+        const profit = Math.floor(Math.random() * 20) + 5;
+        equity += profit;
+        balance = equity; // asumsi langsung settle
+        savedCount++;
+        messageEl.textContent = `✅ Posisi ditutup! Profit $${profit}.`;
+        updateUI();
+        // Naikkan level setiap 3 posisi tersimpan
+        if (savedCount % 3 === 0) {
+          level++;
+          decaySpeed += 0.15;
+          messageEl.textContent += ` Level UP! (Speed +)`;
+          levelEl.textContent = level;
+        }
+        savedEl.textContent = savedCount;
+      }
+
+      function startDecay() {
+        clearInterval(decayInterval);
+        decayInterval = setInterval(() => {
+          if (gameOver) return;
+          // Penurunan equity (simulasi floating loss)
+          equity -= decaySpeed * 2;
+          if (equity < 0) equity = 0;
+          updateUI();
+        }, 80);
+      }
+
+      function resetGame() {
+        clearInterval(decayInterval);
+        balance = 1000;
+        equity = 1000;
+        marginUsed = 200;
+        level = 1;
+        savedCount = 0;
+        decaySpeed = 0.3;
+        gameOver = false;
+        gameOverMsgEl.style.display = 'none';
+        messageEl.textContent = '';
+        updateUI();
+        startDecay();
+      }
+
+      closeBtn.addEventListener('click', closePosition);
+      document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+      // Mulai
+      updateUI();
+      startDecay();
+    })();
+  </script>
+</body>
+</html>
