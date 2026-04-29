@@ -1,3 +1,4 @@
+<!-- tools/emulator-tools/nes-emulator.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/nostalgist"></script>
+    <script src="../../data/js/virtual-gamepad.js"></script>
     <script src="../../data/js/nes-emulator.js"></script>
 </head>
 <body>
@@ -21,13 +23,11 @@
         <h1>🎮 NES EMULATOR</h1>
         <p class="subtitle" style="text-align:center;">Drop .nes / .zip ROM</p>
 
-        <!-- Dropzone -->
         <div class="nes-dropzone" id="dropZone">
             ⬇️ Drop .nes / .zip file here<br>
             <span style="font-size:0.4rem;">or click to select</span>
         </div>
 
-        <!-- Control bar -->
         <div class="nes-controls" id="controls" style="display:none;">
             <button id="btnStop">⏹️ STOP</button>
             <button id="btnReset">🔄 RESET</button>
@@ -43,8 +43,8 @@
                     <h3>🎮 GAMEPAD LAYOUT</h3>
                     <button class="close-btn" id="btnCloseEditor">✕</button>
                 </div>
-                <p style="font-size:0.5rem;color:#9da5b4;text-align:center;margin-bottom:0.5rem;">
-                    Drag buttons to set position
+                <p style="font-size:0.45rem;color:#9da5b4;text-align:center;margin-bottom:0.5rem;">
+                    Drag group boxes to set position
                 </p>
                 <div class="orientation-tabs">
                     <button class="active" data-ori="portrait">📱 PORTRAIT</button>
@@ -52,7 +52,7 @@
                 </div>
                 <div class="editor-canvas-area" id="editorCanvasArea"></div>
                 <div class="editor-info">
-                    <span id="selectedName">Click a button</span>
+                    <span id="selectedName">Click a group</span>
                     <div class="coord-inputs">
                         <label>X% <input type="number" id="posX" min="0" max="100" step="0.5"></label>
                         <label>Y% <input type="number" id="posY" min="0" max="100" step="0.5"></label>
@@ -66,28 +66,10 @@
             </div>
         </div>
 
-        <!-- Emulator Wrapper -->
         <div class="nes-emulator-wrapper" id="emuWrapper"></div>
 
-        <!-- Virtual Gamepad -->
-        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
-            <div class="gamepad-container">
-                <div class="dpad">
-                    <div class="gamepad-btn" data-btn="up">▲</div>
-                    <div class="gamepad-btn" data-btn="left">◀</div>
-                    <div class="gamepad-btn" data-btn="right">▶</div>
-                    <div class="gamepad-btn" data-btn="down">▼</div>
-                </div>
-                <div class="action-buttons">
-                    <div class="gamepad-btn" data-btn="a">A</div>
-                    <div class="gamepad-btn" data-btn="b">B</div>
-                </div>
-                <div class="start-select">
-                    <div class="gamepad-btn" data-btn="start">START</div>
-                    <div class="gamepad-btn" data-btn="select">SELECT</div>
-                </div>
-            </div>
-        </div>
+        <!-- Virtual Gamepad Container -->
+        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;"></div>
 
         <div class="nes-status" id="statusText">Ready</div>
     </div>
