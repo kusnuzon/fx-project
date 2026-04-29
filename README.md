@@ -1,3 +1,52 @@
+<h1 align="center">
+  <img src="https://raw.githubusercontent.com/kusnuzon/fx-project/main/assets/cartridge-icon.png" width="64" alt="Cartridge Icon">
+  <br>
+  CARTRIDGE VAULT
+</h1>
+
+<p align="center">
+  <em>A modular retro toolbox — automatically organized, always up to date.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-alive-brightgreen?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/badge/theme-retro%20pixel-8A2BE2?style=flat-square" alt="Theme">
+  <img src="https://img.shields.io/badge/tools-automatic%20scan-blue?style=flat-square" alt="Tools">
+  <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License">
+</p>
+
+---
+
+## 🕹️ Welcome to CARTRIDGE VAULT!
+
+**CARTRIDGE VAULT** is a retro‑themed dashboard that automatically discovers and lists all your modular HTML tools — no manual editing required. Just drop a new tool into a category folder, push to GitHub, and it appears instantly.
+
+The entire page is styled with a dark pixel‑art aesthetic inspired by classic game consoles: SNES, Game Boy, and GBA. Every tool inherits the same global theme, so everything looks cohesive right away.
+
+---
+
+## ✨ What Makes It Special
+
+- **📂 Automatic Scanning**  
+  Subfolders inside `tools/` are detected via the GitHub API. No need to update any index file manually.
+
+- **🎮 Retro Pixel Design**  
+  Dark backgrounds, soft glowing text, subtle pixel grids, drifting stars, and a cartridge‑style layout that feels like a classic console menu.
+
+- **🌐 Global Theme System**  
+  One CSS file (`data/css/retro-theme.css`) controls the look of the dashboard and every single tool. You can change the entire appearance by editing just one file.
+
+- **📱 Responsive & Touch‑Friendly**  
+  Tools adapt to different screen sizes. The NES emulator even switches between portrait (Game Boy style) and landscape (GBA style) automatically.
+
+- **🔌 Modular & Reusable**  
+  Virtual gamepad logic is separated into `data/js/virtual-gamepad.js` and can be used by any future emulator you add.
+
+---
+
+## 🗂️ Project Structure
+
+
 🕹️ CARTRIDGE VAULT
 
 A modular retro toolbox — automatically organized, always up to date.
