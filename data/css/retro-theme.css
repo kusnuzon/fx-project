@@ -435,7 +435,6 @@ footer {
    NES EMULATOR – RESPONSIVE & FULLSCREEN
    ============================================= */
 
-/* Dropzone */
 .nes-dropzone {
     border: 2px dashed #5a5a7a;
     padding: 1.5rem;
@@ -452,7 +451,6 @@ footer {
     color: #cfba8c;
 }
 
-/* Canvas emulator */
 .nes-emulator-canvas {
     display: block;
     image-rendering: pixelated;
@@ -464,7 +462,6 @@ footer {
     background: #000;
 }
 
-/* Kontrol (tombol stop/reset/fullscreen) */
 .nes-controls {
     display: flex;
     flex-wrap: wrap;
@@ -493,13 +490,12 @@ footer {
     border-color: #b9a88c !important;
 }
 
-/* Wrapper utama (untuk deteksi orientasi) */
 .nes-emulator-wrapper {
     width: 100%;
     margin: 0 auto;
 }
 
-/* === KONTAINER ORIENTASI (dibuat oleh JS) === */
+/* === KONTAINER ORIENTASI === */
 .emu-container {
     display: flex;
     gap: 1rem;
@@ -508,7 +504,7 @@ footer {
     width: 100%;
 }
 
-/* === PORTRAIT MODE (GB style) === */
+/* PORTRAIT – Game Boy style: layar di atas, gamepad di bawah */
 .emu-portrait {
     flex-direction: column;
 }
@@ -520,7 +516,7 @@ footer {
     margin-top: 0.5rem;
 }
 
-/* === LANDSCAPE MODE (GBA/PSP style) === */
+/* LANDSCAPE – GBA/PSP style: layar tengah, gamepad di kanan */
 .emu-landscape {
     flex-direction: row;
     flex-wrap: nowrap;
@@ -532,7 +528,7 @@ footer {
     flex-shrink: 0;
 }
 
-/* Virtual gamepad (selalu terlihat setelah ROM dimuat) */
+/* Virtual gamepad */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -541,7 +537,6 @@ footer {
     touch-action: none;
 }
 
-/* GamepadZilla / vanilla gamepad styling */
 .gamepad-container {
     display: flex;
     flex-wrap: wrap;
@@ -550,7 +545,7 @@ footer {
     justify-content: center;
 }
 
-/* D‑Pad */
+/* D‑Pad layout */
 .dpad {
     display: grid;
     grid-template-columns: 50px 50px 50px;
@@ -564,16 +559,8 @@ footer {
 .dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
 .dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
 
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-.start-select {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    width: 100%;
-}
+.action-buttons { display: flex; gap: 0.5rem; }
+.start-select { display: flex; gap: 0.5rem; justify-content: center; width: 100%; }
 
 .gamepad-btn {
     width: 50px;
@@ -597,11 +584,7 @@ footer {
     border-color: #cfba8c;
     color: #f0e6d2;
 }
-.action-buttons .gamepad-btn {
-    width: 55px;
-    height: 55px;
-    font-size: 0.7rem;
-}
+.action-buttons .gamepad-btn { width: 55px; height: 55px; font-size: 0.7rem; }
 
 .nes-status {
     text-align: center;
