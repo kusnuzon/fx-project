@@ -14,13 +14,13 @@
     <link rel="stylesheet" href="data/css/retro-theme.css">
 
     <style>
-        /* ===== DASHBOARD EXCLUSIVE STYLES ===== */
+        /* ===== DASHBOARD SPECIFIC – CLEAN RETRO PIXEL ===== */
         .dashboard-container {
             position: relative;
             z-index: 2;
             max-width: 860px;
             margin: 2rem auto;
-            background: rgba(20, 20, 32, 0.9);
+            background: rgba(18, 18, 30, 0.9);
             backdrop-filter: blur(4px);
             border: 4px solid #6e6e8a;
             outline: 4px solid #3d3d56;
@@ -31,7 +31,10 @@
                 0 10px 30px rgba(0,0,0,0.5),
                 inset 0 0 30px rgba(0,0,0,0.4);
             padding: 2rem 2rem 1.5rem;
+            border-radius: 4px;
         }
+
+        /* Scanline halus – lebih transparan */
         .dashboard-container::after {
             content: "";
             position: absolute;
@@ -41,8 +44,8 @@
             height: 100%;
             background: repeating-linear-gradient(
                 0deg,
-                rgba(0,0,0,0.05) 0px,
-                rgba(0,0,0,0.05) 2px,
+                rgba(0,0,0,0.03) 0px,
+                rgba(0,0,0,0.03) 2px,
                 transparent 2px,
                 transparent 4px
             );
@@ -54,15 +57,34 @@
             z-index: 20;
         }
 
+        /* Header dengan animasi SVG cartridge */
+        .header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .header svg {
+            width: 100px;
+            height: 100px;
+            filter: drop-shadow(0 0 8px rgba(207,186,140,0.5));
+            animation: floatCartridge 3s ease-in-out infinite;
+        }
+
+        @keyframes floatCartridge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
         h1 {
             font-family: 'Press Start 2P', cursive;
             font-size: 2rem;
             color: #cfba8c;
             text-shadow: 2px 2px 0 #4a3e2c, 4px 4px 0 rgba(0,0,0,0.4);
-            text-align: center;
+            margin: 0.8rem 0 0.2rem;
             animation: softGlow 3s ease-in-out infinite;
-            margin-bottom: 0.3rem;
+            text-align: center;
         }
+
         @keyframes softGlow {
             0%, 100% { text-shadow: 2px 2px 0 #4a3e2c, 4px 4px 0 rgba(0,0,0,0.4), 0 0 6px rgba(207,186,140,0.2); }
             50%      { text-shadow: 2px 2px 0 #4a3e2c, 4px 4px 0 rgba(0,0,0,0.4), 0 0 14px rgba(207,186,140,0.35); }
@@ -72,32 +94,37 @@
             font-family: 'Press Start 2P', cursive;
             font-size: 0.5rem;
             color: #8e8ea0;
+            letter-spacing: 1px;
             text-align: center;
             margin-bottom: 2rem;
         }
-        .subtitle code {
-            background: #2b2b3c;
-            padding: 0.2rem 0.5rem;
-            color: #ccb38a;
+
+        /* Categories – tanpa garis panjang mengganggu */
+        .category {
+            margin-bottom: 2rem;
         }
 
-        .category { margin-bottom: 2rem; }
         .category-title {
             font-family: 'Press Start 2P', cursive;
             font-size: 0.7rem;
             color: #9da5b4;
             text-transform: uppercase;
-            border-bottom: 3px double #5a5a7a;
-            padding-bottom: 0.4rem;
+            border-bottom: 2px solid #4d4d6e;
+            padding-bottom: 0.3rem;
             margin-bottom: 1rem;
+            letter-spacing: 1px;
+            display: inline-block; /* garis hanya sepanjang teks */
         }
 
+        /* Grid cartridge */
         .tool-list {
             list-style: none;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 0.8rem;
+            margin-top: 0.5rem;
         }
+
         .tool-list li a {
             display: block;
             background: #2a2a3c;
@@ -110,7 +137,9 @@
             border: 2px solid #4e4e68;
             box-shadow: 2px 2px 0 #0e0e1a, inset 0 0 0 2px #202030;
             transition: all 0.1s ease;
+            position: relative;
         }
+
         .tool-list li a:hover {
             background: #4b4a6e;
             border-color: #b9a88c;
@@ -118,10 +147,11 @@
             transform: translate(-1px, -1px);
             box-shadow: 4px 4px 0 #0a0a14, inset 0 0 0 2px #3b3b52;
         }
+
         .tool-list li a[target="_blank"]::after {
             content: " ↗";
             font-size: 0.7em;
-            opacity: 0.5;
+            opacity: 0.6;
         }
 
         .empty-folder {
@@ -131,6 +161,7 @@
             padding-left: 0.5rem;
         }
 
+        /* Loading */
         .loading {
             text-align: center;
             color: #9a9ab0;
@@ -139,6 +170,7 @@
             padding: 2rem;
             animation: blink 1.5s infinite;
         }
+
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.35; }
@@ -153,11 +185,12 @@
             margin: 1rem 0;
         }
 
+        /* Footer */
         .dashboard-footer {
             margin-top: 2rem;
             text-align: center;
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.4rem;
+            font-size: 0.45rem;
             color: #5e5e78;
             position: relative;
         }
@@ -166,11 +199,13 @@
             display: block;
             animation: flickerFooter 2.5s infinite;
         }
+
         @keyframes flickerFooter {
             0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
             20%, 24%, 55% { opacity: 0.2; }
         }
 
+        /* Responsif */
         @media (max-width: 600px) {
             .dashboard-container {
                 padding: 1.2rem;
@@ -178,14 +213,31 @@
                 outline-width: 3px;
                 outline-offset: 3px;
             }
-            h1 { font-size: 1.3rem; }
-            .tool-list { grid-template-columns: 1fr; }
+            h1 {
+                font-size: 1.3rem;
+            }
+            .tool-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <h1>🕹️ CARTRIDGE VAULT</h1>
+        <div class="header">
+            <!-- SVG Cartridge Retro Animasi -->
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="15" width="60" height="70" rx="4" fill="#2a2a3c" stroke="#cfba8c" stroke-width="3"/>
+                <rect x="30" y="25" width="40" height="10" rx="2" fill="#4b4b6e"/>
+                <rect x="35" y="40" width="30" height="8" rx="1" fill="#6e6e8a"/>
+                <rect x="35" y="52" width="30" height="8" rx="1" fill="#6e6e8a"/>
+                <rect x="35" y="64" width="30" height="8" rx="1" fill="#6e6e8a"/>
+                <circle cx="50" cy="85" r="5" fill="#cfba8c"/>
+                <path d="M 20 25 L 10 25 L 10 75 L 20 75" fill="none" stroke="#cfba8c" stroke-width="2"/>
+                <path d="M 80 25 L 90 25 L 90 75 L 80 75" fill="none" stroke="#cfba8c" stroke-width="2"/>
+            </svg>
+        </div>
+        <h1>CARTRIDGE VAULT</h1>
         <p class="subtitle">Insert cartridge inside <code>tools/</code></p>
 
         <div id="tools-container">
