@@ -1,6 +1,4 @@
 // data/js/virtual-gamepad.js
-// MODULAR VIRTUAL GAMEPAD
-
 class VirtualGamepad {
   constructor({ container, groups = {}, onButton = null }) {
     if (!container) throw new Error('VirtualGamepad: container diperlukan');
