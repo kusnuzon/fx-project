@@ -28,7 +28,7 @@
         <div class="nes-controls" id="controls" style="display:none;">
             <button onclick="nesEmulator.stop()">⏹️ STOP</button>
             <button onclick="nesEmulator.reset()">🔄 RESET</button>
-            <button onclick="nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
+            <button class="fullscreen-btn" onclick="nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
         </div>
 
         <div id="emulatorWrapper" class="nes-emulator-wrapper"></div>
@@ -59,7 +59,7 @@
     <footer>🛠️ CARTRIDGE VAULT</footer>
 
     <script>
-        // ── NES Emulator Core ──
+        // Mapping keyboard ke button virtual
         const KEY_MAP = {
             'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
             'z': 'a', 'x': 'b',
@@ -97,9 +97,16 @@
                 const wrapper = document.getElementById('emulatorWrapper');
                 wrapper.innerHTML = '';
 
+                // Buat container orientasi
                 const container = document.createElement('div');
                 container.id = 'emuContainer';
+                container.className = 'emu-container';
                 container.appendChild(canvas);
+
+                // Pindahkan virtual gamepad ke dalam container
+                const gamepad = document.getElementById('virtualGamepad');
+                container.appendChild(gamepad);
+
                 wrapper.appendChild(container);
 
                 this.applyLayout();
@@ -110,7 +117,8 @@
                 const container = document.getElementById('emuContainer');
                 if (!container) return;
                 const isPortrait = window.innerHeight > window.innerWidth;
-                container.className = isPortrait ? 'emu-portrait' : 'emu-landscape';
+                container.classList.toggle('emu-portrait', isPortrait);
+                container.classList.toggle('emu-landscape', !isPortrait);
             },
 
             sendKey(key, type) {
@@ -154,7 +162,7 @@
             }
         };
 
-        // ── Virtual Gamepad Setup (Vanilla JS) ──
+        // ── Virtual Gamepad Setup ──
         function setupVirtualGamepad() {
             const buttons = document.querySelectorAll('.gamepad-btn');
             buttons.forEach(btn => {
