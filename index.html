@@ -5,20 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CARTRIDGE VAULT</title>
 
+    <!-- Google Pixel Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
+    <!-- Global Retro Theme -->
     <link rel="stylesheet" href="data/css/retro-theme.css">
 
     <style>
-        /* ===== RPG GACHA FRAME – UKIRAN BESAR ===== */
+        /* ===== DASHBOARD SPECIFIC – CLEAN RETRO PIXEL ===== */
         .dashboard-container {
             position: relative;
             z-index: 2;
             max-width: 860px;
             margin: 2rem auto;
-            background: rgba(18, 18, 30, 0.92);
+            background: rgba(18, 18, 30, 0.9);
             backdrop-filter: blur(4px);
             border: 4px solid #6e6e8a;
             outline: 4px solid #3d3d56;
@@ -27,73 +29,53 @@
                 0 0 0 4px #1e1e2f,
                 0 0 0 8px #0a0a14,
                 0 10px 30px rgba(0,0,0,0.5),
-                inset 0 0 40px rgba(0,0,0,0.4);
-            padding: 2.5rem 2rem 1.5rem;
+                inset 0 0 30px rgba(0,0,0,0.4);
+            padding: 2rem 2rem 1.5rem;
             border-radius: 4px;
-            overflow: visible;   /* agar hiasan pojok tidak terpotong */
         }
 
-        /* Scanline halus */
+        /* Scanline halus – lebih transparan */
         .dashboard-container::after {
             content: "";
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: repeating-linear-gradient(
                 0deg,
-                rgba(0,0,0,0.025) 0px,
-                rgba(0,0,0,0.025) 2px,
+                rgba(0,0,0,0.03) 0px,
+                rgba(0,0,0,0.03) 2px,
                 transparent 2px,
                 transparent 4px
             );
             pointer-events: none;
             z-index: 10;
         }
-
-        /* ── CORNER DECORATIONS (UKIRAN) ── */
-        .corner-decoration {
-            position: absolute;
-            z-index: 0;
-            pointer-events: none;
-            width: 300px;
-            height: 300px;
-        }
-
-        .corner-tl { top: -70px; left: -70px; }
-        .corner-tr { top: -70px; right: -70px; transform: scale(-1, 1); }
-        .corner-bl { bottom: -70px; left: -70px; transform: scale(1, -1); }
-        .corner-br { bottom: -70px; right: -70px; transform: scale(-1, -1); }
-
-        .corner-decoration svg {
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0 0 6px rgba(207,186,140,0.4));
-        }
-
-        /* ── HEADER ── */
-        .header {
+        .dashboard-container > * {
             position: relative;
-            z-index: 5;
+            z-index: 20;
+        }
+
+        /* Header dengan animasi SVG cartridge */
+        .header {
             text-align: center;
             margin-bottom: 1.5rem;
         }
 
         .header svg {
-            width: 90px;
-            height: 90px;
-            filter: drop-shadow(0 0 10px rgba(207,186,140,0.5));
-            animation: floatEmblem 4s ease-in-out infinite;
+            width: 100px;
+            height: 100px;
+            filter: drop-shadow(0 0 8px rgba(207,186,140,0.5));
+            animation: floatCartridge 3s ease-in-out infinite;
         }
 
-        @keyframes floatEmblem {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-4px) rotate(1deg); }
-            75% { transform: translateY(-2px) rotate(-1deg); }
+        @keyframes floatCartridge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
         }
 
         h1 {
-            position: relative;
-            z-index: 5;
             font-family: 'Press Start 2P', cursive;
             font-size: 2rem;
             color: #cfba8c;
@@ -109,8 +91,6 @@
         }
 
         .subtitle {
-            position: relative;
-            z-index: 5;
             font-family: 'Press Start 2P', cursive;
             font-size: 0.5rem;
             color: #8e8ea0;
@@ -119,10 +99,8 @@
             margin-bottom: 2rem;
         }
 
-        /* ── CATEGORIES ── */
+        /* Categories – tanpa garis panjang mengganggu */
         .category {
-            position: relative;
-            z-index: 5;
             margin-bottom: 2rem;
         }
 
@@ -135,10 +113,10 @@
             padding-bottom: 0.3rem;
             margin-bottom: 1rem;
             letter-spacing: 1px;
-            display: inline-block;
+            display: inline-block; /* garis hanya sepanjang teks */
         }
 
-        /* ── CARTRIDGE GRID ── */
+        /* Grid cartridge */
         .tool-list {
             list-style: none;
             display: grid;
@@ -176,8 +154,14 @@
             opacity: 0.6;
         }
 
-        .empty-folder { color: #6b6b80; font-style: italic; font-size: 0.8rem; padding-left: 0.5rem; }
+        .empty-folder {
+            color: #6b6b80;
+            font-style: italic;
+            font-size: 0.8rem;
+            padding-left: 0.5rem;
+        }
 
+        /* Loading */
         .loading {
             text-align: center;
             color: #9a9ab0;
@@ -187,7 +171,10 @@
             animation: blink 1.5s infinite;
         }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
 
         .error {
             background: #2a1a1a;
@@ -198,6 +185,7 @@
             margin: 1rem 0;
         }
 
+        /* Footer */
         .dashboard-footer {
             margin-top: 2rem;
             text-align: center;
@@ -205,7 +193,6 @@
             font-size: 0.45rem;
             color: #5e5e78;
             position: relative;
-            z-index: 5;
         }
         .dashboard-footer::after {
             content: "▶ PRESS START ▼";
@@ -218,77 +205,34 @@
             20%, 24%, 55% { opacity: 0.2; }
         }
 
+        /* Responsif */
         @media (max-width: 600px) {
-            .dashboard-container { padding: 1.2rem; border-width: 3px; outline-width: 3px; outline-offset: 3px; }
-            h1 { font-size: 1.3rem; }
-            .tool-list { grid-template-columns: 1fr; }
-            .corner-decoration { width: 200px; height: 200px; }
-            .corner-tl { top: -50px; left: -50px; }
-            .corner-tr { top: -50px; right: -50px; }
-            .corner-bl { bottom: -50px; left: -50px; }
-            .corner-br { bottom: -50px; right: -50px; }
+            .dashboard-container {
+                padding: 1.2rem;
+                border-width: 3px;
+                outline-width: 3px;
+                outline-offset: 3px;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
+            .tool-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Corner Decorations (template akan di-clone) -->
-        <div class="corner-decoration corner-tl" id="cornerTemplate">
-            <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-                <!-- Rambatan utama ke kanan -->
-                <path d="M 60,60 Q 180,30 270,50" fill="none" stroke="#b9a88c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 4">
-                    <animate attributeName="stroke-dashoffset" from="12" to="0" dur="3s" repeatCount="indefinite"/>
-                </path>
-                <!-- Rambatan utama ke bawah -->
-                <path d="M 60,60 Q 30,180 50,270" fill="none" stroke="#b9a88c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 4">
-                    <animate attributeName="stroke-dashoffset" from="12" to="0" dur="4s" repeatCount="indefinite"/>
-                </path>
-
-                <!-- Ornamen ujung kanan (scroll) -->
-                <circle cx="270" cy="50" r="14" fill="none" stroke="#cfba8c" stroke-width="2"/>
-                <circle cx="270" cy="50" r="7" fill="none" stroke="#cfba8c" stroke-width="1.5" stroke-dasharray="3 3"/>
-                <path d="M 260,50 Q 245,35 260,20 Q 275,5 290,20 Q 300,35 280,50" fill="none" stroke="#cfba8c" stroke-width="2"/>
-
-                <!-- Ornamen ujung bawah (scroll) -->
-                <circle cx="50" cy="270" r="14" fill="none" stroke="#cfba8c" stroke-width="2"/>
-                <circle cx="50" cy="270" r="7" fill="none" stroke="#cfba8c" stroke-width="1.5" stroke-dasharray="3 3"/>
-                <path d="M 50,260 Q 35,245 20,260 Q 5,275 20,290 Q 35,300 50,280" fill="none" stroke="#cfba8c" stroke-width="2"/>
-
-                <!-- Ornamen sepanjang jalur -->
-                <polygon points="130,40 136,33 142,40 136,47" fill="#cfba8c"/>
-                <polygon points="40,130 33,136 40,142 47,136" fill="#cfba8c"/>
-                <polygon points="190,45 196,38 202,45 196,52" fill="#cfba8c" opacity="0.6">
-                    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
-                </polygon>
-                <polygon points="45,190 38,196 45,202 52,196" fill="#cfba8c" opacity="0.6">
-                    <animate attributeName="opacity" values="0.6;1;0.6" dur="2.5s" repeatCount="indefinite"/>
-                </polygon>
-
-                <!-- Roset pusat di sudut -->
-                <circle cx="60" cy="60" r="20" fill="none" stroke="#cfba8c" stroke-width="2.5"/>
-                <circle cx="60" cy="60" r="13" fill="none" stroke="#b9a88c" stroke-width="1.5" stroke-dasharray="5 2"/>
-                <circle cx="60" cy="60" r="7" fill="#cfba8c" opacity="0.9">
-                    <animate attributeName="fill" values="#cfba8c;#8e8ea0;#cfba8c" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                <!-- Bintang ukiran di dalam roset -->
-                <path d="M 60,45 L 64,55 L 74,56 L 66,63 L 68,73 L 60,68 L 52,73 L 54,63 L 46,56 L 56,55 Z" fill="none" stroke="#cfba8c" stroke-width="1.8"/>
-            </svg>
-        </div>
-        <div class="corner-decoration corner-tr"></div>
-        <div class="corner-decoration corner-bl"></div>
-        <div class="corner-decoration corner-br"></div>
-
-        <!-- Header -->
         <div class="header">
+            <!-- SVG Cartridge Retro Animasi -->
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <rect x="20" y="15" width="60" height="70" rx="4" fill="#2a2a3c" stroke="#cfba8c" stroke-width="3"/>
                 <rect x="30" y="25" width="40" height="10" rx="2" fill="#4b4b6e"/>
                 <rect x="35" y="40" width="30" height="8" rx="1" fill="#6e6e8a"/>
                 <rect x="35" y="52" width="30" height="8" rx="1" fill="#6e6e8a"/>
                 <rect x="35" y="64" width="30" height="8" rx="1" fill="#6e6e8a"/>
-                <circle cx="50" cy="85" r="5" fill="#cfba8c">
-                    <animate attributeName="fill" values="#cfba8c;#8e8ea0;#cfba8c" dur="2s" repeatCount="indefinite"/>
-                </circle>
+                <circle cx="50" cy="85" r="5" fill="#cfba8c"/>
                 <path d="M 20 25 L 10 25 L 10 75 L 20 75" fill="none" stroke="#cfba8c" stroke-width="2"/>
                 <path d="M 80 25 L 90 25 L 90 75 L 80 75" fill="none" stroke="#cfba8c" stroke-width="2"/>
             </svg>
@@ -304,17 +248,6 @@
     </div>
 
     <script>
-        // Clone corner decoration to all four corners
-        (function cloneCorners() {
-            const template = document.getElementById('cornerTemplate');
-            if (!template) return;
-            const svgHTML = template.innerHTML;
-            document.querySelector('.corner-tr').innerHTML = svgHTML;
-            document.querySelector('.corner-bl').innerHTML = svgHTML;
-            document.querySelector('.corner-br').innerHTML = svgHTML;
-        })();
-
-        // Automatic tools scanner
         (async function() {
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
