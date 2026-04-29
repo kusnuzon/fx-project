@@ -1,12 +1,73 @@
-/* data/css/nes-emulator.css */
-.nes-dropzone { border: 2px dashed #5a5a7a; padding: 1.5rem; text-align: center; margin: 1rem 0; color: #8e8ea0; font-family: 'Press Start 2P', cursive; font-size: 0.55rem; transition: border-color 0.2s; background: rgba(0,0,0,0.3); cursor: pointer; }
+/* =============================================
+   NES EMULATOR – EmulatorJS Edition
+   ============================================= */
+
+.nes-dropzone {
+    border: 2px dashed #5a5a7a;
+    padding: 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+    color: #8e8ea0;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    transition: border-color 0.2s;
+    background: rgba(0,0,0,0.3);
+    cursor: pointer;
+}
 .nes-dropzone.drag-over { border-color: #cfba8c; color: #cfba8c; }
-.nes-emulator-canvas { display: block !important; position: relative !important; top: auto !important; left: auto !important; image-rendering: pixelated; width: 100% !important; height: auto !important; aspect-ratio: 256/240; border: 4px solid #6e6e8a; box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14; background: #000; }
-.nes-controls { display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: center; margin: 1rem 0 0.5rem; }
-.nes-controls button { width: auto; padding: 0.5rem 1rem; font-family: 'Press Start 2P', cursive; font-size: 0.5rem; background: #3a3a52; color: #d1d1db; border: 2px solid #5a5a7a; border-radius: 4px; cursor: pointer; min-height: 44px; min-width: 44px; }
+
+.nes-controls {
+    display: flex; flex-wrap: wrap; gap: 0.8rem;
+    justify-content: center; margin: 1rem 0 0.5rem;
+}
+.nes-controls button {
+    width: auto; padding: 0.5rem 1rem;
+    font-family: 'Press Start 2P', cursive; font-size: 0.5rem;
+    background: #3a3a52; color: #d1d1db;
+    border: 2px solid #5a5a7a; border-radius: 4px;
+    cursor: pointer; min-height: 44px; min-width: 44px;
+}
+
 .nes-emulator-wrapper { width: 100%; margin: 0 auto; }
-.virtual-gamepad { display: flex; justify-content: center; align-items: center; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
-.gamepad-container { display: grid; grid-template-areas: "shoulder-l dpad actions shoulder-r" "shoulder-l startsel startsel shoulder-r"; grid-template-columns: auto auto auto auto; grid-template-rows: auto auto; gap: 0.6rem 1rem; justify-content: center; align-items: center; }
+
+/* Container untuk game + gamepad */
+.emu-container {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Div game dari EmulatorJS */
+#game {
+    width: 100%;
+    max-width: 100%;
+    background: #000;
+}
+
+/* Virtual gamepad */
+.virtual-gamepad {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.gamepad-container {
+    display: grid;
+    grid-template-areas:
+        "shoulder-l dpad actions shoulder-r"
+        "shoulder-l startsel startsel shoulder-r";
+    grid-template-columns: auto auto auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.6rem 1rem;
+    justify-content: center;
+    align-items: center;
+}
+
 .vgp-group { display: flex; gap: 0.4rem; align-items: center; justify-content: center; touch-action: none; user-select: none; }
 .vgp-dpad { grid-area: dpad; display: grid; grid-template-columns: 54px 54px 54px; grid-template-rows: 54px 54px 54px; gap: 2px; }
 .vgp-dpad .vgp-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
@@ -21,8 +82,19 @@
 .vgp-startselect { grid-area: startsel; display: flex; gap: 0.8rem; justify-content: center; }
 .vgp-shoulder { display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
 .vgp-shoulder:first-of-type { grid-area: shoulder-l; }
-.vgp-shoulder:last-of-type { grid-area: shoulder-r; }
-.vgp-btn { width: 54px; height: 54px; font-family: 'Press Start 2P', cursive; font-size: 0.45rem; background: #2a2a3c; border: 2px solid #5a5a7a; color: #cdcdd4; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; transition: background 0.05s, border-color 0.05s, transform 0.05s; }
+.vgp-shoulder:last-of-type  { grid-area: shoulder-r; }
+
+.vgp-btn {
+    width: 54px; height: 54px;
+    font-family: 'Press Start 2P', cursive; font-size: 0.45rem;
+    background: #2a2a3c; border: 2px solid #5a5a7a; color: #cdcdd4;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
 .vgp-btn:active, .vgp-btn.active { background: #4b4b6e; border-color: #cfba8c; color: #f0e6d2; transform: scale(0.93); }
 .vgp-btn-round { width: 55px; height: 55px; font-size: 0.7rem; border-radius: 50%; }
 .vgp-btn-round[data-btn="x"] { background: #2a3a1e; border-color: #5a8a3a; color: #b0e0a0; }
@@ -35,11 +107,19 @@
 .vgp-btn-round[data-btn="y"]:active, .vgp-btn-round[data-btn="y"].active { background: #5a3a2a; border-color: #e0a050; }
 .vgp-btn-pill { width: auto; min-width: 56px; height: 34px; padding: 0 0.5rem; font-size: 0.38rem; border-radius: 17px; }
 .vgp-shoulder-btn { min-width: 40px; height: 28px; font-size: 0.35rem; }
+
 .nes-status { text-align: center; font-size: 0.6rem; color: #7a7a95; margin-top: 0.5rem; }
-.emu-container { display: flex; width: 100%; align-items: center; justify-content: center; }
+
+/* Orientasi */
 .emu-container.portrait-layout { flex-direction: column; gap: 1rem; }
-.emu-container.portrait-layout .nes-emulator-canvas { max-width: 100%; max-height: 45vh; }
+.emu-container.portrait-layout #game { max-height: 45vh; }
 .emu-container.portrait-layout .virtual-gamepad { width: 100%; }
 .emu-container.landscape-layout { flex-direction: row; flex-wrap: nowrap; gap: 1rem; }
-.emu-container.landscape-layout .nes-emulator-canvas { max-width: 50%; max-height: 75vh; }
-@media (max-width: 480px) { .vgp-dpad { grid-template-columns: 44px 44px 44px; grid-template-rows: 44px 44px 44px; } .vgp-btn { width: 44px; height: 44px; font-size: 0.35rem; } .vgp-btn-round { width: 48px; height: 48px; font-size: 0.6rem; } .gamepad-container { gap: 0.4rem 0.6rem; } .emu-container.landscape-layout .nes-emulator-canvas { max-width: 45%; } }
+.emu-container.landscape-layout #game { max-width: 50%; max-height: 75vh; }
+.emu-container.landscape-layout .virtual-gamepad { flex: 1; min-height: 200px; }
+
+@media (max-width: 480px) {
+    .vgp-dpad { grid-template-columns: 44px 44px 44px; grid-template-rows: 44px 44px 44px; }
+    .vgp-btn { width: 44px; height: 44px; font-size: 0.35rem; }
+    .vgp-btn-round { width: 48px; height: 48px; font-size: 0.6rem; }
+}
