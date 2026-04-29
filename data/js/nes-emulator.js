@@ -1,5 +1,5 @@
 // data/js/nes-emulator.js
-// NES Emulator Core – Nostalgist.js + Virtual Gamepad + Orientation + Audio
+// NES Emulator Core + Layout Editor
 
 class NESEmulator {
   constructor() {
@@ -7,7 +7,7 @@ class NESEmulator {
     this.loaded = false;
     this.canvas = null;
     this._gamepadInContainer = false;
-    this._orientationHandler = null;
+    this._layoutStorageKey = 'nes_emulator_layout';
 
     this.dropZone       = document.getElementById('dropZone');
     this.subtitle       = document.querySelector('.subtitle');
@@ -25,6 +25,7 @@ class NESEmulator {
     this._setupAudioUnlock();
     this._bindOrientationChange();
     this._bindFullscreenChange();
+    this._initLayoutEditor();
   }
 
   /* ── Audio Unlock ─────────────────── */
@@ -133,36 +134,29 @@ class NESEmulator {
 
       this.canvas = this.nostalgist.getCanvas();
       this.canvas.classList.add('nes-emulator-canvas');
-
-      // Reset styling
       this.canvas.style.position = '';
       this.canvas.style.top = '';
       this.canvas.style.left = '';
       this.canvas.style.width = '';
       this.canvas.style.height = '';
 
-      // Sembunyikan dropzone & subtitle
       this.dropZone.style.display = 'none';
       if (this.subtitle) this.subtitle.style.display = 'none';
 
-      // Buat container orientasi
       this.emuWrapper.innerHTML = '';
       const container = document.createElement('div');
       container.className = 'emu-container';
       container.appendChild(this.canvas);
-
-      // Pindahkan gamepad ke dalam container
       container.appendChild(this.virtualGamepad);
       this._gamepadInContainer = true;
-
       this.emuWrapper.appendChild(container);
 
-      // Tampilkan kontrol & gamepad
       this.controlsDiv.style.display = 'flex';
       this.virtualGamepad.style.display = 'flex';
       this.loaded = true;
       this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
 
+      this._applyLayout();
       this._applyOrientation();
     } catch (e) {
       this.statusText.textContent = 'Error: ' + e.message;
@@ -170,7 +164,7 @@ class NESEmulator {
     }
   }
 
-  /* ── Virtual Gamepad ──────────────── */
+  /* ── Virtual Gamepad Input ────────── */
   _bindVirtualGamepad() {
     this.virtualGamepad.querySelectorAll('.gamepad-btn').forEach(btn => {
       const dataBtn = btn.dataset.btn;
@@ -208,64 +202,36 @@ class NESEmulator {
 
   _sendButton(btn, isPress) {
     if (!this.nostalgist) return;
-
-    // ✅ Metode 1: Kirim keyboard event ke canvas
     const key = this._btnToKey(btn);
     if (key && this.canvas) {
-      const eventType = isPress ? 'keydown' : 'keyup';
-      const event = new KeyboardEvent(eventType, {
-        key: key,
-        code: this._keyToCode(key),
-        keyCode: this._keyToKeyCode(key),
-        which: this._keyToKeyCode(key),
-        bubbles: true,
-        cancelable: true
+      const event = new KeyboardEvent(isPress ? 'keydown' : 'keyup', {
+        key, code: this._keyToCode(key), keyCode: this._keyToKeyCode(key),
+        which: this._keyToKeyCode(key), bubbles: true, cancelable: true
       });
       this.canvas.dispatchEvent(event);
     }
-
-    // ✅ Metode 2: Nostalgist API
     try {
       const nesBtn = this._btnToNostalgistBtn(btn);
       if (nesBtn) {
-        if (isPress) {
-          this.nostalgist.pressButton(nesBtn, 0);
-        } else {
-          this.nostalgist.releaseButton(nesBtn, 0);
-        }
+        isPress ? this.nostalgist.pressButton(nesBtn, 0) : this.nostalgist.releaseButton(nesBtn, 0);
       }
     } catch (_) {}
   }
 
   _btnToNostalgistBtn(btn) {
-    const map = {
-      up: 'up', down: 'down', left: 'left', right: 'right',
-      a: 'a', b: 'b', start: 'start', select: 'select'
-    };
+    const map = { up:'up', down:'down', left:'left', right:'right', a:'a', b:'b', start:'start', select:'select' };
     return map[btn] || null;
   }
-
   _btnToKey(btn) {
-    const map = {
-      up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-      a: 'x', b: 'z', start: 'Enter', select: 'Shift'
-    };
+    const map = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight', a:'x', b:'z', start:'Enter', select:'Shift' };
     return map[btn] || '';
   }
-
   _keyToCode(key) {
-    const m = {
-      'ArrowUp': 'ArrowUp', 'ArrowDown': 'ArrowDown', 'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight',
-      'x': 'KeyX', 'z': 'KeyZ', 'Enter': 'Enter', 'Shift': 'ShiftLeft'
-    };
+    const m = { ArrowUp:'ArrowUp', ArrowDown:'ArrowDown', ArrowLeft:'ArrowLeft', ArrowRight:'ArrowRight', x:'KeyX', z:'KeyZ', Enter:'Enter', Shift:'ShiftLeft' };
     return m[key] || key;
   }
-
   _keyToKeyCode(key) {
-    const m = {
-      'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
-      'x': 88, 'z': 90, 'Enter': 13, 'Shift': 16
-    };
+    const m = { ArrowUp:38, ArrowDown:40, ArrowLeft:37, ArrowRight:39, x:88, z:90, Enter:13, Shift:16 };
     return m[key] || 0;
   }
 
@@ -281,15 +247,10 @@ class NESEmulator {
     window.addEventListener('keydown', handler);
     window.addEventListener('keyup', handler);
   }
-
   _keyToBtn(key) {
-    const map = {
-      'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
-      'x': 'a', 'z': 'b', 'Enter': 'start', 'Shift': 'select'
-    };
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', x:'a', z:'b', Enter:'start', Shift:'select' };
     return map[key] || null;
   }
-
   _highlightButton(btn, active) {
     const el = this.virtualGamepad.querySelector(`[data-btn="${btn}"]`);
     if (el) el.classList.toggle('active', active);
@@ -299,35 +260,218 @@ class NESEmulator {
   _bindOrientationChange() {
     this._orientationHandler = () => this._applyOrientation();
     window.addEventListener('resize', this._orientationHandler);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(() => this._applyOrientation(), 150);
-    });
+    window.addEventListener('orientationchange', () => setTimeout(() => this._applyOrientation(), 150));
   }
-
   _applyOrientation() {
     const container = this.emuWrapper.querySelector('.emu-container');
     if (!container) return;
     const isPortrait = window.innerHeight > window.innerWidth;
     container.classList.toggle('emu-portrait', isPortrait);
     container.classList.toggle('emu-landscape', !isPortrait);
+    this._applyLayout();
+  }
+
+  /* ── Layout dari localStorage ──────── */
+  _applyLayout() {
+    const stored = localStorage.getItem(this._layoutStorageKey);
+    if (!stored) return;
+    try {
+      const layout = JSON.parse(stored);
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const currentLayout = isPortrait ? layout.portrait : layout.landscape;
+      if (!currentLayout) return;
+      Object.keys(currentLayout).forEach(btnName => {
+        const pos = currentLayout[btnName];
+        const el = this.virtualGamepad.querySelector(`[data-btn="${btnName}"]`);
+        if (el) {
+          el.style.position = 'absolute';
+          el.style.left = pos.x + '%';
+          el.style.top = pos.y + '%';
+          el.style.transform = 'translate(-50%, -50%)';
+        }
+      });
+      // Container gamepad harus relative
+      if (this.virtualGamepad.querySelector('.gamepad-container')) {
+        this.virtualGamepad.querySelector('.gamepad-container').style.position = 'relative';
+        this.virtualGamepad.querySelector('.gamepad-container').style.width = '100%';
+        this.virtualGamepad.querySelector('.gamepad-container').style.height = '100%';
+      }
+    } catch (e) {}
+  }
+
+  /* ── Layout Editor ─────────────────── */
+  _initLayoutEditor() {
+    this.editorSelected = null;
+    this.editorLayout = this._loadLayout();
+    this.editorOrientation = 'portrait';
+  }
+
+  _loadLayout() {
+    try {
+      const stored = localStorage.getItem(this._layoutStorageKey);
+      return stored ? JSON.parse(stored) : {
+        portrait: {
+          up:{x:25,y:65}, down:{x:25,y:85}, left:{x:15,y:75}, right:{x:35,y:75},
+          a:{x:75,y:70}, b:{x:65,y:80}, start:{x:40,y:93}, select:{x:60,y:93}
+        },
+        landscape: {
+          up:{x:8,y:30}, down:{x:8,y:50}, left:{x:3,y:40}, right:{x:13,y:40},
+          a:{x:88,y:35}, b:{x:88,y:55}, start:{x:30,y:85}, select:{x:55,y:85}
+        }
+      };
+    } catch (e) {
+      return {
+        portrait: {},
+        landscape: {}
+      };
+    }
+  }
+
+  _saveLayout() {
+    localStorage.setItem(this._layoutStorageKey, JSON.stringify(this.editorLayout));
+    this._applyLayout();
+  }
+
+  toggleLayoutEditor() {
+    const modal = document.getElementById('layoutEditorModal');
+    const isActive = modal.classList.contains('active');
+    if (isActive) {
+      modal.classList.remove('active');
+      this._saveLayout();
+    } else {
+      this.editorLayout = this._loadLayout();
+      this.editorOrientation = 'portrait';
+      modal.classList.add('active');
+      this._renderEditorCanvas();
+    }
+  }
+
+  switchOrientation(ori) {
+    this.editorOrientation = ori;
+    document.getElementById('tabPortrait').classList.toggle('active', ori === 'portrait');
+    document.getElementById('tabLandscape').classList.toggle('active', ori === 'landscape');
+    this._renderEditorCanvas();
+  }
+
+  _renderEditorCanvas() {
+    const canvas = document.getElementById('editorCanvasArea');
+    canvas.innerHTML = '';
+    const buttons = this.editorLayout[this.editorOrientation];
+    if (!buttons) return;
+
+    Object.keys(buttons).forEach(btnName => {
+      const pos = buttons[btnName];
+      const el = document.createElement('div');
+      el.className = 'draggable-btn';
+      el.dataset.btn = btnName;
+      el.style.left = pos.x + '%';
+      el.style.top = pos.y + '%';
+      el.textContent = btnName === 'a' ? 'A' : btnName === 'b' ? 'B' : 
+                       btnName === 'start' ? 'START' : btnName === 'select' ? 'SELECT' :
+                       btnName === 'up' ? '▲' : btnName === 'down' ? '▼' : 
+                       btnName === 'left' ? '◀' : btnName === 'right' ? '▶' : btnName;
+
+      el.addEventListener('pointerdown', (e) => this._startDrag(e, el, btnName));
+      el.addEventListener('click', () => this._selectEditorBtn(btnName));
+      canvas.appendChild(el);
+    });
+  }
+
+  _selectEditorBtn(btnName) {
+    this.editorSelected = btnName;
+    document.getElementById('selectedName').textContent = btnName.toUpperCase();
+    const pos = this.editorLayout[this.editorOrientation][btnName];
+    document.getElementById('posX').value = pos.x;
+    document.getElementById('posY').value = pos.y;
+    document.querySelectorAll('#editorCanvasArea .draggable-btn').forEach(el => el.classList.remove('active'));
+    const el = document.querySelector(`#editorCanvasArea [data-btn="${btnName}"]`);
+    if (el) el.classList.add('active');
+  }
+
+  updateSelectedPosition() {
+    if (!this.editorSelected) return;
+    const x = parseFloat(document.getElementById('posX').value) || 0;
+    const y = parseFloat(document.getElementById('posY').value) || 0;
+    this.editorLayout[this.editorOrientation][this.editorSelected] = { x, y };
+    const el = document.querySelector(`#editorCanvasArea [data-btn="${this.editorSelected}"]`);
+    if (el) { el.style.left = x + '%'; el.style.top = y + '%'; }
+    this._saveLayout();
+  }
+
+  _startDrag(e, el, btnName) {
+    e.preventDefault();
+    this._selectEditorBtn(btnName);
+    const canvas = document.getElementById('editorCanvasArea');
+    const rect = canvas.getBoundingClientRect();
+
+    const onMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      let x = ((clientX - rect.left) / rect.width) * 100;
+      let y = ((clientY - rect.top) / rect.height) * 100;
+      x = Math.max(2, Math.min(98, Math.round(x * 2) / 2));
+      y = Math.max(2, Math.min(98, Math.round(y * 2) / 2));
+      this.editorLayout[this.editorOrientation][btnName] = { x, y };
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+      document.getElementById('posX').value = x;
+      document.getElementById('posY').value = y;
+      this._saveLayout();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+
+  exportLayoutJSON() {
+    const json = JSON.stringify(this.editorLayout, null, 2);
+    navigator.clipboard.writeText(json).then(() => alert('Layout JSON copied!'));
+  }
+
+  importLayoutJSON() {
+    const input = prompt('Paste layout JSON:');
+    if (!input) return;
+    try {
+      this.editorLayout = JSON.parse(input);
+      this._saveLayout();
+      this._renderEditorCanvas();
+    } catch (e) { alert('Invalid JSON'); }
+  }
+
+  resetLayout() {
+    this.editorLayout = {
+      portrait: {
+        up:{x:25,y:65}, down:{x:25,y:85}, left:{x:15,y:75}, right:{x:35,y:75},
+        a:{x:75,y:70}, b:{x:65,y:80}, start:{x:40,y:93}, select:{x:60,y:93}
+      },
+      landscape: {
+        up:{x:8,y:30}, down:{x:8,y:50}, left:{x:3,y:40}, right:{x:13,y:40},
+        a:{x:88,y:35}, b:{x:88,y:55}, start:{x:30,y:85}, select:{x:55,y:85}
+      }
+    };
+    this._saveLayout();
+    this._renderEditorCanvas();
   }
 
   /* ── Fullscreen ───────────────────── */
   _bindFullscreenChange() {
-    document.addEventListener('fullscreenchange', () => {
-      setTimeout(() => this._applyOrientation(), 200);
-    });
-    document.addEventListener('webkitfullscreenchange', () => {
-      setTimeout(() => this._applyOrientation(), 200);
-    });
+    document.addEventListener('fullscreenchange', () => setTimeout(() => this._applyOrientation(), 200));
+    document.addEventListener('webkitfullscreenchange', () => setTimeout(() => this._applyOrientation(), 200));
   }
 
   /* ── Kontrol ──────────────────────── */
   stop() {
-    if (this.nostalgist) {
-      try { this.nostalgist.exit(); } catch (_) {}
-      this.nostalgist = null;
-    }
+    if (this.nostalgist) { try { this.nostalgist.exit(); } catch (_) {} this.nostalgist = null; }
     if (this._gamepadInContainer) {
       this._gamepadOriginalParent.insertBefore(this.virtualGamepad, this._gamepadOriginalNext);
       this._gamepadInContainer = false;
@@ -343,10 +487,7 @@ class NESEmulator {
   }
 
   reset() {
-    if (this.nostalgist) {
-      this.nostalgist.restart();
-      this.statusText.textContent = '🔄 Reset.';
-    }
+    if (this.nostalgist) { this.nostalgist.restart(); this.statusText.textContent = '🔄 Reset.'; }
   }
 
   toggleFullscreen() {
