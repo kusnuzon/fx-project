@@ -1,8 +1,5 @@
 /* =============================================
    NES EMULATOR – RESPONSIVE & FULLSCREEN
-   ✅ FIXED: Layout landscape/portrait sekarang
-      bekerja karena virtualGamepad dipindah
-      ke dalam .emu-container via JS
    ============================================= */
 
 /* Dropzone */
@@ -23,12 +20,13 @@
     color: #cfba8c;
 }
 
-/* Canvas */
+/* Canvas – penting untuk reset styling Nostalgist */
 .nes-emulator-canvas {
-    display: block;
+    display: block !important;
+    position: relative !important;
     image-rendering: pixelated;
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
     max-width: 100%;
     border: 4px solid #6e6e8a;
     box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
@@ -53,7 +51,6 @@
     border: 2px solid #5a5a7a;
     border-radius: 4px;
     cursor: pointer;
-    /* ✅ Tombol kontrol lebih mudah di-tap di HP */
     min-height: 44px;
     min-width: 44px;
 }
@@ -75,8 +72,6 @@
 }
 
 /* ── Orientasi ─────────────────────────────────── */
-
-/* Container utama yang menampung canvas + gamepad */
 .emu-container {
     display: flex;
     gap: 1rem;
@@ -85,21 +80,19 @@
     width: 100%;
 }
 
-/* PORTRAIT – canvas di atas, gamepad di bawah */
+/* PORTRAIT – Game Boy style: canvas di atas, gamepad di bawah */
 .emu-portrait {
     flex-direction: column;
 }
 .emu-portrait .nes-emulator-canvas {
     max-width: 100%;
 }
-/* ✅ FIX: selector ini sekarang BENAR karena gamepad
-   sudah berada di dalam .emu-portrait via JS */
 .emu-portrait .virtual-gamepad {
     width: 100%;
-    margin-top: 0.5rem;
+    margin-top: 0.8rem;
 }
 
-/* LANDSCAPE – canvas di kiri, gamepad di kanan */
+/* LANDSCAPE – GBA/PSP style: canvas kiri, gamepad kanan */
 .emu-landscape {
     flex-direction: row;
     flex-wrap: nowrap;
@@ -109,21 +102,17 @@
     max-width: 60%;
     flex: 1 1 auto;
 }
-/* ✅ FIX: selector ini sekarang BENAR */
 .emu-landscape .virtual-gamepad {
     flex: 0 0 auto;
     margin-top: 0;
 }
 
 /* ── Virtual Gamepad ───────────────────────────── */
-
 .virtual-gamepad {
     display: flex;
     justify-content: center;
     user-select: none;
     -webkit-user-select: none;
-    /* ✅ touch-action: none penting untuk mencegah scroll
-       saat menekan tombol di layar sentuh */
     touch-action: none;
     -webkit-touch-callout: none;
 }
@@ -139,7 +128,6 @@
 /* D‑Pad */
 .dpad {
     display: grid;
-    /* ✅ Diperbesar dari 50px → 56px untuk touch target yang lebih mudah */
     grid-template-columns: 56px 56px 56px;
     grid-template-rows: 56px 56px 56px;
     gap: 0.25rem;
@@ -163,9 +151,7 @@
     width: 100%;
 }
 
-/* Tombol Gamepad Base */
 .gamepad-btn {
-    /* ✅ Diperbesar dari 50px → 56px, minimum 44px touch target Apple HIG */
     width: 56px;
     height: 56px;
     font-family: 'Press Start 2P', cursive;
@@ -178,7 +164,6 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    /* ✅ touch-action: none (bukan manipulation) agar tidak ada delay sentuhan */
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
@@ -192,28 +177,26 @@
     transform: scale(0.93);
 }
 
-/* Tombol A & B sedikit lebih besar */
 .action-buttons .gamepad-btn {
     width: 62px;
     height: 62px;
     font-size: 0.7rem;
     border-radius: 50%;
 }
-/* Warna berbeda untuk A dan B */
 .action-buttons .gamepad-btn[data-btn="a"] {
     background: #1e3a4c;
     border-color: #4a8cb8;
     color: #a8d4f0;
 }
-.action-buttons .gamepad-btn[data-btn="a"].active,
-.action-buttons .gamepad-btn[data-btn="a"]:active {
-    background: #2a5470;
-    border-color: #7ab8e0;
-}
 .action-buttons .gamepad-btn[data-btn="b"] {
     background: #3a1e2a;
     border-color: #b85a7a;
     color: #f0a8c4;
+}
+.action-buttons .gamepad-btn[data-btn="a"].active,
+.action-buttons .gamepad-btn[data-btn="a"]:active {
+    background: #2a5470;
+    border-color: #7ab8e0;
 }
 .action-buttons .gamepad-btn[data-btn="b"].active,
 .action-buttons .gamepad-btn[data-btn="b"]:active {
@@ -221,7 +204,6 @@
     border-color: #e07aa0;
 }
 
-/* Start & Select lebih kecil */
 .start-select .gamepad-btn {
     width: auto;
     min-width: 60px;
@@ -231,7 +213,6 @@
     border-radius: 18px;
 }
 
-/* Status text */
 .nes-status {
     text-align: center;
     font-size: 0.6rem;
@@ -240,9 +221,7 @@
 }
 
 /* ── Responsive Mobile ─────────────────────────── */
-
 @media (max-width: 480px) {
-    /* Di HP kecil, perkecil sedikit tombol agar muat */
     .dpad {
         grid-template-columns: 50px 50px 50px;
         grid-template-rows: 50px 50px 50px;
@@ -259,13 +238,11 @@
     .gamepad-container {
         gap: 0.6rem;
     }
-    /* Canvas landscape di HP kecil */
     .emu-landscape .nes-emulator-canvas {
         max-width: 55%;
     }
 }
 
-/* Di landscape HP, paksa layout row */
 @media (orientation: landscape) and (max-height: 500px) {
     .emu-container {
         flex-direction: row !important;
@@ -273,7 +250,6 @@
     }
     .nes-emulator-canvas {
         max-width: 55% !important;
-        max-height: 90vw;
     }
     .virtual-gamepad {
         margin-top: 0 !important;
