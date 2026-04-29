@@ -2,7 +2,6 @@
    NES EMULATOR – RESPONSIVE & FULLSCREEN
    ============================================= */
 
-/* Dropzone */
 .nes-dropzone {
     border: 2px dashed #5a5a7a;
     padding: 1.5rem;
@@ -20,7 +19,6 @@
     color: #cfba8c;
 }
 
-/* Canvas – reset semua positioning Nostalgist */
 .nes-emulator-canvas {
     display: block !important;
     position: relative !important;
@@ -29,14 +27,12 @@
     image-rendering: pixelated;
     width: 100% !important;
     height: auto !important;
-    max-width: 100%;
     aspect-ratio: 256 / 240;
     border: 4px solid #6e6e8a;
     box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
     background: #000;
 }
 
-/* Kontrol bar */
 .nes-controls {
     display: flex;
     flex-wrap: wrap;
@@ -68,16 +64,14 @@
     border-color: #b9a88c !important;
 }
 
-/* Wrapper */
 .nes-emulator-wrapper {
     width: 100%;
     margin: 0 auto;
 }
 
-/* ── KONTAINER UTAMA ─────────────────────────── */
+/* ── KONTAINER UTAMA ───────────────── */
 .emu-container {
     display: flex;
-    gap: 1rem;
     width: 100%;
     align-items: center;
     justify-content: center;
@@ -85,39 +79,40 @@
 
 /* =============================================
    PORTRAIT – Game Boy style
-   Canvas penuh di atas, D-Pad + Action di bawah
+   Canvas di atas, gamepad di bawah
    ============================================= */
 .emu-portrait {
     flex-direction: column;
+    gap: 0.8rem;
 }
 .emu-portrait .nes-emulator-canvas {
     max-width: 100%;
-    max-height: 55vh;           /* batasi tinggi agar tidak memanjang */
+    max-height: 50vh;
 }
 .emu-portrait .virtual-gamepad {
     width: 100%;
-    margin-top: 0.8rem;
 }
-/* Grid gamepad: D-Pad kiri bawah, tombol aksi kanan bawah */
+/* Grid portrait: D-Pad kiri, Action kanan, Start/Select TENGAH BAWAH */
 .emu-portrait .gamepad-container {
     display: grid;
-    grid-template-areas:
-        "dpad actions"
-        "dpad startsel";
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.5rem 1.2rem;
+    justify-content: center;
     align-items: center;
-    justify-items: center;
 }
 .emu-portrait .dpad {
-    grid-area: dpad;
+    grid-row: 1 / 3;
+    grid-column: 1;
 }
 .emu-portrait .action-buttons {
-    grid-area: actions;
+    grid-row: 1;
+    grid-column: 2;
 }
 .emu-portrait .start-select {
-    grid-area: startsel;
-    justify-self: center;
+    grid-row: 2;
+    grid-column: 1 / 3;        /* ✅ Start/Select melebar di tengah bawah */
+    justify-content: center;
 }
 
 /* =============================================
@@ -127,37 +122,44 @@
 .emu-landscape {
     flex-direction: row;
     flex-wrap: nowrap;
+    gap: 0.8rem;
     align-items: center;
 }
 .emu-landscape .nes-emulator-canvas {
     max-width: 55%;
-    max-height: 70vh;
+    max-height: 75vh;
     flex: 1 1 auto;
 }
 .emu-landscape .virtual-gamepad {
     flex: 0 0 auto;
-    margin: 0 0.5rem;
-}
-/* Grid gamepad: D-Pad di kiri, tombol aksi di kanan (stack vertikal) */
-.emu-landscape .gamepad-container {
     display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
+    align-items: center;
+}
+/* Grid landscape: D-Pad di KIRI, Action di KANAN (vertikal), Start/Select di bawah Action */
+.emu-landscape .gamepad-container {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.5rem 1rem;
+    justify-items: center;
     align-items: center;
 }
 .emu-landscape .dpad {
-    order: 1;
+    grid-row: 1;
+    grid-column: 1;
 }
 .emu-landscape .action-buttons {
-    order: 2;
-    flex-direction: column;
+    grid-row: 1;
+    grid-column: 2;
+    flex-direction: column;         /* ✅ A dan B vertikal */
 }
 .emu-landscape .start-select {
-    order: 3;
-    width: 100%;
+    grid-row: 2;
+    grid-column: 1 / 3;            /* ✅ Start/Select di bawah D-Pad + Action */
+    justify-content: center;
 }
 
-/* ── Virtual Gamepad ───────────────────────────── */
+/* ── Virtual Gamepad Dasar ─────────── */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -170,7 +172,7 @@
 .gamepad-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.6rem;
     align-items: center;
     justify-content: center;
 }
@@ -178,32 +180,23 @@
 /* D‑Pad */
 .dpad {
     display: grid;
-    grid-template-columns: 56px 56px 56px;
-    grid-template-rows: 56px 56px 56px;
+    grid-template-columns: 54px 54px 54px;
+    grid-template-rows: 54px 54px 54px;
     gap: 0.25rem;
     justify-items: center;
     align-items: center;
 }
-.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }  /* up */
-.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }  /* left */
-.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }  /* right */
-.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }  /* down */
+.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
 
-.action-buttons {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-}
-.start-select {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    width: 100%;
-}
+.action-buttons { display: flex; gap: 0.5rem; align-items: center; }
+.start-select { display: flex; gap: 0.5rem; justify-content: center; }
 
 .gamepad-btn {
-    width: 56px;
-    height: 56px;
+    width: 54px;
+    height: 54px;
     font-family: 'Press Start 2P', cursive;
     font-size: 0.45rem;
     background: #2a2a3c;
@@ -228,8 +221,8 @@
 }
 
 .action-buttons .gamepad-btn {
-    width: 62px;
-    height: 62px;
+    width: 60px;
+    height: 60px;
     font-size: 0.7rem;
     border-radius: 50%;
 }
@@ -256,11 +249,11 @@
 
 .start-select .gamepad-btn {
     width: auto;
-    min-width: 60px;
-    height: 36px;
-    padding: 0 0.6rem;
+    min-width: 56px;
+    height: 34px;
+    padding: 0 0.5rem;
     font-size: 0.38rem;
-    border-radius: 18px;
+    border-radius: 17px;
 }
 
 .nes-status {
@@ -270,7 +263,7 @@
     margin-top: 0.5rem;
 }
 
-/* ── FULLSCREEN ────────────────────────────────── */
+/* ── FULLSCREEN ───────────────────── */
 .nes-emulator-wrapper:fullscreen,
 .nes-emulator-wrapper:-webkit-full-screen {
     background: #000;
@@ -284,40 +277,18 @@
 .nes-emulator-wrapper:-webkit-full-screen .emu-container {
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-.nes-emulator-wrapper:fullscreen .nes-emulator-canvas,
-.nes-emulator-wrapper:-webkit-full-screen .nes-emulator-canvas {
-    max-width: 60%;
-    max-height: 90vh;
 }
 .nes-emulator-wrapper:fullscreen .virtual-gamepad,
 .nes-emulator-wrapper:-webkit-full-screen .virtual-gamepad {
     display: flex !important;
 }
 
-/* ── Responsive Mobile ─────────────────────────── */
+/* ── Responsive Mobile ────────────── */
 @media (max-width: 480px) {
     .dpad {
-        grid-template-columns: 48px 48px 48px;
-        grid-template-rows: 48px 48px 48px;
-        gap: 0.2rem;
+        grid-template-columns: 46px 46px 46px;
+        grid-template-rows: 46px 46px 46px;
     }
-    .gamepad-btn {
-        width: 48px;
-        height: 48px;
-    }
-    .action-buttons .gamepad-btn {
-        width: 54px;
-        height: 54px;
-    }
-    .gamepad-container {
-        gap: 0.5rem;
-    }
-    .emu-landscape .nes-emulator-canvas {
-        max-width: 50%;
-    }
+    .gamepad-btn { width: 46px; height: 46px; font-size: 0.4rem; }
+    .action-buttons .gamepad-btn { width: 52px; height: 52px; font-size: 0.65rem; }
 }
