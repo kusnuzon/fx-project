@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chart Pattern Cheatsheet - Cartridge Vault</title>
+    <title>Chart Pattern Vault - Ultimate Edition</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 
     <style>
         /* =============================================
-           GLOBAL RETRO THEME
+           RETRO THEME ENGINE (FIXED & OPTIMIZED)
            ============================================= */
         *, *::before, *::after {
             margin: 0;
@@ -20,490 +20,304 @@
         }
 
         body {
-            background: #101018;
-            color: #cdcdd4;
+            background: #0d0d12;
+            color: #b0b0bc;
             font-family: 'Courier New', Courier, monospace;
-            line-height: 1.5;
-            position: relative;
             overflow-x: hidden;
             min-height: 100vh;
             background-image:
-                linear-gradient(rgba(120,120,150,0.07) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(120,120,150,0.07) 1px, transparent 1px);
-            background-size: 8px 8px;
+                linear-gradient(rgba(100,100,150,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100,100,150,0.05) 1px, transparent 1px);
+            background-size: 15px 15px;
         }
 
-        body::before {
-            content: "";
+        /* Scanline global effect */
+        body::after {
+            content: " ";
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            background-image:
-                radial-gradient(1px 1px at 10% 20%, rgba(255,255,200,0.4), transparent),
-                radial-gradient(1px 1px at 85% 15%, rgba(200,220,255,0.35), transparent),
-                radial-gradient(1.5px 1.5px at 40% 70%, rgba(220,200,255,0.3), transparent),
-                radial-gradient(1px 1px at 70% 60%, rgba(255,255,180,0.4), transparent),
-                radial-gradient(1.2px 1.2px at 25% 90%, rgba(180,220,255,0.25), transparent);
-            background-size: 200px 200px;
-            animation: driftStars 40s linear infinite;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 3px, 3px 100%;
             pointer-events: none;
-            z-index: 0;
+            z-index: 100;
         }
 
         .container {
             position: relative;
             z-index: 2;
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 2rem auto;
-            background: rgba(16, 16, 28, 0.9);
-            backdrop-filter: blur(4px);
-            border: 3px solid #5a5a7a;
-            border-radius: 6px;
-            box-shadow:
-                0 0 0 4px #1a1a2e,
-                0 0 0 8px #0a0a14,
-                0 10px 30px rgba(0,0,0,0.7),
-                inset 0 0 30px rgba(0,0,0,0.5);
+            background: rgba(20, 20, 30, 0.95);
+            border: 2px solid #44445a;
             padding: 2rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
         h1 {
             font-family: 'Press Start 2P', cursive;
             color: #cfba8c;
             text-align: center;
-            text-shadow: 2px 2px 0 #3b3224;
-            font-size: 1.6rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #7a7a95;
+            font-size: 1.4rem;
             margin-bottom: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: -1px;
+            text-shadow: 3px 3px 0 #222;
         }
 
-        /* --- CONTROLS: SEARCH & TABS --- */
-        .controls-container {
+        /* --- CONTROLS --- */
+        .controls {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .search-box {
             width: 100%;
-            padding: 0.8rem 1rem;
-            background: #1e1e2e;
-            border: 2px solid #4b4b68;
-            color: #cfba8c;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1rem;
-            border-radius: 4px;
+            padding: 12px;
+            background: #161625;
+            border: 1px solid #44445a;
+            color: #6c9;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
             outline: none;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-        }
-
-        .search-box:focus {
-            border-color: #cfba8c;
-            background: #232336;
-        }
-
-        .search-box::placeholder {
-            color: #5a5a7a;
         }
 
         .tabs {
             display: flex;
-            gap: 0;
-            border-bottom: 2px solid #4b4b68;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid #44445a;
         }
 
         .tab-btn {
-            flex: 1;
-            padding: 0.7rem;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.55rem;
-            background: transparent;
+            padding: 8px 15px;
+            background: #1a1a2e;
+            border: 1px solid #44445a;
+            border-bottom: none;
             color: #7a7a95;
-            border: none;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
             cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            outline: none;
         }
 
         .tab-btn.active {
-            color: #cfba8c;
-            border-bottom: 3px solid #cfba8c;
-            background: rgba(207,186,140,0.08);
+            background: #cfba8c;
+            color: #101018;
+            border-color: #cfba8c;
         }
 
-        .tab-btn:hover:not(.active) { 
-            color: #b9a88c; 
-            background: rgba(255,255,255,0.02);
-        }
-
-        /* =============================================
-           CHEATSHEET GRID & CARDS
-           ============================================= */
-        .grid-container {
+        /* --- GRID SYSTEM --- */
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
-        .pattern-card {
-            background: #1e1e2e;
-            border: 2px solid #3f3f5c;
-            border-radius: 8px;
-            padding: 1.2rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            cursor: crosshair;
-        }
-
-        .pattern-card:hover {
-            border-color: #cfba8c;
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.5), inset 0 0 15px rgba(207,186,140,0.1);
-        }
-
-        .card-header {
+        .card {
+            background: #1a1a2a;
+            border: 1px solid #33334a;
+            padding: 1rem;
+            transition: 0.2s;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            border-bottom: 1px dashed #4b4b68;
-            padding-bottom: 0.5rem;
+            flex-direction: column;
         }
 
-        .pattern-name {
+        .card:hover {
+            border-color: #cfba8c;
+            box-shadow: 0 0 10px rgba(207, 186, 140, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
             font-family: 'Press Start 2P', cursive;
             font-size: 0.6rem;
-            color: #f0e6d2;
-            line-height: 1.4;
+            color: #eee;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
         }
 
         .badge {
+            font-family: Arial, sans-serif;
             font-size: 0.6rem;
-            padding: 0.3rem 0.5rem;
-            border-radius: 3px;
-            font-weight: bold;
+            padding: 2px 6px;
             text-transform: uppercase;
         }
-        .badge.bullish { background: #2a3a2a; color: #6c9; border: 1px solid #6c9; }
-        .badge.bearish { background: #3a2a2a; color: #e07373; border: 1px solid #e07373; }
-        .badge.neutral { background: #3a3a52; color: #b9a88c; border: 1px solid #b9a88c; }
+        .bullish { color: #6c9; border: 1px solid #6c9; }
+        .bearish { color: #e07373; border: 1px solid #e07373; }
+        .neutral { color: #cfba8c; border: 1px solid #cfba8c; }
 
-        .svg-container {
+        .visual {
             width: 100%;
-            height: 150px;
-            background: #101018;
-            border-radius: 4px;
-            border: 1px solid #2a2a3c;
-            margin-bottom: 1rem;
+            height: 140px;
+            background: #0a0a0f;
+            border: 1px solid #222;
+            margin-bottom: 12px;
             position: relative;
-            background-image: linear-gradient(rgba(120,120,150,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(120,120,150,0.1) 1px, transparent 1px);
-            background-size: 15px 15px;
+            overflow: hidden;
         }
 
-        svg {
-            width: 100%;
-            height: 100%;
-        }
+        svg { width: 100%; height: 100%; }
 
-        /* SVG Elements */
-        .trend-line {
-            stroke: #5a5a7a;
-            stroke-width: 2;
-            stroke-dasharray: 4, 4;
-            fill: none;
-        }
-        
-        .price-action {
+        .p-action {
             fill: none;
             stroke-width: 3;
             stroke-linecap: round;
             stroke-linejoin: round;
-            filter: drop-shadow(0px 0px 5px currentcolor);
-            transition: stroke-dashoffset 1.8s ease-in-out;
+            transition: stroke-dashoffset 1.5s ease-in-out;
         }
 
-        .price-action.bullish-path { stroke: #6c9; color: #6c9; }
-        .price-action.bearish-path { stroke: #e07373; color: #e07373; }
-        .price-action.neutral-path { stroke: #cfba8c; color: #cfba8c; }
+        .guide { stroke: #33334a; stroke-width: 1; stroke-dasharray: 3,3; }
 
-        .pattern-desc {
+        .desc {
             font-size: 0.75rem;
-            color: #b0b0c0;
-            line-height: 1.6;
+            line-height: 1.4;
+            color: #888;
         }
 
-        /* Scanline Animation */
-        .scanline {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: rgba(207, 186, 140, 0.4);
-            opacity: 0;
-            transition: opacity 0.3s;
-            box-shadow: 0 0 10px rgba(207, 186, 140, 0.5);
+        /* Animasi draw saat hover */
+        .card:hover .p-action {
+            stroke-dashoffset: 0 !important;
         }
-
-        .pattern-card:hover .scanline {
-            opacity: 1;
-            animation: scan 2s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        .no-results {
-            text-align: center;
-            grid-column: 1 / -1;
-            padding: 3rem;
-            color: #e07373;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.8rem;
-            line-height: 2;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            .tab-btn { font-size: 0.45rem; padding: 0.5rem; }
-            .pattern-name { font-size: 0.55rem; }
-            .grid-container { grid-template-columns: 1fr; }
-        }
-
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>ULTIMATE PATTERN VAULT</h1>
-        <p class="subtitle">> DECRYPTING PRICE ACTION MATRIX <</p>
+        <h1>[ CHART PATTERN VAULT ]</h1>
 
-        <div class="controls-container">
-            <input type="text" id="search-input" class="search-box" placeholder="> C:\Search_Pattern_Name...">
+        <div class="controls">
+            <input type="text" id="search" class="search-box" placeholder="> MENCARI POLA (CONTOH: 'TRIANGLE' ATAU 'BULLISH')...">
             
             <div class="tabs">
-                <button class="tab-btn active" data-filter="all">SEMUA</button>
-                <button class="tab-btn" data-filter="reversal">REVERSAL</button>
-                <button class="tab-btn" data-filter="continuation">CONTINUATION</button>
-                <button class="tab-btn" data-filter="bilateral">BILATERAL</button>
+                <button class="tab-btn active" onclick="filter('all')">SEMUA</button>
+                <button class="tab-btn" onclick="filter('reversal')">REVERSAL</button>
+                <button class="tab-btn" onclick="filter('continuation')">CONTINUATION</button>
+                <button class="tab-btn" onclick="filter('bilateral')">BILATERAL</button>
             </div>
         </div>
 
-        <div class="grid-container" id="pattern-grid">
+        <div id="grid" class="grid">
             </div>
     </div>
 
     <script>
-        // Database Ekstensif Pola Chart (19 Pola)
-        const patterns = [
-            // ================= REVERSAL =================
-            {
-                name: 'Double Top', type: 'reversal', bias: 'bearish',
-                desc: 'Pola 'M'. Pembalikan tren naik. Dua puncak di level resisten yang sama. Entry sell saat harga jebol neckline ke bawah.',
-                svg: `<path class="trend-line" d="M 20 60 L 80 60" /><path class="price-action bearish-path" d="M 10 90 L 30 20 L 50 60 L 70 20 L 90 90" />`
-            },
-            {
-                name: 'Double Bottom', type: 'reversal', bias: 'bullish',
-                desc: 'Pola 'W'. Pembalikan tren turun. Dua lembah di level support yang sama. Entry buy saat harga jebol neckline ke atas.',
-                svg: `<path class="trend-line" d="M 20 40 L 80 40" /><path class="price-action bullish-path" d="M 10 10 L 30 80 L 50 40 L 70 80 L 90 10" />`
-            },
-            {
-                name: 'Head & Shoulders', type: 'reversal', bias: 'bearish',
-                desc: 'Puncak kiri (bahu), puncak tengah tertinggi (kepala), puncak kanan lebih rendah. Indikasi seller mengambil alih dominasi.',
-                svg: `<path class="trend-line" d="M 15 65 L 85 65" /><path class="price-action bearish-path" d="M 5 90 L 25 45 L 35 65 L 50 15 L 65 65 L 75 45 L 95 90" />`
-            },
-            {
-                name: 'Inv. Head & Shoulders', type: 'reversal', bias: 'bullish',
-                desc: 'Kebalikan H&S. Terjadi di ujung downtrend. Menandakan tekanan jual habis dan buyer mulai mendominasi.',
-                svg: `<path class="trend-line" d="M 15 35 L 85 35" /><path class="price-action bullish-path" d="M 5 10 L 25 55 L 35 35 L 50 85 L 65 35 L 75 55 L 95 10" />`
-            },
-            {
-                name: 'Triple Top', type: 'reversal', bias: 'bearish',
-                desc: 'Harga menguji level resisten sebanyak 3 kali namun gagal tembus. Mengindikasikan area supply yang sangat kuat.',
-                svg: `<path class="trend-line" d="M 15 70 L 85 70" /><path class="price-action bearish-path" d="M 10 90 L 25 30 L 40 70 L 50 30 L 60 70 L 75 30 L 90 90" />`
-            },
-            {
-                name: 'Triple Bottom', type: 'reversal', bias: 'bullish',
-                desc: 'Harga menguji level support sebanyak 3 kali dan tertahan. Menunjukkan area demand yang solid untuk berbalik arah.',
-                svg: `<path class="trend-line" d="M 15 30 L 85 30" /><path class="price-action bullish-path" d="M 10 10 L 25 70 L 40 30 L 50 70 L 60 30 L 75 70 L 90 10" />`
-            },
-            {
-                name: 'Rising Wedge (Reversal)', type: 'reversal', bias: 'bearish',
-                desc: 'Garis support dan resisten mengerucut ke atas. Menunjukkan momentum kenaikan melemah. Rentan breakout ke bawah.',
-                svg: `<path class="trend-line" d="M 20 60 L 80 30" /><path class="trend-line" d="M 20 80 L 80 40" /><path class="price-action bearish-path" d="M 10 90 L 30 50 L 40 70 L 60 35 L 70 50 L 90 90" />`
-            },
-            {
-                name: 'Falling Wedge (Reversal)', type: 'reversal', bias: 'bullish',
-                desc: 'Garis support dan resisten mengerucut ke bawah di akhir downtrend. Momentum sell melemah, bersiap breakout naik.',
-                svg: `<path class="trend-line" d="M 20 20 L 80 60" /><path class="trend-line" d="M 20 40 L 80 70" /><path class="price-action bullish-path" d="M 10 10 L 30 45 L 40 30 L 60 60 L 70 45 L 90 10" />`
-            },
+        const data = [
+            { name: "Double Top", type: "reversal", bias: "bearish", desc: `Pola 'M'. Sinyal jual kuat saat harga menembus neckline bawah.`, 
+              svg: `<path class="guide" d="M10,70 L90,70" /><path class="p-action" stroke="#e07373" d="M10,90 L30,20 L50,70 L70,20 L90,95" />` },
+            
+            { name: "Double Bottom", type: "reversal", bias: "bullish", desc: `Pola 'W'. Sinyal beli kuat saat harga menembus neckline atas.`, 
+              svg: `<path class="guide" d="M10,30 L90,30" /><path class="p-action" stroke="#6c9" d="M10,10 L30,80 L50,30 L70,80 L90,5" />` },
 
-            // ================= CONTINUATION =================
-            {
-                name: 'Bullish Flag', type: 'continuation', bias: 'bullish',
-                desc: 'Setelah rally naik (tiang), harga konsolidasi membentuk channel turun perlahan. Diikuti ledakan harga ke atas.',
-                svg: `<path class="trend-line" d="M 35 25 L 65 40" /><path class="trend-line" d="M 45 60 L 75 75" /><path class="price-action bullish-path" d="M 10 90 L 40 20 L 50 55 L 60 30 L 70 65 L 90 10" />`
-            },
-            {
-                name: 'Bearish Flag', type: 'continuation', bias: 'bearish',
-                desc: 'Setelah drop tajam (tiang), harga koreksi membentuk channel naik perlahan. Biasanya akan tembus lanjut turun.',
-                svg: `<path class="trend-line" d="M 35 75 L 65 60" /><path class="trend-line" d="M 45 40 L 75 25" /><path class="price-action bearish-path" d="M 10 10 L 40 80 L 50 45 L 60 70 L 70 35 L 90 90" />`
-            },
-            {
-                name: 'Bullish Pennant', type: 'continuation', bias: 'bullish',
-                desc: 'Mirip Flag, namun konsolidasinya mengerucut seperti segitiga simetris mini setelah pergerakan impulsif naik.',
-                svg: `<path class="trend-line" d="M 40 30 L 70 45" /><path class="trend-line" d="M 40 60 L 70 45" /><path class="price-action bullish-path" d="M 10 90 L 40 20 L 50 50 L 60 35 L 90 10" />`
-            },
-            {
-                name: 'Bearish Pennant', type: 'continuation', bias: 'bearish',
-                desc: 'Konsolidasi mengerucut mini setelah penurunan impulsif. Sering disebut sebagai "jeda istirahat" sebelum harga anjlok lagi.',
-                svg: `<path class="trend-line" d="M 40 40 L 70 55" /><path class="trend-line" d="M 40 70 L 70 55" /><path class="price-action bearish-path" d="M 10 10 L 40 80 L 50 50 L 60 65 L 90 90" />`
-            },
-            {
-                name: 'Bullish Rectangle', type: 'continuation', bias: 'bullish',
-                desc: 'Harga bergerak menyamping (sideways) dalam range paralel setelah uptrend. Mengumpulkan energi untuk lanjut naik.',
-                svg: `<path class="trend-line" d="M 30 30 L 70 30" /><path class="trend-line" d="M 30 60 L 70 60" /><path class="price-action bullish-path" d="M 10 90 L 35 30 L 45 60 L 55 30 L 65 60 L 90 10" />`
-            },
-            {
-                name: 'Bearish Rectangle', type: 'continuation', bias: 'bearish',
-                desc: 'Harga sideways dalam range kotak setelah downtrend. Re-distribusi aset sebelum melanjutkan penurunan tajam.',
-                svg: `<path class="trend-line" d="M 30 40 L 70 40" /><path class="trend-line" d="M 30 70 L 70 70" /><path class="price-action bearish-path" d="M 10 10 L 35 70 L 45 40 L 55 70 L 65 40 L 90 90" />`
-            },
-            {
-                name: 'Cup & Handle', type: 'continuation', bias: 'bullish',
-                desc: 'Pola mirip cangkir teh. Bentuk dasar membulat (U-shape) diikuti konsolidasi kecil (handle) sebelum breakout resisten.',
-                svg: `<path class="trend-line" d="M 20 30 L 80 30" /><path class="price-action bullish-path" d="M 10 90 L 25 30 C 25 80, 55 80, 55 30 L 65 55 L 75 30 L 90 10" />`
-            },
+            { name: "Head & Shoulders", type: "reversal", bias: "bearish", desc: `Tiga puncak, tengah paling tinggi. Pembalikan trend naik ke turun.`, 
+              svg: `<path class="guide" d="M10,65 L90,65" /><path class="p-action" stroke="#e07373" d="M5,90 L20,40 L35,65 L50,10 L65,65 L80,40 L95,95" />` },
 
-            // ================= BILATERAL / TRIANGLES =================
-            {
-                name: 'Ascending Triangle', type: 'bilateral', bias: 'bullish',
-                desc: 'Atap datar (resisten kuat) namun lantai naik (Higher Lows). Umumnya bullish, namun berstatus bilateral jika terjadi anomali.',
-                svg: `<path class="trend-line" d="M 20 25 L 80 25" /><path class="trend-line" d="M 20 85 L 80 25" /><path class="price-action bullish-path" d="M 10 90 L 35 25 L 45 60 L 60 25 L 70 35 L 90 10" />`
-            },
-            {
-                name: 'Descending Triangle', type: 'bilateral', bias: 'bearish',
-                desc: 'Lantai datar (support kuat) namun atap turun (Lower Highs). Umumnya bearish menembus support ke bawah.',
-                svg: `<path class="trend-line" d="M 20 75 L 80 75" /><path class="trend-line" d="M 20 15 L 80 75" /><path class="price-action bearish-path" d="M 10 10 L 35 75 L 45 40 L 60 75 L 70 65 L 90 90" />`
-            },
-            {
-                name: 'Symmetrical Triangle', type: 'bilateral', bias: 'neutral',
-                desc: 'Resisten menurun dan support menanjak (menyempit secara simetris). Volatilitas mengecil. Arah breakout adalah kuncinya.',
-                svg: `<path class="trend-line" d="M 20 15 L 80 50" /><path class="trend-line" d="M 20 85 L 80 50" /><path class="price-action neutral-path" d="M 10 90 L 30 25 L 45 65 L 60 35 L 70 55 L 90 20" />`
-            },
-            {
-                name: 'Broadening Wedge', type: 'bilateral', bias: 'neutral',
-                desc: 'Pola Megaphone. Support dan resisten makin melebar. Volatilitas sangat tinggi dan liar. Sulit ditradingkan sebelum valid breakout.',
-                svg: `<path class="trend-line" d="M 30 40 L 90 15" /><path class="trend-line" d="M 30 60 L 90 85" /><path class="price-action neutral-path" d="M 10 50 L 35 45 L 45 60 L 60 30 L 75 75 L 90 15" />`
-            }
+            { name: "Inv. Head & Shoulders", type: "reversal", bias: "bullish", desc: `Tiga lembah, tengah paling dalam. Pembalikan trend turun ke naik.`, 
+              svg: `<path class="guide" d="M10,35 L90,35" /><path class="p-action" stroke="#6c9" d="M5,10 L20,60 L35,35 L50,90 L65,35 L80,60 L95,5" />` },
+
+            { name: "Bullish Flag", type: "continuation", bias: "bullish", desc: `Kenaikan tajam diikuti konsolidasi channel turun. Lanjut naik.`, 
+              svg: `<path class="guide" d="M30,20 L70,40 M40,60 L80,80" /><path class="p-action" stroke="#6c9" d="M10,95 L40,20 L50,55 L65,30 L75,65 L95,10" />` },
+
+            { name: "Bearish Flag", type: "continuation", bias: "bearish", desc: `Penurunan tajam diikuti konsolidasi channel naik. Lanjut turun.`, 
+              svg: `<path class="guide" d="M30,80 L70,60 M40,40 L80,20" /><path class="p-action" stroke="#e07373" d="M10,5 L40,80 L50,45 L65,70 L75,35 L95,95" />` },
+
+            { name: "Ascending Triangle", type: "continuation", bias: "bullish", desc: `Atap datar, dasar meninggi. Tekanan beli semakin kuat.`, 
+              svg: `<path class="guide" d="M20,20 L80,20 M20,80 L80,20" /><path class="p-action" stroke="#6c9" d="M10,95 L30,20 L45,60 L65,20 L80,40 L95,5" />` },
+
+            { name: "Descending Triangle", type: "continuation", bias: "bearish", desc: `Dasar datar, atap merendah. Tekanan jual semakin dominan.`, 
+              svg: `<path class="guide" d="M20,80 L80,80 M20,20 L80,80" /><path class="p-action" stroke="#e07373" d="M10,5 L30,80 L45,40 L65,80 L80,60 L95,95" />` },
+
+            { name: "Symmetrical Triangle", type: "bilateral", bias: "neutral", desc: `Penyempitan harga. Breakout ke salah satu sisi menentukan arah.`, 
+              svg: `<path class="guide" d="M20,10 L80,50 M20,90 L80,50" /><path class="p-action" stroke="#cfba8c" d="M10,90 L30,25 L45,65 L60,35 L75,55 L95,20" />` },
+
+            { name: "Rising Wedge", type: "reversal", bias: "bearish", desc: `Mengerucut ke atas. Seringkali pecah ke bawah (Bearish Reversal).`, 
+              svg: `<path class="guide" d="M20,70 L85,25 M30,90 L90,40" /><path class="p-action" stroke="#e07373" d="M10,95 L35,65 L50,80 L70,45 L85,60 L95,95" />` },
+
+            { name: "Falling Wedge", type: "reversal", bias: "bullish", desc: `Mengerucut ke bawah. Seringkali pecah ke atas (Bullish Reversal).`, 
+              svg: `<path class="guide" d="M20,30 L85,75 M30,10 L90,60" /><path class="p-action" stroke="#6c9" d="M10,5 L35,35 L50,20 L70,55 L85,40 L95,10" />` },
+
+            { name: "Cup & Handle", type: "continuation", bias: "bullish", desc: `Bentuk cangkir membulat. Handle adalah koreksi sebelum terbang.`, 
+              svg: `<path class="guide" d="M15,25 L85,25" /><path class="p-action" stroke="#6c9" d="M10,80 Q10,85 15,85 L45,85 Q55,85 55,30 L65,60 L75,30 L95,5" />` },
+
+            { name: "Triple Top", type: "reversal", bias: "bearish", desc: `Tiga kali gagal menembus resisten. Sinyal pembalikan kuat.`, 
+              svg: `<path class="guide" d="M10,30 L90,30" /><path class="p-action" stroke="#e07373" d="M10,90 L25,30 L40,70 L55,30 L70,70 L85,30 L95,95" />` },
+
+            { name: "Triple Bottom", type: "reversal", bias: "bullish", desc: `Tiga kali tertahan di support. Sinyal akumulasi buyer.`, 
+              svg: `<path class="guide" d="M10,70 L90,70" /><path class="p-action" stroke="#6c9" d="M10,10 L25,70 L40,30 L55,70 L70,30 L85,70 L95,5" />` },
+
+            { name: "Broadening Wedge", type: "bilateral", bias: "neutral", desc: `Volatilitas meningkat, harga melebar. Sangat berisiko.`, 
+              svg: `<path class="guide" d="M30,45 L90,10 M30,55 L90,90" /><path class="p-action" stroke="#cfba8c" d="M10,50 L35,40 L50,65 L65,25 L80,75 L95,5" />` },
+
+            { name: "Diamond Top", type: "reversal", bias: "bearish", desc: `Pola berlian di puncak. Menandakan trend naik mulai goyah.`, 
+              svg: `<path class="guide" d="M50,10 L85,50 L50,90 L15,50 Z" /><path class="p-action" stroke="#e07373" d="M10,60 L25,30 L45,70 L65,20 L80,60 L95,95" />` },
+
+            { name: "Bullish Rectangle", type: "continuation", bias: "bullish", desc: `Konsolidasi dalam kotak mendatar sebelum lanjut naik.`, 
+              svg: `<path class="guide" d="M20,30 L80,30 M20,70 L80,70" /><path class="p-action" stroke="#6c9" d="M10,90 L30,30 L45,70 L60,30 L75,70 L95,10" />` },
+
+            { name: "Rounding Bottom", type: "reversal", bias: "bullish", desc: `Pembalikan trend jangka panjang yang landai (U-shape).`, 
+              svg: `<path class="p-action" stroke="#6c9" d="M10,20 Q50,95 90,20 L95,5" />` },
+
+            { name: "Bearish Pennant", type: "continuation", bias: "bearish", desc: `Segitiga simetris kecil setelah drop tajam. Lanjut turun.`, 
+              svg: `<path class="guide" d="M40,40 L80,55 M40,70 L80,55" /><path class="p-action" stroke="#e07373" d="M10,10 L40,85 L50,45 L65,65 L80,55 L95,95" />` },
+
+            { name: "Bullish Pennant", type: "continuation", bias: "bullish", desc: `Segitiga simetris kecil setelah rally tajam. Lanjut naik.`, 
+              svg: `<path class="guide" d="M40,30 L80,45 M40,60 L80,45" /><path class="p-action" stroke="#6c9" d="M10,90 L40,15 L50,55 L65,35 L80,45 L95,5" />` }
         ];
 
-        const grid = document.getElementById('pattern-grid');
-        const searchInput = document.getElementById('search-input');
-        const tabs = document.querySelectorAll('.tab-btn');
-        
-        let currentFilter = 'all';
-        let searchQuery = '';
+        const grid = document.getElementById('grid');
+        const searchInput = document.getElementById('search');
+        let currentCategory = 'all';
 
-        // Fungsi Render Utama
-        function renderPatterns() {
+        function render() {
             grid.innerHTML = '';
-            
-            const filtered = patterns.filter(p => {
-                const matchCategory = currentFilter === 'all' || p.type === currentFilter;
-                const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                    p.desc.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchCategory && matchSearch;
-            });
-            
-            if(filtered.length === 0) {
-                grid.innerHTML = `<div class="no-results">> ERROR: PATTERN [${searchQuery}] NOT FOUND IN DATABASE. <</div>`;
-                return;
-            }
+            const query = searchInput.value.toLowerCase();
 
-            filtered.forEach(p => {
+            const filtered = data.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query);
+                const matchesTab = currentCategory === 'all' || item.type === currentCategory;
+                return matchesSearch && matchesTab;
+            });
+
+            filtered.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'pattern-card';
-                
+                card.className = 'card';
                 card.innerHTML = `
-                    <div class="card-header">
-                        <span class="pattern-name">${p.name}</span>
-                        <span class="badge ${p.bias}">${p.bias}</span>
+                    <div class="card-title">
+                        ${item.name}
+                        <span class="badge ${item.bias}">${item.bias}</span>
                     </div>
-                    <div class="svg-container">
-                        <div class="scanline"></div>
+                    <div class="visual">
                         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                            ${p.svg}
+                            ${item.svg}
                         </svg>
                     </div>
-                    <p class="pattern-desc">${p.desc}</p>
+                    <div class="desc">${item.desc}</div>
                 `;
                 grid.appendChild(card);
             });
 
-            setupSvgAnimation();
+            // Set animation lengths
+            setTimeout(() => {
+                document.querySelectorAll('.p-action').forEach(p => {
+                    const len = p.getTotalLength();
+                    p.style.strokeDasharray = len;
+                    p.style.strokeDashoffset = len;
+                });
+            }, 10);
         }
 
-        // Setup Animasi SVG (Hanya digambar saat di-hover)
-        function setupSvgAnimation() {
-            const paths = document.querySelectorAll('.price-action');
-            paths.forEach(path => {
-                const length = path.getTotalLength();
-                // Set kondisi awal (tak terlihat)
-                path.style.strokeDasharray = length;
-                path.style.strokeDashoffset = length;
-                
-                const card = path.closest('.pattern-card');
-                
-                // Memicu animasi jalan saat mouse masuk
-                card.addEventListener('mouseenter', () => {
-                    path.style.strokeDashoffset = '0';
-                });
-                
-                // Mereset animasi saat mouse keluar
-                card.addEventListener('mouseleave', () => {
-                    path.style.strokeDashoffset = length;
-                });
-            });
+        function filter(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            render();
         }
 
-        // Event Listener untuk Search Box
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value;
-            renderPatterns();
-        });
-
-        // Event Listener untuk Tabs Kategori
-        tabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                tabs.forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                
-                currentFilter = e.target.getAttribute('data-filter');
-                renderPatterns();
-            });
-        });
-
-        // Eksekusi Render Pertama Kali
-        renderPatterns();
+        searchInput.addEventListener('input', render);
+        
+        // Initial build
+        window.onload = render;
     </script>
 </body>
 </html>
