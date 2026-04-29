@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSF Reader | Cartridge Vault</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <!-- NSFPlayer by bbbradsmith (WASM) -->
+    <script src="https://bbbradsmith.github.io/nsfplay/nsfplayer.js"></script>
+
+    <style>
+        .nsf-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 2rem auto;
+            background: rgba(12, 12, 24, 0.95);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            padding: 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .nsf-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .nsf-wrapper > * { position: relative; z-index: 20; }
+
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-area {
+            margin: 1rem 0;
+        }
+        .file-area label {
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #cfba8c;
+            cursor: pointer;
+        }
+        .file-area input {
+            display: none;
+        }
+
+        .info-table {
+            width: 100%;
+            margin: 1.5rem 0;
+            border-collapse: collapse;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+        }
+        .info-table td {
+            padding: 0.4rem;
+            border-bottom: 1px solid #3f3f5c;
+        }
+        .info-table td:first-child {
+            color: #cfba8c;
+            width: 40%;
+        }
+
+        .track-list {
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .track-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem;
+            margin: 0.2rem 0;
+            background: #1e1e2e;
+            border: 1px solid #3f3f5c;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #cdcdd4;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .track-item:hover {
+            background: #4b4a6e;
+            border-color: #cfba8c;
+        }
+        .track-item.active {
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+            box-shadow: 0 0 8px rgba(207,186,140,0.4);
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .pixel-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            padding: 0.5rem 1.2rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #d1d1db;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #0a0a14;
+            transition: 0.1s;
+        }
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #0a0a14;
+            background: #4b4a6e;
+            border-color: #cfba8c;
+        }
+
+        canvas#oscCanvas {
+            width: 100%;
+            height: 100px;
+            background: #0a0a14;
+            border: 2px solid #4b4b68;
+            margin-top: 1rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="nsf-wrapper">
+        <h2>🎵 NSF READER</h2>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.5rem;color:#9da5b4;">UPLOAD .NSF FILE</p>
+
+        <div class="file-area">
+            <label for="nsfFile">📁 SELECT NSF</label>
+            <input type="file" id="nsfFile" accept=".nsf">
+            <label for="m3uFile" style="margin-left:0.5rem;">📋 SELECT M3U (OPT)</label>
+            <input type="file" id="m3uFile" accept=".m3u">
+        </div>
+
+        <table class="info-table" id="infoTable" style="display:none;">
+            <tr><td>TITLE</td><td id="nsfTitle">-</td></tr>
+            <tr><td>ARTIST</td><td id="nsfArtist">-</td></tr>
+            <tr><td>COPYRIGHT</td><td id="nsfCopyright">-</td></tr>
+            <tr><td>VERSION</td><td id="nsfVersion">-</td></tr>
+            <tr><td>TOTAL SONGS</td><td id="nsfTotalSongs">-</td></tr>
+            <tr><td>STARTING SONG</td><td id="nsfStartingSong">-</td></tr>
+        </table>
+
+        <div class="track-list" id="trackList"></div>
+
+        <div class="player-controls" style="display:none;" id="playerControls">
+            <button class="pixel-btn" id="stopBtn">⏹ STOP</button>
+        </div>
+
+        <canvas id="oscCanvas"></canvas>
+    </div>
+
+    <script>
+        (() => {
+            const nsfInput = document.getElementById('nsfFile');
+            const m3uInput = document.getElementById('m3uFile');
+            const trackListDiv = document.getElementById('trackList');
+            const playerControls = document.getElementById('playerControls');
+            const stopBtn = document.getElementById('stopBtn');
+            const canvas = document.getElementById('oscCanvas');
+            const ctx = canvas.getContext('2d');
+
+            let nsfData = null;
+            let m3uData = null;
+            let currentTrack = 1;
+            let totalSongs = 0;
+            let player = null;
+            let audioCtx = null;
+            let analyser = null;
+            let isPlaying = false;
+
+            // Init NSFPlayer
+            async function initPlayer() {
+                if (player) return;
+                player = new NSFPlayer();
+                await player.ready;
+                // Set up audio context and analyser
+                audioCtx = player.context;
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.7;
+                // Connect analyser to destination
+                analyser.connect(audioCtx.destination);
+                // Override player output to analyser
+                player.output = analyser;
+            }
+
+            // Parse NSF header
+            function parseNSFHeader(buffer) {
+                const view = new DataView(buffer);
+                if (view.getUint8(0) !== 0x4E || view.getUint8(1) !== 0x45 || view.getUint8(2) !== 0x53 || view.getUint8(3) !== 0x4D || view.getUint8(4) !== 0x1A) {
+                    throw new Error('Not a valid NSF file (missing NESM\x1A)');
+                }
+                const version = view.getUint8(5);
+                totalSongs = view.getUint8(6);
+                const startingSong = view.getUint8(7);
+                const loadAddr = view.getUint16(8, true);
+                const initAddr = view.getUint16(0x0A, true);
+                const playAddr = view.getUint16(0x0C, true);
+
+                let gameName = '';
+                for (let i = 0x0E; i < 0x0E+16; i++) {
+                    const byte = view.getUint8(i);
+                    if (byte === 0) break;
+                    gameName += String.fromCharCode(byte);
+                }
+                let artist = '';
+                for (let i = 0x1E; i < 0x1E+16; i++) {
+                    const byte = view.getUint8(i);
+                    if (byte === 0) break;
+                    artist += String.fromCharCode(byte);
+                }
+                let copyright = '';
+                for (let i = 0x2E; i < 0x2E+16; i++) {
+                    const byte = view.getUint8(i);
+                    if (byte === 0) break;
+                    copyright += String.fromCharCode(byte);
+                }
+
+                return { version, totalSongs, startingSong, gameName, artist, copyright };
+            }
+
+            // Parse M3U playlist
+            function parseM3U(text) {
+                const lines = text.split(/\r?\n/);
+                const tracks = [];
+                for (const line of lines) {
+                    if (line.startsWith('#') || line.trim() === '') continue;
+                    // Format: filename::NSF,track,name,min,sec,fade
+                    const match = line.match(/::NSF,(\d+),(.*),(\d+),(\d+),(\d+)/);
+                    if (match) {
+                        tracks.push({
+                            track: parseInt(match[1]),
+                            name: match[2],
+                            duration: parseInt(match[3])*60 + parseInt(match[4]),
+                            fade: parseInt(match[5]),
+                        });
+                    } else {
+                        // Just a reference line, maybe only track number
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            tracks.push({ track: parseInt(parts[0]), name: parts[1] });
+                        }
+                    }
+                }
+                return tracks;
+            }
+
+            function renderTrackList(playlist) {
+                trackListDiv.innerHTML = '';
+                if (playlist.length > 0) {
+                    playlist.forEach((item, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'track-item';
+                        div.innerHTML = `<span>${item.track}. ${item.name}</span><span class="track-num">TRACK ${item.track}</span>`;
+                        div.addEventListener('click', () => playTrack(index));
+                        trackListDiv.appendChild(div);
+                    });
+                } else {
+                    for (let i = 1; i <= totalSongs; i++) {
+                        const name = `Track ${i}`;
+                        const div = document.createElement('div');
+                        div.className = 'track-item';
+                        div.innerHTML = `<span>${name}</span><span class="track-num">TRACK ${i}</span>`;
+                        div.addEventListener('click', () => playTrack(i-1));
+                        trackListDiv.appendChild(div);
+                    }
+                }
+            }
+
+            async function playTrack(index) {
+                if (!nsfData) return;
+                if (!player) await initPlayer();
+                const trackNum = index + 1;
+                // Load ROM into player
+                player.rom = new Uint8Array(nsfData);
+                player.start(trackNum);
+                isPlaying = true;
+                playerControls.style.display = 'flex';
+                highlightActiveTrack(index);
+            }
+
+            function highlightActiveTrack(index) {
+                const items = trackListDiv.querySelectorAll('.track-item');
+                items.forEach((item, i) => {
+                    if (i === index) item.classList.add('active');
+                    else item.classList.remove('active');
+                });
+            }
+
+            function stopPlayback() {
+                if (player) {
+                    player.stop();
+                    isPlaying = false;
+                    playerControls.style.display = 'none';
+                    highlightActiveTrack(-1);
+                }
+            }
+
+            // Load file and process
+            async function loadNSF(file) {
+                const buffer = await file.arrayBuffer();
+                nsfData = buffer;
+                const info = parseNSFHeader(buffer);
+                document.getElementById('nsfTitle').textContent = info.gameName || 'Untitled';
+                document.getElementById('nsfArtist').textContent = info.artist || 'Unknown';
+                document.getElementById('nsfCopyright').textContent = info.copyright || 'Unknown';
+                document.getElementById('nsfVersion').textContent = info.version;
+                document.getElementById('nsfTotalSongs').textContent = info.totalSongs;
+                document.getElementById('nsfStartingSong').textContent = info.startingSong;
+                document.getElementById('infoTable').style.display = 'table';
+                totalSongs = info.totalSongs;
+
+                // If M3U already loaded, combine
+                if (m3uData) {
+                    const playlist = parseM3U(new TextDecoder().decode(m3uData));
+                    renderTrackList(playlist);
+                } else {
+                    renderTrackList([]);
+                }
+            }
+
+            async function loadM3U(file) {
+                const buffer = await file.arrayBuffer();
+                m3uData = buffer;
+                if (nsfData) {
+                    const playlist = parseM3U(new TextDecoder().decode(buffer));
+                    renderTrackList(playlist);
+                }
+            }
+
+            nsfInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    loadNSF(file);
+                }
+            });
+
+            m3uInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    loadM3U(file);
+                }
+            });
+
+            stopBtn.addEventListener('click', stopPlayback);
+
+            // Oscilloscope
+            function drawOsc() {
+                if (!canvas || !ctx) return;
+                const w = canvas.width = canvas.clientWidth;
+                const h = canvas.height = canvas.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+
+                if (isPlaying && analyser) {
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    analyser.getByteTimeDomainData(dataArray);
+                    ctx.strokeStyle = '#e64300';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const sliceWidth = w / bufferLength;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = (v * h) / 2;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                        x += sliceWidth;
+                    }
+                    ctx.stroke();
+                } else {
+                    ctx.strokeStyle = '#3f3f5c';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, h/2);
+                    ctx.lineTo(w, h/2);
+                    ctx.stroke();
+                }
+
+                // Pixel grid
+                ctx.strokeStyle = 'rgba(78,78,104,0.3)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < w; i += 8) {
+                    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+                }
+                for (let i = 0; i < h; i += 8) {
+                    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+                }
+                requestAnimationFrame(drawOsc);
+            }
+
+            drawOsc();
+        })();
+    </script>
+</body>
+</html>
