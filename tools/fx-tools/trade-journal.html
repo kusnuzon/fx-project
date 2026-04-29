@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Journal – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📓 TRADE JOURNAL</h1>
+    <p style="text-align:center;">Catatan trading kamu, Save Game ala retro</p>
+
+    <form id="tradeForm">
+      <input type="hidden" id="editIndex" value="-1">
+      <label>Pair</label>
+      <select id="pair">
+        <option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>AUDUSD</option>
+        <option>NZDUSD</option><option>USDCAD</option><option>USDCHF</option><option>GBPJPY</option>
+      </select>
+
+      <label>Tanggal</label>
+      <input type="date" id="date" required>
+
+      <label>Arah</label>
+      <select id="direction">
+        <option value="Buy">Buy</option>
+        <option value="Sell">Sell</option>
+      </select>
+
+      <label>Entry Price</label>
+      <input type="number" id="entry" step="0.00001" required>
+
+      <label>Exit Price</label>
+      <input type="number" id="exit" step="0.00001" required>
+
+      <label>Lot (Standar)</label>
+      <input type="number" id="lots" step="0.01" value="0.01" required>
+
+      <label>Catatan</label>
+      <input type="text" id="notes" placeholder="Opsional">
+
+      <button type="button" id="btnAdd" onclick="addTrade()">➕ SIMPAN TRADE</button>
+      <button type="button" id="btnUpdate" style="display:none;" onclick="updateTrade()">💾 UPDATE</button>
+      <button type="button" id="btnCancel" style="display:none;" onclick="cancelEdit()">↩️ BATAL</button>
+    </form>
+
+    <div style="margin:1.5rem 0;">
+      <button onclick="exportJSON()" style="display:inline-block; width:auto; margin-right:10px;">📤 Ekspor JSON</button>
+      <button onclick="importJSON()" style="display:inline-block; width:auto;">📥 Impor JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="handleImport(event)">
+    </div>
+
+    <table id="tradeTable">
+      <thead>
+        <tr><th>Tanggal</th><th>Pair</th><th>Arah</th><th>Entry</th><th>Exit</th><th>Lot</th><th>P/L ($)</th><th>Aksi</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="stats" class="result-box"></div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    const STORAGE_KEY = 'cartridge_trade_journal';
+    let trades = [];
+
+    function loadTrades() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      trades = stored ? JSON.parse(stored) : [];
+    }
+
+    function saveTrades() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+    }
+
+    function pipSize(pair) {
+      return pair.includes('JPY') ? 0.01 : 0.0001;
+    }
+
+    function calcPL(entry, exit, direction, lots, pair) {
+      const diff = direction === 'Buy' ? (exit - entry) : (entry - exit);
+      const pips = diff / pipSize(pair);
+      // pip value approx $10 per lot (untuk pair dengan USD counter; estimasi umum)
+      return pips * lots * 10;
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#tradeTable tbody');
+      tbody.innerHTML = '';
+      trades.forEach((t, idx) => {
+        const pl = calcPL(t.entry, t.exit, t.direction, t.lots, t.pair);
+        tbody.innerHTML += `
+          <tr onclick="editTrade(${idx})" style="cursor:pointer;">
+            <td>${t.date}</td><td>${t.pair}</td><td>${t.direction}</td>
+            <td>${t.entry}</td><td>${t.exit}</td><td>${t.lots}</td>
+            <td class="${pl>=0 ? 'profit' : 'loss'}">${pl.toFixed(2)}</td>
+            <td><button class="delete-btn" onclick="event.stopPropagation();deleteTrade(${idx})">🗑️</button></td>
+          </tr>`;
+      });
+      renderStats();
+    }
+
+    function renderStats() {
+      if (trades.length === 0) {
+        document.getElementById('stats').innerHTML = 'Belum ada trade.';
+        return;
+      }
+      let totalPL = 0, wins = 0, losses = 0, winSum = 0, lossSum = 0;
+      trades.forEach(t => {
+        const pl = calcPL(t.entry, t.exit, t.direction, t.lots, t.pair);
+        totalPL += pl;
+        if (pl > 0) { wins++; winSum += pl; }
+        else if (pl < 0) { losses++; lossSum += Math.abs(pl); }
+      });
+      const winRate = (wins / trades.length * 100).toFixed(1);
+      const avgWin = wins ? (winSum / wins).toFixed(2) : 0;
+      const avgLoss = losses ? (lossSum / losses).toFixed(2) : 0;
+      const profitFactor = lossSum ? (winSum / lossSum).toFixed(2) : '∞';
+      document.getElementById('stats').innerHTML = `
+        <strong>Total Trades:</strong> ${trades.length} | <strong>Win Rate:</strong> ${winRate}%<br>
+        <strong>Total P/L:</strong> $${totalPL.toFixed(2)} | Avg Win: $${avgWin} | Avg Loss: $${avgLoss}<br>
+        <strong>Profit Factor:</strong> ${profitFactor}
+      `;
+    }
+
+    function addTrade() {
+      const pair = document.getElementById('pair').value;
+      const date = document.getElementById('date').value;
+      const direction = document.getElementById('direction').value;
+      const entry = parseFloat(document.getElementById('entry').value);
+      const exit = parseFloat(document.getElementById('exit').value);
+      const lots = parseFloat(document.getElementById('lots').value);
+      const notes = document.getElementById('notes').value;
+
+      if (!date || isNaN(entry) || isNaN(exit) || isNaN(lots)) {
+        alert('Lengkapi data trade.');
+        return;
+      }
+
+      trades.push({ pair, date, direction, entry, exit, lots, notes });
+      saveTrades();
+      resetForm();
+      renderTable();
+    }
+
+    function editTrade(index) {
+      const t = trades[index];
+      document.getElementById('pair').value = t.pair;
+      document.getElementById('date').value = t.date;
+      document.getElementById('direction').value = t.direction;
+      document.getElementById('entry').value = t.entry;
+      document.getElementById('exit').value = t.exit;
+      document.getElementById('lots').value = t.lots;
+      document.getElementById('notes').value = t.notes || '';
+      document.getElementById('editIndex').value = index;
+      document.getElementById('btnAdd').style.display = 'none';
+      document.getElementById('btnUpdate').style.display = 'inline-block';
+      document.getElementById('btnCancel').style.display = 'inline-block';
+    }
+
+    function updateTrade() {
+      const index = parseInt(document.getElementById('editIndex').value);
+      if (index < 0 || index >= trades.length) return;
+      trades[index].pair = document.getElementById('pair').value;
+      trades[index].date = document.getElementById('date').value;
+      trades[index].direction = document.getElementById('direction').value;
+      trades[index].entry = parseFloat(document.getElementById('entry').value);
+      trades[index].exit = parseFloat(document.getElementById('exit').value);
+      trades[index].lots = parseFloat(document.getElementById('lots').value);
+      trades[index].notes = document.getElementById('notes').value;
+      saveTrades();
+      cancelEdit();
+      renderTable();
+    }
+
+    function cancelEdit() {
+      resetForm();
+      document.getElementById('editIndex').value = '-1';
+      document.getElementById('btnAdd').style.display = '';
+      document.getElementById('btnUpdate').style.display = 'none';
+      document.getElementById('btnCancel').style.display = 'none';
+    }
+
+    function deleteTrade(index) {
+      if (confirm('Hapus trade ini?')) {
+        trades.splice(index, 1);
+        saveTrades();
+        renderTable();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('tradeForm').reset();
+      document.getElementById('editIndex').value = '-1';
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(trades, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'trade_journal_backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJSON() {
+      document.getElementById('importFile').click();
+    }
+
+    function handleImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!Array.isArray(data)) throw new Error('Bukan array');
+          trades = data;
+          saveTrades();
+          renderTable();
+          alert('Data berhasil diimpor!');
+        } catch (err) {
+          alert('File tidak valid.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // reset input
+    }
+
+    // Init
+    loadTrades();
+    renderTable();
+  </script>
+</body>
+</html>
