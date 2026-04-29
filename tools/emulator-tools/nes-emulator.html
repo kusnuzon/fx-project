@@ -13,18 +13,18 @@
     <link rel="stylesheet" href="../../data/css/nes-emulator.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.emulatorjs.org/EmulatorJS/4.0.12/emulator.min.js"></script>
+    <script src="https://unpkg.com/nostalgist"></script>
     <script src="../../data/js/virtual-gamepad.js"></script>
     <script src="../../data/js/nes-emulator.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>🎮 NES EMULATOR</h1>
-        <p class="subtitle" style="text-align:center;">Drop .nes / .zip / .rar / .7z ROM</p>
+        <p class="subtitle" style="text-align:center;">Drop .nes / .zip ROM</p>
 
         <div class="nes-dropzone" id="dropZone">
-            ⬇️ Drop ROM file here<br>
-            <span style="font-size:0.4rem;">.nes, .zip, .rar, .7z supported</span>
+            ⬇️ Drop .nes / .zip file here<br>
+            <span style="font-size:0.4rem;">or click to select</span>
         </div>
 
         <div class="nes-controls" id="controls" style="display:none;">
@@ -34,9 +34,7 @@
         </div>
 
         <div class="nes-emulator-wrapper" id="emuWrapper">
-            <div class="emu-container">
-                <div id="game"></div>
-            </div>
+            <div class="emu-container" id="emuContainer"></div>
         </div>
 
         <div class="virtual-gamepad" id="virtualGamepad" style="display:none;"></div>
