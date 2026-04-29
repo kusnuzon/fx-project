@@ -1,6 +1,5 @@
 /* =============================================
    CARTRIDGE VAULT – GLOBAL RETRO THEME (FULL)
-   Mencakup SEMUA komponen dari seluruh tools.
    ============================================= */
 
 /* --- Reset dasar --- */
@@ -285,8 +284,6 @@ footer {
 }
 
 /* --- FX Calendar & News --- */
-
-/* Tabs */
 .tabs {
     display: flex;
     gap: 0;
@@ -314,7 +311,6 @@ footer {
     color: #b9a88c;
 }
 
-/* Filter row (layout) */
 .filter-row {
     display: flex;
     flex-wrap: wrap;
@@ -343,7 +339,6 @@ footer {
     white-space: nowrap;
 }
 
-/* Calendar table */
 .cal-table {
     width: 100%;
     border-collapse: collapse;
@@ -372,7 +367,6 @@ footer {
     opacity: 0.5;
 }
 
-/* Day group header */
 .day-group {
     background: #2a2a3c;
     font-weight: bold;
@@ -385,7 +379,6 @@ footer {
     border-bottom: 2px solid #4b4b68;
 }
 
-/* Impact badge */
 .impact {
     display: inline-block;
     padding: 0.2rem 0.5rem;
@@ -400,7 +393,6 @@ footer {
 .impact-low     { background: #2a3a2a; color: #a0d0a0; }
 .impact-holiday { background: #3a2a5c; color: #c0a0f0; }
 
-/* News cards */
 .news-card {
     background: #2a2a3c;
     border: 1px solid #4b4b68;
@@ -439,44 +431,9 @@ footer {
     text-decoration: underline;
 }
 
-/* --- NES Emulator --- */
-.nes-canvas {
-    display: block;
-    margin: 0 auto;
-    image-rendering: pixelated;
-    width: 100%;
-    max-width: 512px;
-    height: auto;
-    border: 4px solid #6e6e8a;
-    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
-    background: #000;
-}
-
-.nes-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    justify-content: center;
-    margin: 1.5rem 0 0.5rem;
-}
-
-.nes-controls button {
-    width: auto;
-    padding: 0.5rem 1rem;
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.55rem;
-    background: #3a3a52;
-    color: #d1d1db;
-    border: 2px solid #5a5a7a;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.nes-controls button:hover {
-    background: #4b4b6e;
-    border-color: #b9a88c;
-    color: #f0e6d2;
-}
+/* =============================================
+   NES EMULATOR (via Nostalgist.js)
+   ============================================= */
 
 .nes-dropzone {
     border: 2px dashed #5a5a7a;
@@ -494,14 +451,45 @@ footer {
     color: #cfba8c;
 }
 
-.nes-status {
-    text-align: center;
-    font-size: 0.6rem;
-    color: #7a7a95;
-    margin-top: 0.5rem;
+/* Canvas emulator */
+.nes-emulator-canvas {
+    display: block;
+    margin: 0 auto;
+    image-rendering: pixelated;
+    width: 100%;
+    max-width: 512px;
+    height: auto;
+    border: 4px solid #6e6e8a;
+    box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14;
+    background: #000;
 }
 
-/* --- Virtual Gamepad --- */
+/* Kontrol emulator */
+.nes-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin: 1rem 0 0.5rem;
+}
+.nes-controls button {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    background: #3a3a52;
+    color: #d1d1db;
+    border: 2px solid #5a5a7a;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.nes-controls button:hover {
+    background: #4b4b6e;
+    border-color: #b9a88c;
+    color: #f0e6d2;
+}
+
+/* Virtual gamepad */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -509,7 +497,6 @@ footer {
     user-select: none;
     -webkit-user-select: none;
 }
-
 .gamepad-container {
     display: flex;
     flex-wrap: wrap;
@@ -517,8 +504,6 @@ footer {
     align-items: center;
     justify-content: center;
 }
-
-/* D‑Pad layout */
 .dpad {
     display: grid;
     grid-template-columns: 50px 50px 50px;
@@ -527,24 +512,13 @@ footer {
     justify-items: center;
     align-items: center;
 }
-.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; } /* up */
-.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; } /* left */
-.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; } /* right */
-.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; } /* down */
+.dpad .gamepad-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+.dpad .gamepad-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
+.dpad .gamepad-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
 
-/* Action buttons */
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-/* Start / Select */
-.start-select {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    width: 100%;
-}
+.action-buttons { display: flex; gap: 0.5rem; }
+.start-select { display: flex; gap: 0.5rem; justify-content: center; width: 100%; }
 
 .gamepad-btn {
     width: 50px;
@@ -562,42 +536,30 @@ footer {
     touch-action: manipulation;
     transition: background 0.1s, border-color 0.1s;
 }
-
 .gamepad-btn:active,
 .gamepad-btn.active {
     background: #4b4b6e;
     border-color: #cfba8c;
     color: #f0e6d2;
 }
+.action-buttons .gamepad-btn { width: 55px; height: 55px; font-size: 0.7rem; }
 
-/* Ukuran sedikit lebih besar untuk tombol aksi */
-.action-buttons .gamepad-btn {
-    width: 55px;
-    height: 55px;
-    font-size: 0.7rem;
+.nes-status {
+    text-align: center;
+    font-size: 0.6rem;
+    color: #7a7a95;
+    margin-top: 0.5rem;
 }
 
 /* --- Responsif dasar --- */
 @media (max-width: 700px) {
-    .cal-table th, .cal-table td {
-        font-size: 0.55rem;
-        padding: 0.3rem 0.2rem;
-    }
-    .cal-table th {
-        font-size: 0.45rem;
-    }
-    .filter-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .tab-btn {
-        font-size: 0.45rem;
-    }
+    .cal-table th, .cal-table td { font-size: 0.55rem; padding: 0.3rem 0.2rem; }
+    .cal-table th { font-size: 0.45rem; }
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .tab-btn { font-size: 0.45rem; }
 }
 
 @media (max-width: 600px) {
-    .container, form, table {
-        max-width: 95%;
-    }
+    .container, form, table { max-width: 95%; }
     h1 { font-size: 1.2rem; }
 }
