@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mario Overworld BGM | Cartridge Vault</title>
 
-    <!-- Fonts & Retro Theme -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <!-- Tone.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
 
     <style>
@@ -106,7 +104,7 @@
             <button class="mario-btn" id="stopBtn" style="display:none;">⏹ STOP</button>
         </div>
         <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.8rem;">
-            NES APU STYLE · INFINITE LOOP
+            BASS FIXED · INFINITE LOOP
         </p>
     </div>
 
@@ -117,7 +115,7 @@
             const canvas = document.getElementById('oscCanvas');
             const ctx = canvas.getContext('2d');
 
-            // ========== MELODY DATA (EXACT FROM YOUR REFERENCE) ==========
+            // ========== MELODY (EXACT) ==========
             const intro = [
                 'E5', 'E5', null, 'E5',
                 null, 'C5', 'E5', null,
@@ -185,7 +183,6 @@
                 null, null, null, null,
             ];
 
-            // Full melody line
             const melodyLine = intro.concat(
                 A1, A2, A1, A2,
                 B1, B2, B1, B3,
@@ -221,33 +218,45 @@
             bassSynth.connect(reverb);
             noiseSynth.connect(reverb);
 
-            // ========== BASS LINE ==========
-            function getBassLine() {
-                const sections = [
-                    { start: 0, end: 16, root: 'C3' },
-                    { start: 16, end: 48, root: 'C3' },
-                    { start: 48, end: 80, root: 'F3' },
-                    { start: 80, end: 112, root: 'C3' },
-                    { start: 112, end: 144, root: 'F3' },
-                    { start: 144, end: 176, root: 'C3' },
-                    { start: 176, end: 208, root: 'C3' },
-                    { start: 208, end: 240, root: 'G3' },
-                    { start: 240, end: 272, root: 'C3' },
-                    { start: 272, end: 304, root: 'F3' },
-                    { start: 304, end: 336, root: 'C3' },
-                    { start: 336, end: 368, root: 'G3' },
-                    { start: 368, end: 400, root: 'C3' },
-                    { start: 400, end: 432, root: 'C3' },
-                ];
-                const roots = [];
-                for (let i = 0; i < melodyLine.length; i++) {
-                    const sec = sections.find(s => i >= s.start && i < s.end);
-                    roots.push(sec ? sec.root : 'C3');
+            // ========== BASS LINE YANG SUDAH DIPERBAIKI ==========
+            // Setiap bagian memiliki 16 langkah 8th note = 8 quarter notes
+            function getQuarterPattern(partName) {
+                // Mengembalikan array 8 not (string) untuk 8 quarter notes
+                switch(partName) {
+                    case 'intro': return ['C3','G2','C3','G2','C3','G2','C3','G2'];
+                    case 'A1':    return ['C3','G2','C3','G2','C3','G2','C3','G2'];
+                    case 'A2':    return ['C3','G2','C3','G2','C3','G2','C3','G2'];
+                    case 'B1':    return ['F3','C3','F3','C3','G3','D3','G3','D3'];
+                    case 'B2':    return ['F3','C3','F3','C3','G3','D3','G3','D3'];
+                    case 'B3':    return ['F3','C3','F3','C3','G3','D3','G3','D3'];
+                    case 'C1':    return ['C3','G2','C3','G2','C3','G2','C3','G2'];
+                    case 'C2':    return ['C3','G2','C3','G2','C3','G2','C3','G2'];
+                    case 'D1':    return ['C3','G2','C3','G2','F3','C3','F3','C3'];
+                    case 'D2':    return ['C3','G2','C3','G2','F3','C3','F3','C3'];
+                    case 'D3':    return ['C3','G2','C3','G2','F3','C3','F3','C3'];
+                    default:      return ['C3','C3','C3','C3','C3','C3','C3','C3'];
                 }
-                return roots;
             }
 
-            const bassLine = getBassLine();
+            // Urutan bagian sesuai susunan melodyLine.concat(...)
+            const sectionOrder = [
+                'intro',
+                'A1','A2','A1','A2',
+                'B1','B2','B1','B3',
+                'B1','B2','B1','B3',
+                'C1','C2','C1','intro',
+                'A1','A2','A1','A2',
+                'D1','D2','D1','D3',
+                'D1','D2','D1','D3',
+                'C1','C2','C1'
+            ];
+
+            // Bangun array bassRoots (quarter notes)
+            const bassRoots = [];
+            for (const part of sectionOrder) {
+                const pattern = getQuarterPattern(part);
+                bassRoots.push(...pattern);
+            }
 
             // ========== SEQUENCER ==========
             let leadSeq, bassSeq, drumSeq;
@@ -258,9 +267,10 @@
                     if (note) leadSynth.triggerAttackRelease(note, '8n', time);
                 }, melodyLine, '8n');
 
+                // Bass sekarang menggunakan quarter note dengan bassRoots yang akurat
                 bassSeq = new Tone.Sequence((time, note) => {
                     bassSynth.triggerAttackRelease(note, '4n', time);
-                }, bassLine, '4n');
+                }, bassRoots, '4n');
 
                 drumSeq = new Tone.Sequence((time) => {
                     noiseSynth.triggerAttackRelease('8n', time);
@@ -272,12 +282,9 @@
                 Tone.start();
                 createSequences();
 
-                // TEMPO DIPERLAMBAT: 200 BPM (sekarang lebih pas)
                 Tone.Transport.bpm.value = 200;
-
                 Tone.Transport.loop = true;
                 Tone.Transport.loopStart = 0;
-                // Durasi total: (jumlah langkah * 8th) / 2 = quarter notes
                 const totalQuarters = melodyLine.length / 2;
                 Tone.Transport.loopEnd = `${totalQuarters}q`;
 
@@ -305,13 +312,12 @@
                 stopBtn.style.display = 'none';
             }
 
-            // ========== VISUAL OSCILLOSCOPE ==========
+            // ========== VISUAL ==========
             function drawOsc() {
                 if (!canvas || !ctx) return;
                 const w = canvas.width = canvas.clientWidth;
                 const h = canvas.height = canvas.clientHeight;
                 ctx.clearRect(0, 0, w, h);
-
                 if (!isPlaying) {
                     ctx.strokeStyle = '#3f3f5c';
                     ctx.lineWidth = 2;
@@ -333,7 +339,6 @@
                         else ctx.lineTo(x, y);
                     }
                     ctx.stroke();
-
                     ctx.strokeStyle = 'rgba(78,78,104,0.3)';
                     ctx.lineWidth = 1;
                     for (let i = 0; i < w; i += 8) {
