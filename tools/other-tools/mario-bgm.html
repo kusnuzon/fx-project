@@ -110,7 +110,7 @@
 <body>
     <div class="mario-wrapper">
         <h2>🍄 MARIO OVERWORLD</h2>
-        <div class="track-info">8-BIT NES APU EMULATION</div>
+        <div class="track-info">FULL TRACK LOOP · ACCURATE MELODY</div>
 
         <div class="oscilloscope">
             <canvas id="oscCanvas"></canvas>
@@ -121,70 +121,131 @@
             <button class="mario-btn" id="stopBtn">⏹ STOP</button>
         </div>
         <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.8rem;">
-            FULL TRACK LOOP
+            TEMPO 200 · PULSE + TRI + NOISE
         </p>
     </div>
 
     <script>
         (() => {
-            // ---------- DOM ----------
             const canvas = document.getElementById('oscCanvas');
             const ctx = canvas.getContext('2d');
             const playBtn = document.getElementById('playBtn');
             const stopBtn = document.getElementById('stopBtn');
 
-            // ---------- AUDIO ----------
             let audioCtx = null;
             let masterGain = null;
             let isPlaying = false;
-            let schedulerTimer = null;      // setTimeout id untuk scheduler
+            let schedulerTimer = null;
             let animFrameId = null;
-            let currentOscillators = [];    // simpan referensi osilator yang sedang aktif
+            let currentOscillators = [];
 
-            // ---------- TRACK DEFINITION ----------
-            const TEMPO = 180;                     // BPM
-            const STEP_DURATION = 60 / TEMPO / 4;  // durasi satu 16th note dalam detik
+            // ---------- NOTE FREQUENCIES ----------
+            const NOTE = {
+                REST: 0,
+                C4: 262, CS4: 277, D4: 294, DS4: 311, E4: 330, F4: 349, FS4: 370,
+                G4: 392, GS4: 415, A4: 440, AS4: 466, B4: 494,
+                C5: 523, CS5: 554, D5: 587, DS5: 622, E5: 659, F5: 698, FS5: 740,
+                G5: 784, GS5: 831, A5: 880, AS5: 932, B5: 988,
+            };
 
-            // Lead (Pulse 1) – frekuensi 0 artinya istirahat (rest)
-            // Setiap entry memiliki { freq, steps } (dalam satuan 16th note)
-            const leadPattern = [
-                { freq: 659.3, steps: 2 }, { freq: 659.3, steps: 2 }, { freq: 0, steps: 2 }, { freq: 659.3, steps: 2 },
-                { freq: 0, steps: 2 }, { freq: 523.3, steps: 2 }, { freq: 659.3, steps: 2 }, { freq: 0, steps: 2 },
-                { freq: 784.0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
-                { freq: 0, steps: 6 },
-
-                { freq: 523.3, steps: 2 }, { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
-                { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 330.0, steps: 2 }, { freq: 0, steps: 2 },
-                { freq: 0, steps: 2 }, { freq: 349.2, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
-                { freq: 440.0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 494.0, steps: 2 }, { freq: 523.3, steps: 2 }
+            // ---------- MELODY FROM ARDUINO DATA ----------
+            // Pasangan [freq, duration]
+            // duration: 4=quarter, 8=eighth, -4=dotted quarter, -8=dotted eighth, 2=half
+            const melody = [
+                // Bar 1
+                NOTE.E5,8, NOTE.E5,8, NOTE.REST,8, NOTE.E5,8, NOTE.REST,8, NOTE.C5,8, NOTE.E5,8,
+                NOTE.G5,4, NOTE.REST,4, NOTE.G4,8, NOTE.REST,4,
+                NOTE.C5,-4, NOTE.G4,8, NOTE.REST,4, NOTE.E4,-4,
+                NOTE.A4,4, NOTE.B4,4, NOTE.AS4,8, NOTE.A4,4,
+                NOTE.G4,-8, NOTE.E5,-8, NOTE.G5,-8, NOTE.A5,4, NOTE.F5,8, NOTE.G5,8,
+                NOTE.REST,8, NOTE.E5,4, NOTE.C5,8, NOTE.D5,8, NOTE.B4,-4,
+                // Pengulangan dari bar 3
+                NOTE.C5,-4, NOTE.G4,8, NOTE.REST,4, NOTE.E4,-4,
+                NOTE.A4,4, NOTE.B4,4, NOTE.AS4,8, NOTE.A4,4,
+                NOTE.G4,-8, NOTE.E5,-8, NOTE.G5,-8, NOTE.A5,4, NOTE.F5,8, NOTE.G5,8,
+                NOTE.REST,8, NOTE.E5,4, NOTE.C5,8, NOTE.D5,8, NOTE.B4,-4,
+                // Bar 7
+                NOTE.REST,4, NOTE.G5,8, NOTE.FS5,8, NOTE.F5,8, NOTE.DS5,4, NOTE.E5,8,
+                NOTE.REST,8, NOTE.GS4,8, NOTE.A4,8, NOTE.C4,8, NOTE.REST,8, NOTE.A4,8, NOTE.C5,8, NOTE.D5,8,
+                NOTE.REST,4, NOTE.DS5,4, NOTE.REST,8, NOTE.D5,-4,
+                NOTE.C5,2, NOTE.REST,2,
+                // Ulangi bar 7
+                NOTE.REST,4, NOTE.G5,8, NOTE.FS5,8, NOTE.F5,8, NOTE.DS5,4, NOTE.E5,8,
+                NOTE.REST,8, NOTE.GS4,8, NOTE.A4,8, NOTE.C4,8, NOTE.REST,8, NOTE.A4,8, NOTE.C5,8, NOTE.D5,8,
+                NOTE.REST,4, NOTE.DS5,4, NOTE.REST,8, NOTE.D5,-4,
+                NOTE.C5,2, NOTE.REST,2,
+                // Bar 11
+                NOTE.C5,8, NOTE.C5,4, NOTE.C5,8, NOTE.REST,8, NOTE.C5,8, NOTE.D5,4,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                // Bar 13
+                NOTE.C5,8, NOTE.C5,4, NOTE.C5,8, NOTE.REST,8, NOTE.C5,8, NOTE.D5,8, NOTE.E5,8,
+                NOTE.REST,1,
+                NOTE.C5,8, NOTE.C5,4, NOTE.C5,8, NOTE.REST,8, NOTE.C5,8, NOTE.D5,4,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                NOTE.E5,8, NOTE.E5,8, NOTE.REST,8, NOTE.E5,8, NOTE.REST,8, NOTE.C5,8, NOTE.E5,4,
+                NOTE.G5,4, NOTE.REST,4, NOTE.G4,4, NOTE.REST,4,
+                // Bar 19
+                NOTE.C5,-4, NOTE.G4,8, NOTE.REST,4, NOTE.E4,-4,
+                NOTE.A4,4, NOTE.B4,4, NOTE.AS4,8, NOTE.A4,4,
+                NOTE.G4,-8, NOTE.E5,-8, NOTE.G5,-8, NOTE.A5,4, NOTE.F5,8, NOTE.G5,8,
+                NOTE.REST,8, NOTE.E5,4, NOTE.C5,8, NOTE.D5,8, NOTE.B4,-4,
+                // Ulangi dari 19
+                NOTE.C5,-4, NOTE.G4,8, NOTE.REST,4, NOTE.E4,-4,
+                NOTE.A4,4, NOTE.B4,4, NOTE.AS4,8, NOTE.A4,4,
+                NOTE.G4,-8, NOTE.E5,-8, NOTE.G5,-8, NOTE.A5,4, NOTE.F5,8, NOTE.G5,8,
+                NOTE.REST,8, NOTE.E5,4, NOTE.C5,8, NOTE.D5,8, NOTE.B4,-4,
+                // Bar 23
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.D5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.G5,-8, NOTE.F5,-8,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.B4,8, NOTE.F5,4, NOTE.F5,8, NOTE.F5,-8, NOTE.E5,-8, NOTE.D5,-8,
+                NOTE.C5,8, NOTE.E4,4, NOTE.E4,8, NOTE.C4,2,
+                // Ulangi dari 23
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.D5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.G5,-8, NOTE.F5,-8,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.B4,8, NOTE.F5,4, NOTE.F5,8, NOTE.F5,-8, NOTE.E5,-8, NOTE.D5,-8,
+                NOTE.C5,8, NOTE.E4,4, NOTE.E4,8, NOTE.C4,2,
+                // Bar 31
+                NOTE.C5,8, NOTE.C5,4, NOTE.C5,8, NOTE.REST,8, NOTE.C5,8, NOTE.D5,8, NOTE.E5,8,
+                NOTE.REST,1,
+                NOTE.C5,8, NOTE.C5,4, NOTE.C5,8, NOTE.REST,8, NOTE.C5,8, NOTE.D5,4,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                NOTE.E5,8, NOTE.E5,8, NOTE.REST,8, NOTE.E5,8, NOTE.REST,8, NOTE.C5,8, NOTE.E5,4,
+                NOTE.G5,4, NOTE.REST,4, NOTE.G4,4, NOTE.REST,4,
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.D5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.A5,-8, NOTE.G5,-8, NOTE.F5,-8,
+                NOTE.E5,8, NOTE.C5,4, NOTE.A4,8, NOTE.G4,2,
+                NOTE.E5,8, NOTE.C5,4, NOTE.G4,8, NOTE.REST,4, NOTE.GS4,4,
+                NOTE.A4,8, NOTE.F5,4, NOTE.F5,8, NOTE.A4,2,
+                NOTE.B4,8, NOTE.F5,4, NOTE.F5,8, NOTE.F5,-8, NOTE.E5,-8, NOTE.D5,-8,
+                NOTE.C5,8, NOTE.E4,4, NOTE.E4,8, NOTE.C4,2,
             ];
 
-            // Bass (Triangle) – lebih sederhana, not panjang
-            const bassPattern = [
-                { freq: 130.8, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 130.8, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 },
+            const TEMPO = 200;
+            const wholenote = (60000 * 4) / TEMPO; // ms untuk whole note
 
-                { freq: 164.8, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 164.8, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 174.6, steps: 4 }, { freq: 0, steps: 4 },
-                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 }
+            // ---------- BASS PATTERN SEDERHANA ----------
+            // Bass line mengikuti harmoni dasar
+            const bassLine = [
+                NOTE.C3,4, NOTE.G2,4, NOTE.C3,4, NOTE.G2,4,
+                NOTE.C3,4, NOTE.G2,4, NOTE.C3,4, NOTE.G2,4,
+                NOTE.F3,4, NOTE.C3,4, NOTE.F3,4, NOTE.C3,4,
+                NOTE.G3,4, NOTE.D3,4, NOTE.G3,4, NOTE.D3,4,
+                NOTE.C3,4, NOTE.G2,4, NOTE.C3,4, NOTE.G2,4,
+                NOTE.C3,4, NOTE.G2,4, NOTE.C3,4, NOTE.G2,4,
+                NOTE.F3,4, NOTE.C3,4, NOTE.F3,4, NOTE.C3,4,
+                NOTE.G3,4, NOTE.D3,4, NOTE.G3,4, NOTE.D3,4,
             ];
 
-            // Drum (Noise) – 1 = bunyi, 0 = diam (resolusi 8 langkah per beat? kita sesuaikan)
-            // Kita buat drum setiap 2 langkah (8th note) agar cocok dengan langkah 16th note kita
-            const drumPattern = [
-                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0,
-                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0
-            ];
-
-            // Total langkah = panjang lead pattern (dalam langkah 16th note)
-            const totalSteps = leadPattern.reduce((sum, ev) => sum + ev.steps, 0);
-            // Durasi total loop dalam detik
-            const loopDuration = totalSteps * STEP_DURATION;
-
-            // ---------- FUNGSI AUDIO DASAR ----------
+            // ---------- AUDIO FUNCTIONS ----------
             function initAudio() {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -208,7 +269,7 @@
                 const gain = audioCtx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, startTime);
-                gain.gain.setValueAtTime(0.25, startTime);
+                gain.gain.setValueAtTime(type === 'square' ? 0.22 : 0.18, startTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
                 osc.connect(gain);
                 gain.connect(masterGain);
@@ -227,70 +288,70 @@
                 }
                 const noise = audioCtx.createBufferSource();
                 noise.buffer = buffer;
-                const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.2, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
-                noise.connect(gain);
-                gain.connect(masterGain);
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.15, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
+                noise.connect(gainNode);
+                gainNode.connect(masterGain);
                 noise.start(startTime);
                 noise.stop(startTime + durationSec);
                 currentOscillators.push(noise);
             }
 
-            // ---------- PENJADWALAN NOT UNTUK SATU LOOP ----------
-            function scheduleLoop(startTime) {
-                let currentStep = 0; // akumulasi langkah (dalam 16th note)
+            // ---------- SCHEDULER ----------
+            function scheduleFullTrack(startTime) {
+                let currentTime = startTime;
 
-                // Fungsi untuk mengambil not dari array pattern berdasarkan langkah
-                const getEventAtStep = (pattern, step) => {
-                    let accumulated = 0;
-                    for (const ev of pattern) {
-                        if (step < accumulated + ev.steps) {
-                            return ev;
-                        }
-                        accumulated += ev.steps;
+                // Lead melody
+                for (let i = 0; i < melody.length; i += 2) {
+                    const freq = melody[i];
+                    const divider = melody[i + 1];
+                    let durationMs;
+                    if (divider > 0) {
+                        durationMs = wholenote / divider;
+                    } else {
+                        durationMs = (wholenote / Math.abs(divider)) * 1.5;
                     }
-                    return null; // seharusnya tidak terjadi
-                };
+                    const durationSec = durationMs / 1000;
+                    const playDuration = durationSec * 0.9;
 
-                // Jadwalkan lead
-                for (let s = 0; s < totalSteps; s++) {
-                    const ev = getEventAtStep(leadPattern, s);
-                    if (ev && ev.freq > 0) {
-                        const t = startTime + s * STEP_DURATION;
-                        playNote(ev.freq, 'square', t, STEP_DURATION * 0.8);
+                    if (freq > 0) {
+                        playNote(freq, 'square', currentTime, playDuration);
                     }
+                    currentTime += durationSec;
                 }
 
-                // Jadwalkan bass
-                for (let s = 0; s < totalSteps; s++) {
-                    const ev = getEventAtStep(bassPattern, s);
-                    if (ev && ev.freq > 0) {
-                        const t = startTime + s * STEP_DURATION;
-                        playNote(ev.freq, 'triangle', t, STEP_DURATION * 0.9);
+                const totalDuration = currentTime - startTime;
+
+                // Bass line (looping sederhana mengikuti harmoni)
+                let bassTime = startTime;
+                const bassNoteLen = (wholenote / 4) / 1000; // quarter note
+                for (let i = 0; i < Math.ceil(totalDuration / bassNoteLen); i++) {
+                    const bassFreq = bassLine[i % bassLine.length];
+                    if (bassFreq > 0) {
+                        playNote(bassFreq, 'triangle', bassTime, bassNoteLen * 0.9);
                     }
+                    bassTime += bassNoteLen;
                 }
 
-                // Jadwalkan drum (resolusi 1 langkah 16th note)
-                for (let s = 0; s < totalSteps; s++) {
-                    if (drumPattern[s % drumPattern.length] === 1) {
-                        const t = startTime + s * STEP_DURATION;
-                        playNoise(t, STEP_DURATION * 0.6);
-                    }
+                // Drum (noise) setiap 8th note
+                const drumInterval = (wholenote / 8) / 1000;
+                for (let t = startTime; t < startTime + totalDuration; t += drumInterval) {
+                    playNoise(t, drumInterval * 0.6);
                 }
+
+                return totalDuration;
             }
 
-            // ---------- LOOP CONTROL ----------
             function nextLoop() {
                 if (!isPlaying) return;
                 const now = audioCtx.currentTime;
-                scheduleLoop(now);
-                // Bersihkan osilator yang sudah selesai (supaya array tidak membengkak)
+                const loopDur = scheduleFullTrack(now);
+                // Bersihkan osilator yang sudah selesai
                 currentOscillators = currentOscillators.filter(o => {
                     try { return o.playbackState !== 3; } catch(e) { return false; }
                 });
-                // Jadwalkan loop berikutnya tepat setelah durasi loop selesai
-                schedulerTimer = setTimeout(nextLoop, loopDuration * 1000);
+                schedulerTimer = setTimeout(nextLoop, loopDur * 1000);
             }
 
             function startPlayback() {
@@ -314,14 +375,12 @@
                 if (animFrameId) cancelAnimationFrame(animFrameId);
             }
 
-            // ---------- VISUAL OSILOSKOP ----------
+            // ---------- VISUAL ----------
             function drawOsc() {
                 const w = canvas.width = canvas.clientWidth;
                 const h = canvas.height = canvas.clientHeight;
                 ctx.clearRect(0, 0, w, h);
-
                 if (!isPlaying) {
-                    // Garis datar
                     ctx.strokeStyle = '#3f3f5c';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -329,23 +388,19 @@
                     ctx.lineTo(w, h/2);
                     ctx.stroke();
                 } else {
-                    // Efek gelombang dinamis
                     const now = Date.now() / 1000;
-                    const freq = 523.3; // representasi visual
                     ctx.strokeStyle = '#e64300';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     const center = h/2;
                     const amp = h * 0.4;
                     for (let x = 0; x < w; x++) {
-                        const phase = (x / w) * 2 * Math.PI * (freq / 100) + now * 5;
+                        const phase = (x / w) * 2 * Math.PI * 1.5 + now * 5;
                         const y = center + Math.sin(phase) * amp * 0.3;
                         if (x === 0) ctx.moveTo(x, y);
                         else ctx.lineTo(x, y);
                     }
                     ctx.stroke();
-
-                    // Grid piksel
                     ctx.strokeStyle = 'rgba(78,78,104,0.3)';
                     ctx.lineWidth = 1;
                     for (let i = 0; i < w; i += 8) {
@@ -362,11 +417,9 @@
                 animFrameId = requestAnimationFrame(animateOscilloscope);
             }
 
-            // ---------- EVENT LISTENERS ----------
             playBtn.addEventListener('click', startPlayback);
             stopBtn.addEventListener('click', stopPlayback);
 
-            // Inisialisasi awal
             canvas.width = canvas.clientWidth;
             canvas.height = canvas.clientHeight;
             animateOscilloscope();
