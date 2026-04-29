@@ -185,7 +185,7 @@
                 null, null, null, null,
             ];
 
-            // Full melody line sesuai susunan asli
+            // Full melody line
             const melodyLine = intro.concat(
                 A1, A2, A1, A2,
                 B1, B2, B1, B3,
@@ -198,34 +198,30 @@
             );
 
             // ========== TONE.JS SETUP ==========
-            // Lead (pulse)
             const leadSynth = new Tone.MonoSynth({
                 oscillator: { type: 'square' },
                 envelope: { attack: 0.02, decay: 0.05, sustain: 0.5, release: 0.8 },
                 volume: -12,
             }).toDestination();
 
-            // Bass (triangle)
             const bassSynth = new Tone.MonoSynth({
                 oscillator: { type: 'triangle' },
                 envelope: { attack: 0.02, decay: 0.05, sustain: 0.5, release: 0.8 },
                 volume: -18,
             }).toDestination();
 
-            // Drum (noise)
             const noiseSynth = new Tone.NoiseSynth({
                 noise: { type: 'white' },
                 envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.05 },
                 volume: -22,
             }).toDestination();
 
-            // Reverb
             const reverb = new Tone.Freeverb(0.6, 500).toDestination();
             leadSynth.connect(reverb);
             bassSynth.connect(reverb);
             noiseSynth.connect(reverb);
 
-            // Bass line sederhana (root notes per bagian)
+            // ========== BASS LINE ==========
             function getBassLine() {
                 const sections = [
                     { start: 0, end: 16, root: 'C3' },
@@ -266,7 +262,6 @@
                     bassSynth.triggerAttackRelease(note, '4n', time);
                 }, bassLine, '4n');
 
-                // Drum bunyi setiap langkah
                 drumSeq = new Tone.Sequence((time) => {
                     noiseSynth.triggerAttackRelease('8n', time);
                 }, new Array(melodyLine.length).fill(1), '8n');
@@ -277,10 +272,12 @@
                 Tone.start();
                 createSequences();
 
-                Tone.Transport.bpm.value = 400;
-                Tone.Transport.loop = true;         // <-- loop tanpa batas
+                // TEMPO DIPERLAMBAT: 200 BPM (sekarang lebih pas)
+                Tone.Transport.bpm.value = 200;
+
+                Tone.Transport.loop = true;
                 Tone.Transport.loopStart = 0;
-                // Durasi total dalam quarter note: (jumlah langkah * 8th) / 2 karena 1 quarter = 2 eighth
+                // Durasi total: (jumlah langkah * 8th) / 2 = quarter notes
                 const totalQuarters = melodyLine.length / 2;
                 Tone.Transport.loopEnd = `${totalQuarters}q`;
 
@@ -337,7 +334,6 @@
                     }
                     ctx.stroke();
 
-                    // Pixel grid
                     ctx.strokeStyle = 'rgba(78,78,104,0.3)';
                     ctx.lineWidth = 1;
                     for (let i = 0; i < w; i += 8) {
@@ -350,11 +346,9 @@
                 requestAnimationFrame(drawOsc);
             }
 
-            // ========== EVENT LISTENERS ==========
             playBtn.addEventListener('click', startPlayback);
             stopBtn.addEventListener('click', stopPlayback);
 
-            // Init
             canvas.width = canvas.clientWidth;
             canvas.height = canvas.clientHeight;
             drawOsc();
