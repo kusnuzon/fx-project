@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Patterns – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .patterns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .pattern-card {
+      background: #2a2a3c;
+      border: 2px solid #4b4b68;
+      padding: 0.8rem;
+      text-align: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+      cursor: default;
+      position: relative;
+    }
+    .pattern-card:hover {
+      border-color: #cfba8c;
+      background: #32324a;
+      transform: translateY(-2px);
+    }
+    .pattern-card canvas {
+      display: block;
+      margin: 0 auto 0.5rem;
+      image-rendering: crisp-edges;
+    }
+    .pattern-name {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.5rem;
+      color: #cfba8c;
+      margin: 0.3rem 0;
+      word-break: break-word;
+    }
+    .pattern-type {
+      font-size: 0.5rem;
+      color: #9da5b4;
+      margin-bottom: 0.2rem;
+      text-transform: uppercase;
+    }
+    .pattern-tooltip {
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a0a14;
+      border: 2px solid #cfba8c;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.6rem;
+      color: #cdcdd4;
+      width: 220px;
+      text-align: left;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 20;
+    }
+    .pattern-card:hover .pattern-tooltip {
+      opacity: 1;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+    .filter-row select {
+      padding: 0.4rem;
+      font-size: 0.65rem;
+      font-family: 'Press Start 2P', cursive;
+      background: #2a2a3c;
+      color: #cdcdd4;
+      border: 1px solid #4b4b68;
+      border-radius: 4px;
+    }
+    @media (max-width: 600px) {
+      .patterns-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 CHART PATTERNS</h1>
+    <p style="text-align:center;">Kamus pola grafik ala cartridge</p>
+
+    <div class="filter-row">
+      <label style="font-size:0.6rem; color:#9da5b4;">Filter:</label>
+      <select id="filterType" onchange="renderPatterns()">
+        <option value="all">ALL</option>
+        <option value="bullish">BULLISH</option>
+        <option value="bearish">BEARISH</option>
+        <option value="reversal">REVERSAL</option>
+        <option value="continuation">CONTINUATION</option>
+        <option value="bilateral">BILATERAL</option>
+      </select>
+    </div>
+
+    <div id="patternsContainer" class="patterns-grid"></div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    const CW = 140, CH = 90;
+
+    function drawGrid(ctx) {
+      ctx.strokeStyle = '#2a2a3c';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < CW; x += 20) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+      }
+      for (let y = 0; y < CH; y += 15) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+      }
+    }
+
+    function drawPriceLine(ctx, points, color, dashed) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      if (dashed) ctx.setLineDash([4, 3]);
+      else ctx.setLineDash([]);
+      points.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawArrow(ctx, x, y, angle, color) {
+      ctx.fillStyle = color;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, -6);
+      ctx.lineTo(5, -6);
+      ctx.lineTo(0, -12);
+      ctx.lineTo(-5, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Fungsi-fungsi gambar spesifik
+    function drawHeadShoulders(ctx, inverted) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const yBase = inverted ? 20 : 70;
+      const cols = [[15, inverted?60:40], [45, inverted?20:65], [75, inverted?60:40], [105, inverted?55:45], [125, inverted?55:45]];
+      const pts = cols.map(c => [c[0], c[1]]);
+      drawPriceLine(ctx, pts, '#cfba8c', false);
+      // neckline
+      drawPriceLine(ctx, [[10, inverted?45:55], [130, inverted?45:55]], '#7a7a95', true);
+      // breakout arrow
+      drawArrow(ctx, 120, inverted?50:50, inverted ? 0 : Math.PI, inverted ? '#6c9' : '#e07373');
+    }
+
+    function drawDoubleTop(ctx, top) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const yPeak = top ? 20 : 60;
+      const yBase = top ? 55 : 25;
+      const pts = [[15, yBase], [35, yPeak], [55, yBase], [75, yPeak], [95, yBase - (top?10:-10)], [125, yBase - (top?15:-15)]];
+      const color = top ? '#e07373' : '#6c9';
+      drawPriceLine(ctx, pts, color, false);
+      drawPriceLine(ctx, [[10, yBase], [80, yBase]], '#7a7a95', true); // neckline
+      drawArrow(ctx, 115, yBase - (top?5:5), top ? 0 : Math.PI, color);
+    }
+
+    function drawTripleTop(ctx, top) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const yPeak = top ? 15 : 65;
+      const yBase = top ? 50 : 20;
+      const pts = [[10, yBase], [25, yPeak], [40, yBase], [55, yPeak], [70, yBase], [85, yPeak], [100, yBase - (top?10:-10)], [125, yBase - (top?15:-15)]];
+      const color = top ? '#e07373' : '#6c9';
+      drawPriceLine(ctx, pts, color, false);
+      drawPriceLine(ctx, [[10, yBase], [90, yBase]], '#7a7a95', true);
+      drawArrow(ctx, 115, yBase - (top?5:5), top ? 0 : Math.PI, color);
+    }
+
+    function drawTriangle(ctx, ascending) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const pts = ascending
+        ? [[15, 65], [65, 20], [115, 20]]
+        : [[15, 20], [65, 65], [115, 65]];
+      const color = ascending ? '#6c9' : '#e07373';
+      drawPriceLine(ctx, [pts[0], pts[1]], color, false);
+      drawPriceLine(ctx, [pts[1], pts[2]], color, false);
+      drawPriceLine(ctx, [pts[0], [pts[2][0], pts[0][1]]], '#7a7a95', true);
+      drawArrow(ctx, 105, ascending ? 30 : 55, ascending ? Math.PI : 0, color);
+    }
+
+    function drawSymmetricalTriangle(ctx) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const pts = [[15, 20], [70, 45], [125, 70]];
+      drawPriceLine(ctx, [pts[0], pts[1]], '#cfba8c', false);
+      drawPriceLine(ctx, [pts[1], pts[2]], '#cfba8c', false);
+      drawPriceLine(ctx, [[15, 70], [70, 45]], '#7a7a95', true);
+      drawArrow(ctx, 110, 35, Math.PI, '#6c9');
+      drawArrow(ctx, 110, 55, 0, '#e07373');
+    }
+
+    function drawWedge(ctx, falling) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const topPts = falling ? [[15, 50], [75, 25], [125, 20]] : [[15, 20], [75, 50], [125, 65]];
+      const botPts = falling ? [[15, 65], [75, 30], [125, 25]] : [[15, 35], [75, 55], [125, 70]];
+      const color = falling ? '#6c9' : '#e07373';
+      drawPriceLine(ctx, topPts, color, false);
+      drawPriceLine(ctx, botPts, color, false);
+      drawArrow(ctx, 110, falling ? 32 : 60, falling ? Math.PI : 0, color);
+    }
+
+    function drawFlag(ctx, bearFlag) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const polePts = bearFlag ? [[25, 65], [25, 20]] : [[25, 20], [25, 65]];
+      const flagStart = bearFlag ? [30, 30] : [30, 55];
+      const flagEnd = bearFlag ? [115, 50] : [115, 35];
+      drawPriceLine(ctx, polePts, '#cfba8c', false);
+      drawPriceLine(ctx, [flagStart, flagEnd], '#7a7a95', false);
+      drawPriceLine(ctx, [[flagStart[0], flagStart[1]-8], [flagEnd[0], flagEnd[1]-8]], '#7a7a95', false);
+      drawArrow(ctx, 100, bearFlag ? 60 : 25, bearFlag ? 0 : Math.PI, bearFlag ? '#e07373' : '#6c9');
+    }
+
+    function drawCupHandle(ctx) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const pts = [[15, 30], [35, 65], [55, 70], [75, 65], [95, 30], [105, 35], [110, 30], [115, 20], [125, 15]];
+      drawPriceLine(ctx, pts, '#6c9', false);
+      drawPriceLine(ctx, [[15, 30], [95, 30]], '#7a7a95', true);
+      drawArrow(ctx, 115, 22, Math.PI, '#6c9');
+    }
+
+    function drawChannel(ctx, ascending) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const topY = ascending ? [50, 35, 20] : [20, 35, 50];
+      const botY = ascending ? [65, 50, 35] : [35, 50, 65];
+      const color = ascending ? '#6c9' : '#e07373';
+      drawPriceLine(ctx, [[15, topY[0]], [75, topY[1]], [125, topY[2]]], color, false);
+      drawPriceLine(ctx, [[15, botY[0]], [75, botY[1]], [125, botY[2]]], color, false);
+    }
+
+    function drawRectangle(ctx) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      drawPriceLine(ctx, [[15, 25], [115, 25]], '#cfba8c', false);
+      drawPriceLine(ctx, [[15, 60], [115, 60]], '#cfba8c', false);
+      // osilasi
+      for (let x = 20; x < 110; x += 20) {
+        drawPriceLine(ctx, [[x, 25], [x+10, 60], [x+10, 60]], '#cfba8c', false);
+      }
+      drawArrow(ctx, 100, 35, Math.PI, '#6c9');
+      drawArrow(ctx, 100, 50, 0, '#e07373');
+    }
+
+    function drawDiamond(ctx, top) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      const out = top ? [[15, 40], [45, 15], [85, 15], [115, 40]] : [[15, 45], [45, 65], [85, 65], [115, 45]];
+      const in_ = top ? [[45, 45], [70, 25], [105, 45]] : [[45, 40], [70, 55], [105, 40]];
+      drawPriceLine(ctx, out, top ? '#cfba8c' : '#cfba8c', false);
+      drawPriceLine(ctx, in_, '#cfba8c', false);
+      drawArrow(ctx, 105, top ? 30 : 55, top ? 0 : Math.PI, top ? '#e07373' : '#6c9');
+    }
+
+    function drawBumpRun(ctx) {
+      ctx.clearRect(0, 0, CW, CH);
+      drawGrid(ctx);
+      drawPriceLine(ctx, [[15, 65], [45, 63], [70, 55], [90, 30], [110, 50]], '#cfba8c', false);
+      drawPriceLine(ctx, [[15, 65], [80, 62]], '#7a7a95', true); // trendline
+      drawArrow(ctx, 105, 45, 0, '#6c9');
+    }
+
+    const patterns = [
+      { name: 'Head & Shoulders', type: 'bearish reversal', draw: (ctx)=>drawHeadShoulders(ctx, false), desc: 'Tiga puncak: kiri, kepala (tinggi), kanan. Break neckline = sinyal turun.' },
+      { name: 'Inv Head & Shoulders', type: 'bullish reversal', draw: (ctx)=>drawHeadShoulders(ctx, true), desc: 'Kebalikan Head & Shoulders. Tiga lembah. Break neckline = sinyal naik.' },
+      { name: 'Double Top', type: 'bearish reversal', draw: (ctx)=>drawDoubleTop(ctx, true), desc: 'Dua puncak sejajar. Break support bawah = reversal turun.' },
+      { name: 'Double Bottom', type: 'bullish reversal', draw: (ctx)=>drawDoubleTop(ctx, false), desc: 'Dua lembah sejajar. Break resistance atas = reversal naik.' },
+      { name: 'Triple Top', type: 'bearish reversal', draw: (ctx)=>drawTripleTop(ctx, true), desc: 'Tiga puncak hampir sama tinggi. Konfirmasi resistance kuat. Break down = sinyal jual.' },
+      { name: 'Triple Bottom', type: 'bullish reversal', draw: (ctx)=>drawTripleTop(ctx, false), desc: 'Tiga lembah. Break resistance = sinyal naik kuat.' },
+      { name: 'Ascending Triangle', type: 'bullish continuation', draw: (ctx)=>drawTriangle(ctx, true), desc: 'Resistance datar, support naik. Biasanya breakout ke atas.' },
+      { name: 'Descending Triangle', type: 'bearish continuation', draw: (ctx)=>drawTriangle(ctx, false), desc: 'Support datar, resistance turun. Biasanya breakdown ke bawah.' },
+      { name: 'Symmetrical Triangle', type: 'bilateral', draw: drawSymmetricalTriangle, desc: 'Support & resistance menyempit. Breakout bisa dua arah, tunggu konfirmasi.' },
+      { name: 'Falling Wedge', type: 'bullish reversal', draw: (ctx)=>drawWedge(ctx, true), desc: 'Dua garis turun menyempit. Biasanya breakout ke atas.' },
+      { name: 'Rising Wedge', type: 'bearish reversal', draw: (ctx)=>drawWedge(ctx, false), desc: 'Dua garis naik menyempit. Biasanya breakdown ke bawah.' },
+      { name: 'Bull Flag', type: 'bullish continuation', draw: (ctx)=>drawFlag(ctx, false), desc: 'Tiang naik tajam, lalu konsolidasi turun landai. Breakout lanjut naik.' },
+      { name: 'Bear Flag', type: 'bearish continuation', draw: (ctx)=>drawFlag(ctx, true), desc: 'Tiang turun tajam, konsolidasi naik landai. Breakdown lanjut turun.' },
+      { name: 'Cup & Handle', type: 'bullish continuation', draw: drawCupHandle, desc: 'Bentuk U (cup) + koreksi kecil (handle). Breakout naik.' },
+      { name: 'Channel (Ascending)', type: 'bullish continuation', draw: (ctx)=>drawChannel(ctx, true), desc: 'Harga bergerak di antara dua garis sejajar naik.' },
+      { name: 'Channel (Descending)', type: 'bearish continuation', draw: (ctx)=>drawChannel(ctx, false), desc: 'Harga bergerak di antara dua garis sejajar turun.' },
+      { name: 'Rectangle', type: 'bilateral', draw: drawRectangle, desc: 'Harga terkurung di rentang horizontal. Breakout tentukan arah.' },
+      { name: 'Diamond Top', type: 'bearish reversal', draw: (ctx)=>drawDiamond(ctx, true), desc: 'Pelebaran lalu penyempitan di puncak. Breakdown = sinyal turun.' },
+      { name: 'Diamond Bottom', type: 'bullish reversal', draw: (ctx)=>drawDiamond(ctx, false), desc: 'Pelebaran lalu penyempitan di dasar. Breakout = sinyal naik.' },
+      { name: 'Bump & Run', type: 'bullish reversal', draw: drawBumpRun, desc: 'Kemiringan curam (bump) lalu break trendline (run). Sinyal reversal naik.' }
+    ];
+
+    function renderPatterns() {
+      const filter = document.getElementById('filterType').value;
+      const container = document.getElementById('patternsContainer');
+      container.innerHTML = '';
+
+      const filtered = patterns.filter(p => {
+        if (filter === 'all') return true;
+        if (filter === 'bullish') return p.type.includes('bullish');
+        if (filter === 'bearish') return p.type.includes('bearish');
+        if (filter === 'reversal') return p.type.includes('reversal');
+        if (filter === 'continuation') return p.type.includes('continuation');
+        if (filter === 'bilateral') return p.type.includes('bilateral');
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="loading" style="grid-column:1/-1;">Tidak ada pola untuk filter ini.</div>';
+        return;
+      }
+
+      filtered.forEach(pattern => {
+        const card = document.createElement('div');
+        card.className = 'pattern-card';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = CW;
+        canvas.height = CH;
+        const ctx = canvas.getContext('2d');
+        if (pattern.draw) pattern.draw(ctx);
+
+        const name = document.createElement('div');
+        name.className = 'pattern-name';
+        name.textContent = pattern.name;
+
+        const type = document.createElement('div');
+        type.className = 'pattern-type';
+        type.textContent = pattern.type;
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'pattern-tooltip';
+        tooltip.textContent = pattern.desc;
+
+        card.appendChild(canvas);
+        card.appendChild(name);
+        card.appendChild(type);
+        card.appendChild(tooltip);
+        container.appendChild(card);
+      });
+    }
+
+    renderPatterns();
+  </script>
+</body>
+</html>
