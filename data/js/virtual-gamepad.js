@@ -1,5 +1,5 @@
 // data/js/virtual-gamepad.js
-// MODULAR VIRTUAL GAMEPAD – Pasti Berfungsi
+// MODULAR VIRTUAL GAMEPAD – Teruji Berfungsi
 class VirtualGamepad {
   constructor({ container, groups = {}, onButton = null }) {
     if (!container) throw new Error('container required');
@@ -16,7 +16,6 @@ class VirtualGamepad {
     const wrapper = document.createElement('div');
     wrapper.className = 'gamepad-container';
 
-    // D‑Pad
     if (this.groups.dpad) {
       const dpad = document.createElement('div');
       dpad.className = 'vgp-group vgp-dpad';
@@ -27,7 +26,6 @@ class VirtualGamepad {
       wrapper.appendChild(dpad);
     }
 
-    // ABXY
     if (this.groups.abxy) {
       const abxy = document.createElement('div');
       abxy.className = 'vgp-group vgp-abxy';
@@ -40,7 +38,6 @@ class VirtualGamepad {
       wrapper.appendChild(abxy);
     }
 
-    // Start / Select
     if (this.groups.startselect) {
       const ss = document.createElement('div');
       ss.className = 'vgp-group vgp-startselect';
@@ -52,7 +49,6 @@ class VirtualGamepad {
       wrapper.appendChild(ss);
     }
 
-    // L1 / L2
     if (this.groups.l1l2) {
       const l = document.createElement('div');
       l.className = 'vgp-group vgp-shoulder';
@@ -64,7 +60,6 @@ class VirtualGamepad {
       wrapper.appendChild(l);
     }
 
-    // R1 / R2
     if (this.groups.r1r2) {
       const r = document.createElement('div');
       r.className = 'vgp-group vgp-shoulder';
@@ -87,11 +82,13 @@ class VirtualGamepad {
 
     const press = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       btn.classList.add('active');
       if (this.onButton) this.onButton({ button: name, pressed: true });
     };
     const release = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       btn.classList.remove('active');
       if (this.onButton) this.onButton({ button: name, pressed: false });
     };
