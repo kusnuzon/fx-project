@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CARTRIDGE VAULT</title>
 
-    <!-- Google Pixel Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-    <!-- Global Retro Theme -->
     <link rel="stylesheet" href="data/css/retro-theme.css">
 
     <style>
-        /* ===== RPG GACHA FLORAL FRAME ===== */
+        /* ===== RPG GACHA FRAME – UKIRAN BESAR ===== */
         .dashboard-container {
             position: relative;
             z-index: 2;
@@ -32,17 +30,15 @@
                 inset 0 0 40px rgba(0,0,0,0.4);
             padding: 2.5rem 2rem 1.5rem;
             border-radius: 4px;
-            overflow: hidden; /* Penting agar dekorasi tidak bocor */
+            overflow: visible;   /* agar hiasan pojok tidak terpotong */
         }
 
         /* Scanline halus */
         .dashboard-container::after {
             content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: repeating-linear-gradient(
                 0deg,
                 rgba(0,0,0,0.025) 0px,
@@ -54,36 +50,24 @@
             z-index: 10;
         }
 
-        /* ── CORNER FLORAL DECORATIONS ── */
+        /* ── CORNER DECORATIONS (UKIRAN) ── */
         .corner-decoration {
             position: absolute;
             z-index: 0;
             pointer-events: none;
-            width: 220px;
-            height: 220px;
+            width: 300px;
+            height: 300px;
         }
 
-        /* Pojok Kiri Atas */
-        .corner-tl { top: -30px; left: -30px; }
+        .corner-tl { top: -70px; left: -70px; }
+        .corner-tr { top: -70px; right: -70px; transform: scale(-1, 1); }
+        .corner-bl { bottom: -70px; left: -70px; transform: scale(1, -1); }
+        .corner-br { bottom: -70px; right: -70px; transform: scale(-1, -1); }
 
-        /* Pojok Kanan Atas */
-        .corner-tr { top: -30px; right: -30px; transform: scale(-1, 1); }
-
-        /* Pojok Kiri Bawah */
-        .corner-bl { bottom: -30px; left: -30px; transform: scale(1, -1); }
-
-        /* Pojok Kanan Bawah */
-        .corner-br { bottom: -30px; right: -30px; transform: scale(-1, -1); }
-
-        /* Animasi daun bergoyang */
-        .leaf-sway {
-            animation: sway 3s ease-in-out infinite alternate;
-            transform-origin: center;
-        }
-
-        @keyframes sway {
-            0% { transform: rotate(-2deg); }
-            100% { transform: rotate(2deg); }
+        .corner-decoration svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 6px rgba(207,186,140,0.4));
         }
 
         /* ── HEADER ── */
@@ -192,14 +176,8 @@
             opacity: 0.6;
         }
 
-        .empty-folder {
-            color: #6b6b80;
-            font-style: italic;
-            font-size: 0.8rem;
-            padding-left: 0.5rem;
-        }
+        .empty-folder { color: #6b6b80; font-style: italic; font-size: 0.8rem; padding-left: 0.5rem; }
 
-        /* Loading */
         .loading {
             text-align: center;
             color: #9a9ab0;
@@ -209,10 +187,7 @@
             animation: blink 1.5s infinite;
         }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.35; }
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
         .error {
             background: #2a1a1a;
@@ -223,7 +198,6 @@
             margin: 1rem 0;
         }
 
-        /* Footer */
         .dashboard-footer {
             margin-top: 2rem;
             text-align: center;
@@ -244,174 +218,65 @@
             20%, 24%, 55% { opacity: 0.2; }
         }
 
-        /* Responsif */
         @media (max-width: 600px) {
-            .dashboard-container {
-                padding: 1.2rem;
-                border-width: 3px;
-                outline-width: 3px;
-                outline-offset: 3px;
-            }
-            h1 {
-                font-size: 1.3rem;
-            }
-            .tool-list {
-                grid-template-columns: 1fr;
-            }
-            .corner-decoration {
-                width: 150px;
-                height: 150px;
-            }
-            .corner-tl { top: -20px; left: -20px; }
-            .corner-tr { top: -20px; right: -20px; }
-            .corner-bl { bottom: -20px; left: -20px; }
-            .corner-br { bottom: -20px; right: -20px; }
+            .dashboard-container { padding: 1.2rem; border-width: 3px; outline-width: 3px; outline-offset: 3px; }
+            h1 { font-size: 1.3rem; }
+            .tool-list { grid-template-columns: 1fr; }
+            .corner-decoration { width: 200px; height: 200px; }
+            .corner-tl { top: -50px; left: -50px; }
+            .corner-tr { top: -50px; right: -50px; }
+            .corner-bl { bottom: -50px; left: -50px; }
+            .corner-br { bottom: -50px; right: -50px; }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Corner Decorations Floral -->
-        <div class="corner-decoration corner-tl">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <!-- Sulur menjalar ke kanan -->
-                <path d="M40,40 Q100,20 160,30" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="3s" repeatCount="indefinite"/>
+        <!-- Corner Decorations (template akan di-clone) -->
+        <div class="corner-decoration corner-tl" id="cornerTemplate">
+            <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <!-- Rambatan utama ke kanan -->
+                <path d="M 60,60 Q 180,30 270,50" fill="none" stroke="#b9a88c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 4">
+                    <animate attributeName="stroke-dashoffset" from="12" to="0" dur="3s" repeatCount="indefinite"/>
                 </path>
-                <!-- Sulur menjalar ke bawah -->
-                <path d="M40,40 Q20,100 30,160" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="4s" repeatCount="indefinite"/>
+                <!-- Rambatan utama ke bawah -->
+                <path d="M 60,60 Q 30,180 50,270" fill="none" stroke="#b9a88c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 4">
+                    <animate attributeName="stroke-dashoffset" from="12" to="0" dur="4s" repeatCount="indefinite"/>
                 </path>
-                <!-- Daun -->
-                <ellipse cx="90" cy="25" rx="10" ry="5" fill="#7a8a5a" transform="rotate(25 90 25)">
-                    <animate attributeName="ry" values="5;6;5" dur="2s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="25" cy="90" rx="10" ry="5" fill="#7a8a5a" transform="rotate(-65 25 90)">
-                    <animate attributeName="ry" values="5;6;5" dur="2.5s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="120" cy="28" rx="8" ry="4" fill="#7a8a5a" transform="rotate(15 120 28)"/>
-                <ellipse cx="28" cy="120" rx="8" ry="4" fill="#7a8a5a" transform="rotate(-75 28 120)"/>
-                <!-- Bunga Mekar -->
-                <g transform="translate(40,40)">
-                    <circle cx="0" cy="-10" r="7" fill="#d4a0b0" opacity="0.9">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="0" cy="10" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="0" cy="0" r="6" fill="#cfba8c">
-                        <animate attributeName="fill" values="#cfba8c;#e0d0b0;#cfba8c" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </g>
-            </svg>
-        </div>
 
-        <div class="corner-decoration corner-tr">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <!-- Clone dari kiri atas (akan di-mirror oleh CSS) -->
-                <path d="M40,40 Q100,20 160,30" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="3s" repeatCount="indefinite"/>
-                </path>
-                <path d="M40,40 Q20,100 30,160" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="4s" repeatCount="indefinite"/>
-                </path>
-                <ellipse cx="90" cy="25" rx="10" ry="5" fill="#7a8a5a" transform="rotate(25 90 25)">
-                    <animate attributeName="ry" values="5;6;5" dur="2s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="25" cy="90" rx="10" ry="5" fill="#7a8a5a" transform="rotate(-65 25 90)">
-                    <animate attributeName="ry" values="5;6;5" dur="2.5s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="120" cy="28" rx="8" ry="4" fill="#7a8a5a" transform="rotate(15 120 28)"/>
-                <ellipse cx="28" cy="120" rx="8" ry="4" fill="#7a8a5a" transform="rotate(-75 28 120)"/>
-                <g transform="translate(40,40)">
-                    <circle cx="0" cy="-10" r="7" fill="#d4a0b0" opacity="0.9">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="0" cy="10" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="0" cy="0" r="6" fill="#cfba8c">
-                        <animate attributeName="fill" values="#cfba8c;#e0d0b0;#cfba8c" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </g>
-            </svg>
-        </div>
+                <!-- Ornamen ujung kanan (scroll) -->
+                <circle cx="270" cy="50" r="14" fill="none" stroke="#cfba8c" stroke-width="2"/>
+                <circle cx="270" cy="50" r="7" fill="none" stroke="#cfba8c" stroke-width="1.5" stroke-dasharray="3 3"/>
+                <path d="M 260,50 Q 245,35 260,20 Q 275,5 290,20 Q 300,35 280,50" fill="none" stroke="#cfba8c" stroke-width="2"/>
 
-        <div class="corner-decoration corner-bl">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <path d="M40,40 Q100,20 160,30" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="3s" repeatCount="indefinite"/>
-                </path>
-                <path d="M40,40 Q20,100 30,160" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="4s" repeatCount="indefinite"/>
-                </path>
-                <ellipse cx="90" cy="25" rx="10" ry="5" fill="#7a8a5a" transform="rotate(25 90 25)">
-                    <animate attributeName="ry" values="5;6;5" dur="2s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="25" cy="90" rx="10" ry="5" fill="#7a8a5a" transform="rotate(-65 25 90)">
-                    <animate attributeName="ry" values="5;6;5" dur="2.5s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="120" cy="28" rx="8" ry="4" fill="#7a8a5a" transform="rotate(15 120 28)"/>
-                <ellipse cx="28" cy="120" rx="8" ry="4" fill="#7a8a5a" transform="rotate(-75 28 120)"/>
-                <g transform="translate(40,40)">
-                    <circle cx="0" cy="-10" r="7" fill="#d4a0b0" opacity="0.9">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="0" cy="10" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="0" cy="0" r="6" fill="#cfba8c">
-                        <animate attributeName="fill" values="#cfba8c;#e0d0b0;#cfba8c" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </g>
-            </svg>
-        </div>
+                <!-- Ornamen ujung bawah (scroll) -->
+                <circle cx="50" cy="270" r="14" fill="none" stroke="#cfba8c" stroke-width="2"/>
+                <circle cx="50" cy="270" r="7" fill="none" stroke="#cfba8c" stroke-width="1.5" stroke-dasharray="3 3"/>
+                <path d="M 50,260 Q 35,245 20,260 Q 5,275 20,290 Q 35,300 50,280" fill="none" stroke="#cfba8c" stroke-width="2"/>
 
-        <div class="corner-decoration corner-br">
-            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <path d="M40,40 Q100,20 160,30" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="3s" repeatCount="indefinite"/>
-                </path>
-                <path d="M40,40 Q20,100 30,160" fill="none" stroke="#b9a88c" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round">
-                    <animate attributeName="stroke-dashoffset" from="10" to="0" dur="4s" repeatCount="indefinite"/>
-                </path>
-                <ellipse cx="90" cy="25" rx="10" ry="5" fill="#7a8a5a" transform="rotate(25 90 25)">
-                    <animate attributeName="ry" values="5;6;5" dur="2s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="25" cy="90" rx="10" ry="5" fill="#7a8a5a" transform="rotate(-65 25 90)">
-                    <animate attributeName="ry" values="5;6;5" dur="2.5s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="120" cy="28" rx="8" ry="4" fill="#7a8a5a" transform="rotate(15 120 28)"/>
-                <ellipse cx="28" cy="120" rx="8" ry="4" fill="#7a8a5a" transform="rotate(-75 28 120)"/>
-                <g transform="translate(40,40)">
-                    <circle cx="0" cy="-10" r="7" fill="#d4a0b0" opacity="0.9">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="0" cy="10" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="10" cy="0" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="-7" cy="7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="7" cy="-7" r="7" fill="#d4a0b0" opacity="0.9"/>
-                    <circle cx="0" cy="0" r="6" fill="#cfba8c">
-                        <animate attributeName="fill" values="#cfba8c;#e0d0b0;#cfba8c" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </g>
+                <!-- Ornamen sepanjang jalur -->
+                <polygon points="130,40 136,33 142,40 136,47" fill="#cfba8c"/>
+                <polygon points="40,130 33,136 40,142 47,136" fill="#cfba8c"/>
+                <polygon points="190,45 196,38 202,45 196,52" fill="#cfba8c" opacity="0.6">
+                    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+                </polygon>
+                <polygon points="45,190 38,196 45,202 52,196" fill="#cfba8c" opacity="0.6">
+                    <animate attributeName="opacity" values="0.6;1;0.6" dur="2.5s" repeatCount="indefinite"/>
+                </polygon>
+
+                <!-- Roset pusat di sudut -->
+                <circle cx="60" cy="60" r="20" fill="none" stroke="#cfba8c" stroke-width="2.5"/>
+                <circle cx="60" cy="60" r="13" fill="none" stroke="#b9a88c" stroke-width="1.5" stroke-dasharray="5 2"/>
+                <circle cx="60" cy="60" r="7" fill="#cfba8c" opacity="0.9">
+                    <animate attributeName="fill" values="#cfba8c;#8e8ea0;#cfba8c" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Bintang ukiran di dalam roset -->
+                <path d="M 60,45 L 64,55 L 74,56 L 66,63 L 68,73 L 60,68 L 52,73 L 54,63 L 46,56 L 56,55 Z" fill="none" stroke="#cfba8c" stroke-width="1.8"/>
             </svg>
         </div>
+        <div class="corner-decoration corner-tr"></div>
+        <div class="corner-decoration corner-bl"></div>
+        <div class="corner-decoration corner-br"></div>
 
         <!-- Header -->
         <div class="header">
@@ -439,6 +304,17 @@
     </div>
 
     <script>
+        // Clone corner decoration to all four corners
+        (function cloneCorners() {
+            const template = document.getElementById('cornerTemplate');
+            if (!template) return;
+            const svgHTML = template.innerHTML;
+            document.querySelector('.corner-tr').innerHTML = svgHTML;
+            document.querySelector('.corner-bl').innerHTML = svgHTML;
+            document.querySelector('.corner-br').innerHTML = svgHTML;
+        })();
+
+        // Automatic tools scanner
         (async function() {
             const GITHUB_USERNAME = 'kusnuzon';
             const REPO_NAME      = 'fx-project';
