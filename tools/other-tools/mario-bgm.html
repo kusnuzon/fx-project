@@ -3,22 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mario BGM | Cartridge Vault</title>
+    <title>Mario Overworld BGM | Cartridge Vault</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
     <style>
         .mario-wrapper {
             position: relative;
             z-index: 2;
-            max-width: 620px;
+            max-width: 600px;
             margin: 2rem auto;
             background: rgba(12, 12, 24, 0.95);
-            border: 4px solid #6e6e8a;
+            border: 4px solid #e64300;
             outline: 4px solid #3d3d56;
             outline-offset: 6px;
-            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            box-shadow:
+                0 0 0 4px #1e1e2f,
+                0 0 0 8px #0a0a14,
+                0 10px 30px rgba(0,0,0,0.7),
+                inset 0 0 30px rgba(0,0,0,0.4);
             padding: 1.5rem;
             border-radius: 4px;
             text-align: center;
@@ -28,7 +35,13 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.06) 0px,
+                rgba(0,0,0,0.06) 2px,
+                transparent 2px,
+                transparent 4px
+            );
             pointer-events: none;
             z-index: 10;
         }
@@ -36,8 +49,8 @@
 
         h2 {
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.9rem;
-            color: #cfba8c;
+            font-size: 1rem;
+            color: #f0e6d2;
             margin-bottom: 0.3rem;
             text-shadow: 2px 2px 0 #4a3e2c;
         }
@@ -47,7 +60,6 @@
             font-size: 0.5rem;
             color: #9da5b4;
             margin-bottom: 1rem;
-            min-height: 1.5em;
         }
 
         .oscilloscope {
@@ -57,8 +69,6 @@
             border: 2px solid #4b4b68;
             margin-bottom: 1.5rem;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
-            position: relative;
-            overflow: hidden;
         }
         canvas#oscCanvas {
             width: 100%;
@@ -71,52 +81,36 @@
             justify-content: center;
             gap: 0.8rem;
             flex-wrap: wrap;
-            margin-bottom: 1rem;
         }
 
         .mario-btn {
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.45rem;
-            padding: 0.6rem 1.2rem;
+            font-size: 0.5rem;
+            padding: 0.7rem 1.5rem;
             background: #2a2a3c;
-            border: 2px solid #4b4b68;
-            color: #d1d1db;
+            border: 2px solid #e64300;
+            color: #f0e6d2;
             cursor: pointer;
-            box-shadow: 3px 3px 0 #0a0a14;
+            box-shadow: 3px 3px 0 #4a3e2c;
             transition: all 0.05s;
             text-transform: uppercase;
         }
         .mario-btn:active {
             transform: translate(2px, 2px);
-            box-shadow: 1px 1px 0 #0a0a14;
-            background: #4b4a6e;
-            border-color: #cfba8c;
-            color: #f0e6d2;
+            box-shadow: 1px 1px 0 #4a3e2c;
         }
         .mario-btn.active {
-            background: #4b4a6e;
-            border-color: #cfba8c;
-            color: #f0e6d2;
-            box-shadow: 0 0 8px rgba(207,186,140,0.4);
-        }
-
-        .track-selector {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            background: #e64300;
+            border-color: #f0e6d2;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(230,67,0,0.5);
         }
     </style>
 </head>
 <body>
     <div class="mario-wrapper">
-        <h2>🍄 MARIO BGM</h2>
-        <div class="track-info" id="trackName">OVERWORLD</div>
-
-        <div class="track-selector">
-            <button class="mario-btn active" data-track="0">⛅ OVERWORLD</button>
-            <button class="mario-btn" data-track="1">🌀 UNDERWORLD</button>
-        </div>
+        <h2>🍄 MARIO OVERWORLD</h2>
+        <div class="track-info">8-BIT NES APU EMULATION</div>
 
         <div class="oscilloscope">
             <canvas id="oscCanvas"></canvas>
@@ -126,185 +120,177 @@
             <button class="mario-btn" id="playBtn">▶ PLAY</button>
             <button class="mario-btn" id="stopBtn">⏹ STOP</button>
         </div>
-        <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;">8-BIT / NES APU STYLE</p>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.8rem;">
+            FULL TRACK LOOP
+        </p>
     </div>
 
     <script>
         (() => {
+            // ---------- DOM ----------
             const canvas = document.getElementById('oscCanvas');
             const ctx = canvas.getContext('2d');
-
-            let audioCtx = null;
-            let masterGain = null;
-            let currentOscillators = [];
-            let animFrameId = null;
-
-            // ================== TRACK DEFINITIONS ==================
-            // Each track: name, tempo (BPM), lead[] arrays of {freq, dur (in 16th notes)},
-            // bass[], drumPattern[] (1 = noise hit, 0 = silence)
-            // Frequencies are set to 0 for rests.
-
-            const tracks = [
-                {
-                    name: 'OVERWORLD (Super Mario)',
-                    tempo: 180,
-                    // Lead (Pulse 1) - iconic melody, arranged in 16th note steps
-                    lead: [
-                        {f:659.3,d:2}, {f:659.3,d:2}, {f:0,d:2}, {f:659.3,d:2},
-                        {f:0,d:2}, {f:523.3,d:2}, {f:659.3,d:2}, {f:0,d:2},
-                        {f:784.0,d:2}, {f:0,d:2}, {f:0,d:2}, {f:392.0,d:2},
-                        {f:0,d:2}, {f:0,d:2}, {f:0,d:4},
-
-                        {f:523.3,d:2}, {f:0,d:2}, {f:0,d:2}, {f:392.0,d:2},
-                        {f:0,d:2}, {f:0,d:2}, {f:330.0,d:2}, {f:0,d:2},
-                        {f:0,d:2}, {f:349.2,d:2}, {f:0,d:2}, {f:392.0,d:2},
-                        {f:440.0,d:2}, {f:0,d:2}, {f:494.0,d:2}, {f:523.3,d:2}
-                    ],
-                    // Bass (Triangle) - typical alternating bass
-                    bass: [
-                        {f:130.8,d:4}, {f:0,d:4}, {f:130.8,d:4}, {f:0,d:4},
-                        {f:196.0,d:4}, {f:0,d:4}, {f:196.0,d:4}, {f:0,d:4},
-                        {f:164.8,d:4}, {f:0,d:4}, {f:164.8,d:4}, {f:0,d:4},
-                        {f:174.6,d:4}, {f:0,d:4}, {f:196.0,d:4}, {f:0,d:4}
-                    ],
-                    // Drum (Noise) - classic 8th note pattern
-                    drumPattern: [
-                        1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0,
-                        1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0
-                    ]
-                },
-                {
-                    name: 'UNDERWORLD (Star Theme)',
-                    tempo: 160,
-                    lead: [
-                        {f:523.3,d:2}, {f:0,d:2}, {f:587.3,d:2}, {f:0,d:2},
-                        {f:659.3,d:2}, {f:0,d:2}, {f:523.3,d:2}, {f:0,d:2},
-                        {f:659.3,d:2}, {f:0,d:2}, {f:784.0,d:2}, {f:0,d:2},
-                        {f:880.0,d:2}, {f:0,d:2}, {f:784.0,d:2}, {f:659.3,d:2}
-                    ],
-                    bass: [
-                        {f:130.8,d:4}, {f:0,d:4}, {f:164.8,d:4}, {f:0,d:4},
-                        {f:196.0,d:4}, {f:0,d:4}, {f:164.8,d:4}, {f:0,d:4},
-                        {f:196.0,d:4}, {f:0,d:4}, {f:130.8,d:4}, {f:0,d:4},
-                        {f:164.8,d:4}, {f:0,d:4}, {f:196.0,d:4}, {f:0,d:4}
-                    ],
-                    drumPattern: [
-                        1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-                        1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0
-                    ]
-                }
-            ];
-
-            let currentTrackIdx = 0;
-            let isPlaying = false;
-            let stepIndex = 0;
-            let intervalId = null;
-            let currentStepDuration = 0; // ms
-
-            // DOM
-            const trackNameEl = document.getElementById('trackName');
             const playBtn = document.getElementById('playBtn');
             const stopBtn = document.getElementById('stopBtn');
-            const trackButtons = document.querySelectorAll('[data-track]');
 
+            // ---------- AUDIO ----------
+            let audioCtx = null;
+            let masterGain = null;
+            let isPlaying = false;
+            let schedulerTimer = null;      // setTimeout id untuk scheduler
+            let animFrameId = null;
+            let currentOscillators = [];    // simpan referensi osilator yang sedang aktif
+
+            // ---------- TRACK DEFINITION ----------
+            const TEMPO = 180;                     // BPM
+            const STEP_DURATION = 60 / TEMPO / 4;  // durasi satu 16th note dalam detik
+
+            // Lead (Pulse 1) – frekuensi 0 artinya istirahat (rest)
+            // Setiap entry memiliki { freq, steps } (dalam satuan 16th note)
+            const leadPattern = [
+                { freq: 659.3, steps: 2 }, { freq: 659.3, steps: 2 }, { freq: 0, steps: 2 }, { freq: 659.3, steps: 2 },
+                { freq: 0, steps: 2 }, { freq: 523.3, steps: 2 }, { freq: 659.3, steps: 2 }, { freq: 0, steps: 2 },
+                { freq: 784.0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
+                { freq: 0, steps: 6 },
+
+                { freq: 523.3, steps: 2 }, { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
+                { freq: 0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 330.0, steps: 2 }, { freq: 0, steps: 2 },
+                { freq: 0, steps: 2 }, { freq: 349.2, steps: 2 }, { freq: 0, steps: 2 }, { freq: 392.0, steps: 2 },
+                { freq: 440.0, steps: 2 }, { freq: 0, steps: 2 }, { freq: 494.0, steps: 2 }, { freq: 523.3, steps: 2 }
+            ];
+
+            // Bass (Triangle) – lebih sederhana, not panjang
+            const bassPattern = [
+                { freq: 130.8, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 130.8, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 },
+
+                { freq: 164.8, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 164.8, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 174.6, steps: 4 }, { freq: 0, steps: 4 },
+                { freq: 196.0, steps: 4 }, { freq: 0, steps: 4 }
+            ];
+
+            // Drum (Noise) – 1 = bunyi, 0 = diam (resolusi 8 langkah per beat? kita sesuaikan)
+            // Kita buat drum setiap 2 langkah (8th note) agar cocok dengan langkah 16th note kita
+            const drumPattern = [
+                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0,
+                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0
+            ];
+
+            // Total langkah = panjang lead pattern (dalam langkah 16th note)
+            const totalSteps = leadPattern.reduce((sum, ev) => sum + ev.steps, 0);
+            // Durasi total loop dalam detik
+            const loopDuration = totalSteps * STEP_DURATION;
+
+            // ---------- FUNGSI AUDIO DASAR ----------
             function initAudio() {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     masterGain = audioCtx.createGain();
-                    masterGain.gain.value = 0.12; // low volume for BGM
+                    masterGain.gain.value = 0.12;
                     masterGain.connect(audioCtx.destination);
                 }
                 if (audioCtx.state === 'suspended') audioCtx.resume();
             }
 
             function stopAllOsc() {
-                currentOscillators.forEach(o => { try { o.stop(); } catch(e) {} });
+                currentOscillators.forEach(o => {
+                    try { o.stop(); } catch(e) {}
+                });
                 currentOscillators = [];
             }
 
-            function stopPlayback() {
-                if (intervalId) clearInterval(intervalId);
-                intervalId = null;
-                stopAllOsc();
-                isPlaying = false;
-                playBtn.classList.remove('active');
-                if (animFrameId) cancelAnimationFrame(animFrameId);
-            }
-
-            function playNote(freq, type, durationSec) {
+            function playNote(freq, type, startTime, durationSec) {
                 if (!audioCtx || !masterGain || freq <= 0) return;
-                const now = audioCtx.currentTime;
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = type;
-                osc.frequency.setValueAtTime(freq, now);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+                osc.frequency.setValueAtTime(freq, startTime);
+                gain.gain.setValueAtTime(0.25, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
                 osc.connect(gain);
                 gain.connect(masterGain);
-                osc.start(now);
-                osc.stop(now + durationSec);
+                osc.start(startTime);
+                osc.stop(startTime + durationSec);
                 currentOscillators.push(osc);
             }
 
-            function playNoise(durationSec) {
+            function playNoise(startTime, durationSec) {
                 if (!audioCtx || !masterGain) return;
-                const now = audioCtx.currentTime;
-                const bufferSize = audioCtx.sampleRate * durationSec;
+                const bufferSize = Math.floor(audioCtx.sampleRate * durationSec);
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
                 const noise = audioCtx.createBufferSource();
                 noise.buffer = buffer;
                 const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+                gain.gain.setValueAtTime(0.2, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
                 noise.connect(gain);
                 gain.connect(masterGain);
-                noise.start(now);
-                noise.stop(now + durationSec);
+                noise.start(startTime);
+                noise.stop(startTime + durationSec);
                 currentOscillators.push(noise);
             }
 
-            function advanceStep() {
-                const track = tracks[currentTrackIdx];
-                const leadStep = track.lead[stepIndex % track.lead.length];
-                const bassStep = track.bass[stepIndex % track.bass.length];
-                const drumHit = track.drumPattern[stepIndex % track.drumPattern.length];
+            // ---------- PENJADWALAN NOT UNTUK SATU LOOP ----------
+            function scheduleLoop(startTime) {
+                let currentStep = 0; // akumulasi langkah (dalam 16th note)
 
-                // Clear already finished sources
+                // Fungsi untuk mengambil not dari array pattern berdasarkan langkah
+                const getEventAtStep = (pattern, step) => {
+                    let accumulated = 0;
+                    for (const ev of pattern) {
+                        if (step < accumulated + ev.steps) {
+                            return ev;
+                        }
+                        accumulated += ev.steps;
+                    }
+                    return null; // seharusnya tidak terjadi
+                };
+
+                // Jadwalkan lead
+                for (let s = 0; s < totalSteps; s++) {
+                    const ev = getEventAtStep(leadPattern, s);
+                    if (ev && ev.freq > 0) {
+                        const t = startTime + s * STEP_DURATION;
+                        playNote(ev.freq, 'square', t, STEP_DURATION * 0.8);
+                    }
+                }
+
+                // Jadwalkan bass
+                for (let s = 0; s < totalSteps; s++) {
+                    const ev = getEventAtStep(bassPattern, s);
+                    if (ev && ev.freq > 0) {
+                        const t = startTime + s * STEP_DURATION;
+                        playNote(ev.freq, 'triangle', t, STEP_DURATION * 0.9);
+                    }
+                }
+
+                // Jadwalkan drum (resolusi 1 langkah 16th note)
+                for (let s = 0; s < totalSteps; s++) {
+                    if (drumPattern[s % drumPattern.length] === 1) {
+                        const t = startTime + s * STEP_DURATION;
+                        playNoise(t, STEP_DURATION * 0.6);
+                    }
+                }
+            }
+
+            // ---------- LOOP CONTROL ----------
+            function nextLoop() {
+                if (!isPlaying) return;
+                const now = audioCtx.currentTime;
+                scheduleLoop(now);
+                // Bersihkan osilator yang sudah selesai (supaya array tidak membengkak)
                 currentOscillators = currentOscillators.filter(o => {
                     try { return o.playbackState !== 3; } catch(e) { return false; }
                 });
-
-                const beatSec = 60 / track.tempo / 4; // 16th note duration in seconds
-
-                // Lead
-                if (leadStep && leadStep.f > 0) {
-                    playNote(leadStep.f, 'square', beatSec * leadStep.d * 0.8);
-                }
-                // Bass
-                if (bassStep && bassStep.f > 0) {
-                    playNote(bassStep.f, 'triangle', beatSec * bassStep.d * 0.9);
-                }
-                // Drum
-                if (drumHit) {
-                    playNoise(beatSec * 0.6);
-                }
-
-                // Calculate next step duration (in ms) for the sequencer
-                const curDur = leadStep ? leadStep.d : 1;
-                currentStepDuration = beatSec * curDur * 1000;
-
-                stepIndex++;
-                // Loop back if we've passed all variations (but pattern length may vary, use lead length)
-                if (stepIndex >= track.lead.length) stepIndex = 0;
-            }
-
-            function scheduleNext() {
-                if (!isPlaying) return;
-                advanceStep();
-                intervalId = setTimeout(scheduleNext, currentStepDuration);
+                // Jadwalkan loop berikutnya tepat setelah durasi loop selesai
+                schedulerTimer = setTimeout(nextLoop, loopDuration * 1000);
             }
 
             function startPlayback() {
@@ -313,28 +299,29 @@
                 stopPlayback();
                 isPlaying = true;
                 playBtn.classList.add('active');
-                stepIndex = 0;
-                scheduleNext();
+                nextLoop();
                 animateOscilloscope();
             }
 
-            function selectTrack(idx) {
-                stopPlayback();
-                currentTrackIdx = idx;
-                trackNameEl.textContent = tracks[idx].name;
-                trackButtons.forEach(btn => {
-                    const t = parseInt(btn.getAttribute('data-track'));
-                    if (t === idx) btn.classList.add('active');
-                    else btn.classList.remove('active');
-                });
+            function stopPlayback() {
+                if (schedulerTimer) {
+                    clearTimeout(schedulerTimer);
+                    schedulerTimer = null;
+                }
+                stopAllOsc();
+                isPlaying = false;
+                playBtn.classList.remove('active');
+                if (animFrameId) cancelAnimationFrame(animFrameId);
             }
 
-            // Oscilloscope draw
+            // ---------- VISUAL OSILOSKOP ----------
             function drawOsc() {
                 const w = canvas.width = canvas.clientWidth;
                 const h = canvas.height = canvas.clientHeight;
                 ctx.clearRect(0, 0, w, h);
+
                 if (!isPlaying) {
+                    // Garis datar
                     ctx.strokeStyle = '#3f3f5c';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -342,23 +329,23 @@
                     ctx.lineTo(w, h/2);
                     ctx.stroke();
                 } else {
-                    const track = tracks[currentTrackIdx];
-                    const leadStep = track.lead[stepIndex % track.lead.length];
-                    const freq = leadStep ? leadStep.f : 0;
-                    ctx.strokeStyle = '#e64300'; // Mario red
+                    // Efek gelombang dinamis
+                    const now = Date.now() / 1000;
+                    const freq = 523.3; // representasi visual
+                    ctx.strokeStyle = '#e64300';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    const time = Date.now() / 1000;
-                    const amp = h * 0.4;
                     const center = h/2;
+                    const amp = h * 0.4;
                     for (let x = 0; x < w; x++) {
-                        const t = (x / w) * 2 * Math.PI * (freq || 440) / 100 + time * 5;
-                        const y = center + Math.sin(t) * amp * 0.3;
+                        const phase = (x / w) * 2 * Math.PI * (freq / 100) + now * 5;
+                        const y = center + Math.sin(phase) * amp * 0.3;
                         if (x === 0) ctx.moveTo(x, y);
                         else ctx.lineTo(x, y);
                     }
                     ctx.stroke();
-                    // Grid
+
+                    // Grid piksel
                     ctx.strokeStyle = 'rgba(78,78,104,0.3)';
                     ctx.lineWidth = 1;
                     for (let i = 0; i < w; i += 8) {
@@ -375,21 +362,14 @@
                 animFrameId = requestAnimationFrame(animateOscilloscope);
             }
 
-            // Events
+            // ---------- EVENT LISTENERS ----------
             playBtn.addEventListener('click', startPlayback);
             stopBtn.addEventListener('click', stopPlayback);
-            trackButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.getAttribute('data-track'));
-                    selectTrack(idx);
-                });
-            });
 
-            // Init
-            selectTrack(0);
+            // Inisialisasi awal
             canvas.width = canvas.clientWidth;
             canvas.height = canvas.clientHeight;
-            animFrameId = requestAnimationFrame(animateOscilloscope);
+            animateOscilloscope();
 
             window.addEventListener('beforeunload', () => {
                 stopPlayback();
