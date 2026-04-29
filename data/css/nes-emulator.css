@@ -1,8 +1,7 @@
 /* =============================================
-   NES EMULATOR – CLEAN LAYOUT (NO EDITOR)
+   NES EMULATOR – FULL GAMEPAD (A,B,X,Y,L1,L2,R1,R2)
    ============================================= */
 
-/* Dropzone */
 .nes-dropzone {
     border: 2px dashed #5a5a7a;
     padding: 1.5rem;
@@ -17,7 +16,6 @@
 }
 .nes-dropzone.drag-over { border-color: #cfba8c; color: #cfba8c; }
 
-/* Canvas */
 .nes-emulator-canvas {
     display: block !important;
     position: relative !important;
@@ -30,7 +28,6 @@
     background: #000;
 }
 
-/* Controls bar */
 .nes-controls {
     display: flex; flex-wrap: wrap; gap: 0.8rem;
     justify-content: center; margin: 1rem 0 0.5rem;
@@ -43,12 +40,9 @@
     cursor: pointer; min-height: 44px; min-width: 44px;
 }
 
-/* Wrapper */
 .nes-emulator-wrapper { width: 100%; margin: 0 auto; }
 
-/* =============================================
-   VIRTUAL GAMEPAD – DEFAULT LAYOUT
-   ============================================= */
+/* Virtual gamepad container */
 .virtual-gamepad {
     display: flex;
     justify-content: center;
@@ -59,19 +53,19 @@
     -webkit-user-select: none;
 }
 
+/* Grid utama – ditambah baris untuk shoulder buttons */
 .gamepad-container {
     display: grid;
     grid-template-areas:
-        "dpad actions"
-        "startsel startsel";
-    grid-template-columns: auto auto;
+        "shoulder-l dpad actions shoulder-r"
+        "shoulder-l startsel startsel shoulder-r";
+    grid-template-columns: auto auto auto auto;
     grid-template-rows: auto auto;
-    gap: 1rem;
+    gap: 0.6rem 1rem;
     justify-content: center;
     align-items: center;
 }
 
-/* Grup tombol */
 .vgp-group {
     display: flex;
     gap: 0.4rem;
@@ -81,7 +75,7 @@
     user-select: none;
 }
 
-/* D-Pad 3x3 grid */
+/* D-Pad */
 .vgp-dpad {
     grid-area: dpad;
     display: grid;
@@ -94,14 +88,19 @@
 .vgp-dpad .vgp-btn:nth-child(3) { grid-column: 3; grid-row: 2; }
 .vgp-dpad .vgp-btn:nth-child(4) { grid-column: 2; grid-row: 3; }
 
-/* ABXY cluster */
+/* ABXY – grid 2x2 */
 .vgp-abxy {
     grid-area: actions;
     display: grid;
-    grid-template-columns: 60px 60px;
-    grid-template-rows: 60px 60px;
-    gap: 0.4rem;
+    grid-template-columns: 55px 55px;
+    grid-template-rows: 55px 55px;
+    gap: 0.3rem;
 }
+/* Susunan: X (kiri-atas), A (kanan-atas), Y (kiri-bawah), B (kanan-bawah) */
+.vgp-abxy .vgp-btn:nth-child(1) { grid-column: 1; grid-row: 1; }  /* X */
+.vgp-abxy .vgp-btn:nth-child(2) { grid-column: 2; grid-row: 1; }  /* A */
+.vgp-abxy .vgp-btn:nth-child(3) { grid-column: 1; grid-row: 2; }  /* Y */
+.vgp-abxy .vgp-btn:nth-child(4) { grid-column: 2; grid-row: 2; }  /* B */
 
 /* Start/Select */
 .vgp-startselect {
@@ -111,7 +110,17 @@
     justify-content: center;
 }
 
-/* Shared button style */
+/* Shoulder (L1/L2, R1/R2) */
+.vgp-shoulder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: center;
+}
+.vgp-shoulder:first-of-type { grid-area: shoulder-l; }
+.vgp-shoulder:last-of-type  { grid-area: shoulder-r; }
+
+/* Base button */
 .vgp-btn {
     width: 54px; height: 54px;
     font-family: 'Press Start 2P', cursive; font-size: 0.45rem;
@@ -131,33 +140,38 @@
 
 /* Round buttons (ABXY) */
 .vgp-btn-round {
-    width: 60px; height: 60px; font-size: 0.7rem; border-radius: 50%;
+    width: 55px; height: 55px; font-size: 0.7rem; border-radius: 50%;
 }
+.vgp-btn-round[data-btn="x"] { background: #2a3a1e; border-color: #5a8a3a; color: #b0e0a0; }
 .vgp-btn-round[data-btn="a"] { background: #1e3a4c; border-color: #4a8cb8; color: #a8d4f0; }
 .vgp-btn-round[data-btn="b"] { background: #3a1e2a; border-color: #b85a7a; color: #f0a8c4; }
+.vgp-btn-round[data-btn="y"] { background: #3a2a1e; border-color: #b88a3a; color: #f0d0a0; }
+
+.vgp-btn-round[data-btn="x"]:active, .vgp-btn-round[data-btn="x"].active { background: #3a5a2a; border-color: #7ab84a; }
 .vgp-btn-round[data-btn="a"]:active, .vgp-btn-round[data-btn="a"].active { background: #2a5470; border-color: #7ab8e0; }
 .vgp-btn-round[data-btn="b"]:active, .vgp-btn-round[data-btn="b"].active { background: #5a2a40; border-color: #e07aa0; }
+.vgp-btn-round[data-btn="y"]:active, .vgp-btn-round[data-btn="y"].active { background: #5a3a2a; border-color: #e0a050; }
 
-/* Pill buttons (Start/Select) */
+/* Pill buttons (Start/Select, Shoulder) */
 .vgp-btn-pill {
     width: auto; min-width: 56px; height: 34px;
     padding: 0 0.5rem; font-size: 0.38rem; border-radius: 17px;
 }
+.vgp-shoulder-btn {
+    min-width: 40px; height: 28px; font-size: 0.35rem;
+}
 
-/* Status */
 .nes-status {
     text-align: center; font-size: 0.6rem; color: #7a7a95; margin-top: 0.5rem;
 }
 
-/* ── ORIENTATION LAYOUTS ──────────── */
+/* ── ORIENTATION ──────────────────── */
 .emu-container {
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: center;
 }
-
-/* Portrait: Game Boy style */
 .emu-container.portrait-layout {
     flex-direction: column;
     gap: 1rem;
@@ -169,25 +183,23 @@
 .emu-container.portrait-layout .virtual-gamepad {
     width: 100%;
 }
-
-/* Landscape: GBA/PSP style */
 .emu-container.landscape-layout {
     flex-direction: row;
     flex-wrap: nowrap;
     gap: 1rem;
 }
 .emu-container.landscape-layout .nes-emulator-canvas {
-    max-width: 55%;
+    max-width: 50%;
     max-height: 75vh;
 }
 
-/* Responsif */
 @media (max-width: 480px) {
     .vgp-dpad {
-        grid-template-columns: 46px 46px 46px;
-        grid-template-rows: 46px 46px 46px;
+        grid-template-columns: 44px 44px 44px;
+        grid-template-rows: 44px 44px 44px;
     }
-    .vgp-btn { width: 46px; height: 46px; font-size: 0.4rem; }
-    .vgp-btn-round { width: 52px; height: 52px; font-size: 0.65rem; }
-    .emu-container.landscape-layout .nes-emulator-canvas { max-width: 50%; }
+    .vgp-btn { width: 44px; height: 44px; font-size: 0.35rem; }
+    .vgp-btn-round { width: 48px; height: 48px; font-size: 0.6rem; }
+    .gamepad-container { gap: 0.4rem 0.6rem; }
+    .emu-container.landscape-layout .nes-emulator-canvas { max-width: 45%; }
 }
