@@ -126,36 +126,36 @@ class NESEmulator {
       this.canvas = this.nostalgist.getCanvas();
       this.canvas.classList.add('nes-emulator-canvas');
       
-      // Reset styling bawaan Nostalgist yang mungkin absolute
+      // Reset styling bawaan Nostalgist
       this.canvas.style.position = '';
       this.canvas.style.top = '';
       this.canvas.style.left = '';
       this.canvas.style.width = '';
       this.canvas.style.height = '';
 
-      // ✅ Sembunyikan dropzone & subtitle
+      // Sembunyikan dropzone & subtitle
       this.dropZone.style.display = 'none';
       if (this.subtitle) this.subtitle.style.display = 'none';
 
-      // ✅ Bersihkan wrapper & buat container orientasi
+      // Bersihkan wrapper & buat container orientasi
       this.emuWrapper.innerHTML = '';
       const container = document.createElement('div');
       container.className = 'emu-container';
       container.appendChild(this.canvas);
 
-      // ✅ Pindahkan gamepad ke dalam container
+      // Pindahkan gamepad ke dalam container
       container.appendChild(this.virtualGamepad);
       this._gamepadInContainer = true;
 
       this.emuWrapper.appendChild(container);
 
-      // ✅ Tampilkan kontrol & gamepad
+      // Tampilkan kontrol & gamepad
       this.controlsDiv.style.display = 'flex';
       this.virtualGamepad.style.display = 'flex';
       this.loaded = true;
       this.statusText.textContent = '🎮 ROM loaded • 🔊 Audio ON';
       
-      // ✅ Terapkan orientasi sekarang
+      // Terapkan orientasi sekarang
       this._applyOrientation();
       
     } catch (e) {
@@ -309,7 +309,7 @@ class NESEmulator {
     this.controlsDiv.style.display = 'none';
     this.virtualGamepad.style.display = 'none';
     
-    // ✅ Tampilkan kembali dropzone & subtitle
+    // Tampilkan kembali dropzone & subtitle
     this.dropZone.style.display = '';
     if (this.subtitle) this.subtitle.style.display = '';
     
@@ -326,12 +326,15 @@ class NESEmulator {
   }
 
   toggleFullscreen() {
+    // ✅ Fullscreen pada emuWrapper agar gamepad ikut masuk layar penuh
     const wrapper = document.getElementById('emuWrapper');
     if (!document.fullscreenElement) {
       (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen)?.call(wrapper);
     } else {
       (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
     }
+    // Re-apply orientasi setelah transisi fullscreen
+    setTimeout(() => this._applyOrientation(), 300);
   }
 }
 
