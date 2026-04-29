@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volatility Cheatsheet – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .vol-table { width: 100%; border-collapse: collapse; margin:1.5rem 0; font-size:0.7rem; }
+    .vol-table th, .vol-table td { padding: 0.5rem 0.4rem; text-align: center; border: 1px solid #3f3f5c; }
+    .vol-table th { background: #3f3f5c; font-family: 'Press Start 2P', cursive; font-size:0.5rem; }
+    .high { background: #5c2a2a; color: #f0a0a0; }
+    .medium { background: #5c4a2a; color: #f0d0a0; }
+    .low { background: #2a3a2a; color: #a0d0a0; }
+    .empty { background: #1e1e2e; color: #7a7a95; }
+    .legend { font-size:0.6rem; margin-top:0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 VOLATILITY CHEATSHEET</h1>
+    <p style="text-align:center;">Pasangan & sesi paling geser</p>
+
+    <table class="vol-table">
+      <thead>
+        <tr><th>Pair</th><th>Sydney</th><th>Tokyo</th><th>London</th><th>New York</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>EUR/USD</td><td class="low">Low</td><td class="low">Low</td><td class="high">High</td><td class="high">High</td></tr>
+        <tr><td>GBP/USD</td><td class="low">Low</td><td class="low">Low</td><td class="high">High</td><td class="high">High</td></tr>
+        <tr><td>USD/JPY</td><td class="medium">Medium</td><td class="high">High</td><td class="medium">Medium</td><td class="high">High</td></tr>
+        <tr><td>AUD/USD</td><td class="high">High</td><td class="medium">Medium</td><td class="medium">Medium</td><td class="medium">Medium</td></tr>
+        <tr><td>NZD/USD</td><td class="medium">Medium</td><td class="low">Low</td><td class="medium">Medium</td><td class="medium">Medium</td></tr>
+        <tr><td>USD/CAD</td><td class="low">Low</td><td class="low">Low</td><td class="medium">Medium</td><td class="high">High</td></tr>
+        <tr><td>USD/CHF</td><td class="low">Low</td><td class="low">Low</td><td class="medium">Medium</td><td class="medium">Medium</td></tr>
+      </tbody>
+    </table>
+
+    <div class="legend">
+      <span class="high">High</span> = Volatilitas tinggi, pergerakan besar.<br>
+      <span class="medium">Medium</span> = Cukup ramai, sinyal lumayan.<br>
+      <span class="low">Low</span> = Cenderung sepi, spread lebar.<br>
+      <small>*Data estimasi berdasarkan sesi historis.</small>
+    </div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+</body>
+</html>
