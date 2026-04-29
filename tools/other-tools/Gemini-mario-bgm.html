@@ -1,197 +1,404 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SND_MODULE: OVERWORLD_BGM</title>
+    <title>Mario Overworld BGM | Cartridge Vault</title>
+
+    <!-- Fonts & Retro Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <!-- Tone.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
     <style>
-        :root {
-            --bg: #0a0a0f;
-            --gold: #cfba8c;
-            --border: #33334a;
-        }
-
-        body {
-            background: var(--bg);
-            color: #cdcdd4;
-            font-family: 'Press Start 2P', cursive;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        .sound-card {
-            background: rgba(18, 18, 30, 0.95);
-            border: 4px solid var(--border);
-            padding: 2rem;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            max-width: 400px;
-        }
-
-        .status-lcd {
-            background: #1a1a2e;
-            border: 2px inset #000;
-            padding: 1rem;
-            color: #00ff99;
-            font-size: 0.6rem;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            line-height: 1.8;
-            text-shadow: 0 0 5px #00ff99;
-        }
-
-        .btn-play {
-            background: var(--gold);
-            color: #000;
-            border: none;
-            padding: 15px 30px;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.8rem;
-            cursor: pointer;
-            box-shadow: 4px 4px 0 #3d3224;
-            transition: 0.1s;
-        }
-
-        .btn-play:active {
-            box-shadow: 0 0 0;
-            transform: translate(4px, 4px);
-        }
-
-        .layer-viz {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .bar {
-            width: 10px;
-            height: 40px;
-            background: #33334a;
+        .mario-wrapper {
             position: relative;
+            z-index: 2;
+            max-width: 600px;
+            margin: 2rem auto;
+            background: rgba(12, 12, 24, 0.95);
+            border: 4px solid #e64300;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            padding: 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .mario-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .mario-wrapper > * { position: relative; z-index: 20; }
+
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: #f0e6d2;
+            margin-bottom: 0.3rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
         }
 
-        .bar-inner {
-            position: absolute;
-            bottom: 0;
+        .oscilloscope {
             width: 100%;
-            height: 0%;
-            background: var(--gold);
-            transition: height 0.1s;
+            height: 100px;
+            background: #0a0a14;
+            border: 2px solid #4b4b68;
+            margin: 1.5rem 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+        }
+        canvas#oscCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .mario-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            padding: 0.7rem 1.5rem;
+            background: #2a2a3c;
+            border: 2px solid #e64300;
+            color: #f0e6d2;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #4a3e2c;
+            transition: all 0.05s;
+            text-transform: uppercase;
+        }
+        .mario-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #4a3e2c;
+        }
+        .mario-btn.active {
+            background: #e64300;
+            border-color: #f0e6d2;
+            color: #fff;
         }
     </style>
 </head>
 <body>
+    <div class="mario-wrapper">
+        <h2>🍄 MARIO OVERWORLD</h2>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.5rem;color:#9da5b4;">ACCURATE MELODY · TONE.JS</p>
 
-<div class="sound-card">
-    <div class="status-lcd" id="display">
-        SYSTEM READY...<br>
-        CH1: SQUARE_1 [IDLE]<br>
-        CH2: SQUARE_2 [IDLE]<br>
-        CH3: TRIANGLE [IDLE]<br>
-        CH4: NOISE    [IDLE]
+        <div class="oscilloscope">
+            <canvas id="oscCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button class="mario-btn" id="playBtn">▶ PLAY</button>
+            <button class="mario-btn" id="stopBtn">⏹ STOP</button>
+        </div>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;margin-top:0.8rem;">
+            NES APU STYLE · LOOP
+        </p>
     </div>
 
-    <button class="btn-play" id="audioTrigger">BOOT BGM</button>
+    <script>
+        (() => {
+            // DOM elements
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const canvas = document.getElementById('oscCanvas');
+            const ctx = canvas.getContext('2d');
 
-    <div class="layer-viz">
-        <div class="bar"><div class="bar-inner" id="b1"></div></div>
-        <div class="bar"><div class="bar-inner" id="b2"></div></div>
-        <div class="bar"><div class="bar-inner" id="b3"></div></div>
-        <div class="bar"><div class="bar-inner" id="b4"></div></div>
-    </div>
-</div>
+            // ========== MELODY DATA (from correct CodePen) ==========
+            const intro = [
+                'E5', 'E5', null, 'E5', 
+                null, 'C5', 'E5', null,
+                'G5', null, null, null,
+                'G4', null, null, null,
+            ];
+            const A1 = [
+                'C5',null, null,'G4',
+                null, null,'E4', null,
+                null, 'A4', null, 'B4',
+                null, 'A#4', 'A4', null,
+            ];
+            const A2 = [
+                'G4', 'C5', 'E5', 'A5',
+                null, 'F5', null, 'G5',
+                null, 'E5', null, 'C5',
+                'D5', 'B4', null, null,
+            ];
+            const B1 = [
+                null, null,'G5', 'F#5', 
+                'F5', 'D#5', null,'E5',  
+                null, 'G#4', 'A4', 'C5', 
+                null, 'A4', 'C5', 'D5',
+            ];
+            const B2 = [
+                null, null, 'G5', 'F#5', 
+                'F5', 'D#5', null, 'E5', 
+                null, 'C6', null, 'C6',
+                'C6',  null, null, null,
+            ];
+            const B3 = [
+                null, null, 'D#5', null, 
+                null, 'D5', null, null, 
+                'C5', null, null, null,
+                null,  null, null, null,
+            ];
+            const C1 = [
+                'C5', 'C5', null, 'C5',
+                null, 'C5', 'D5', null,
+                'E5', 'C5', null, 'A4',
+                'G4', null, null, null,
+            ];
+            const C2 = [
+                'C5', 'C5', null, 'C5',
+                null, 'C5', 'D5', 'E5',
+                null, null, null, null,
+                null, null, null, null,
+            ];
+            const D1 = [
+                'E5','C5',null,'G4',
+                null,null,'G#4',null,
+                'A4','F5',null,'F5',
+                'A4',null,null,null,
+            ];
+            const D2 = [
+                'B4','A5',null,'A5',
+                'A5','G5', null,'F5',
+                'E5','C5',null,'A4',
+                'G4',null,null,null,
+            ];
+            const D3 = [
+                'B4','F5',null,'F5',
+                'F5','E5', null,'D5',
+                'C5',null,null,null,
+                null,null,null,null,
+            ];
 
-<script>
-/**
- * AUDIO ENGINE: 8-BIT SYNTHESIZER
- * Mengemulasi chip Ricoh 2A03 (NES)
- */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // Full melody line (as in original code)
+            const melodyLine = intro.concat(
+                A1, A2, A1, A2, 
+                B1, B2, B1, B3, 
+                B1, B2, B1, B3, 
+                C1, C2, C1, intro, 
+                A1, A2, A1, A2, 
+                D1, D2, D1, D3, 
+                D1, D2, D1, D3, 
+                C1, C2, C1
+            );
 
-const notes = {
-    'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'Eb4': 311.13, 'E4': 329.63, 'F4': 349.23,
-    'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'Bb4': 466.16, 'B4': 493.88,
-    'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46,
-    'G5': 783.99, 'A5': 880.00, 'B5': 987.77, 'C6': 1046.50
-};
+            // ========== TONE.JS SETUP ==========
+            // Main lead synth (pulse wave)
+            const leadSynth = new Tone.MonoSynth({
+                oscillator: { type: 'square' },
+                envelope: {
+                    attack: 0.02,
+                    decay: 0.05,
+                    sustain: 0.5,
+                    release: 0.8,
+                },
+                volume: -12,
+            }).toDestination();
 
-function playNote(freq, startTime, duration, type = 'square', volume = 0.1) {
-    if (!freq) return;
-    
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    
-    gain.gain.setValueAtTime(volume, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-    
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-}
+            // Bass synth (triangle)
+            const bassSynth = new Tone.MonoSynth({
+                oscillator: { type: 'triangle' },
+                envelope: {
+                    attack: 0.02,
+                    decay: 0.05,
+                    sustain: 0.5,
+                    release: 0.8,
+                },
+                volume: -18,
+            }).toDestination();
 
-// Data Intro - Mario Overworld
-const melody = [
-    {n: 'E5', d: 0.1}, {n: 'E5', d: 0.1}, {n: 0, d: 0.1}, {n: 'E5', d: 0.1}, 
-    {n: 0, d: 0.1}, {n: 'C5', d: 0.1}, {n: 'E5', d: 0.1}, {n: 0, d: 0.1},
-    {n: 'G5', d: 0.2}, {n: 0, d: 0.2}, {n: 'G4', d: 0.2}
-];
+            // Noise drum
+            const noiseSynth = new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.1,
+                    sustain: 0,
+                    release: 0.1,
+                },
+                volume: -22,
+            }).toDestination();
 
-const bass = [
-    {n: 'G3', d: 0.1}, {n: 'G3', d: 0.1}, {n: 0, d: 0.1}, {n: 'G3', d: 0.1},
-    {n: 0, d: 0.1}, {n: 'E3', d: 0.1}, {n: 'G3', d: 0.1}, {n: 0, d: 0.1},
-    {n: 'B3', d: 0.2}, {n: 0, d: 0.2}, {n: 'G2', d: 0.2}
-];
+            // Reverb untuk semua
+            const reverb = new Tone.Freeverb(0.6, 500).toDestination();
+            leadSynth.connect(reverb);
+            bassSynth.connect(reverb);
+            noiseSynth.connect(reverb);
 
-let isPlaying = false;
+            // Convert note string to frequency
+            function noteToFreq(note) {
+                if (!note) return 0;
+                return Tone.Frequency(note).toFrequency();
+            }
 
-document.getElementById('audioTrigger').addEventListener('click', () => {
-    if (isPlaying) return;
-    isPlaying = true;
-    audioCtx.resume();
-    
-    let now = audioCtx.currentTime + 0.1;
-    document.getElementById('display').innerHTML = "STATUS: RUNNING...<br>DECODING: MARIO_DRV.SND";
+            // ========== SEQUENCER ==========
+            let leadSeq = null;
+            let bassSeq = null;
+            let drumSeq = null;
+            let isPlaying = false;
 
-    // Play Melody (Square 1)
-    melody.forEach(note => {
-        if(note.n) playNote(notes[note.n], now, note.d, 'square', 0.1);
-        now += note.d + 0.05;
-    });
+            // Simple bass line (root notes)
+            function getBassLine() {
+                const roots = [];
+                const len = melodyLine.length;
+                // Menentukan nada dasar untuk tiap bagian secara heuristik
+                const sections = [
+                    { start: 0, end: 16, root: 'C3' },      // intro
+                    { start: 16, end: 48, root: 'C3' },     // A
+                    { start: 48, end: 80, root: 'F3' },     // B
+                    { start: 80, end: 112, root: 'C3' },    // B
+                    { start: 112, end: 144, root: 'F3' },   // B
+                    { start: 144, end: 176, root: 'C3' },   // B
+                    { start: 176, end: 208, root: 'C3' },   // C
+                    { start: 208, end: 240, root: 'G3' },   // D
+                    { start: 240, end: 272, root: 'C3' },   // D
+                    { start: 272, end: 304, root: 'F3' },   // D
+                    { start: 304, end: 336, root: 'C3' },   // D
+                    { start: 336, end: 368, root: 'G3' },   // D
+                    { start: 368, end: 400, root: 'C3' },   // D
+                    { start: 400, end: 432, root: 'C3' },   // C
+                ];
+                for (let i = 0; i < len; i++) {
+                    const sec = sections.find(s => i >= s.start && i < s.end);
+                    roots.push(sec ? sec.root : 'C3');
+                }
+                return roots;
+            }
 
-    // Play Bass (Triangle)
-    let bassNow = audioCtx.currentTime + 0.1;
-    bass.forEach(note => {
-        if(note.n) playNote(notes[note.n], bassNow, note.d, 'triangle', 0.15);
-        bassNow += note.d + 0.05;
-    });
+            const bassLine = getBassLine();
 
-    // Visualizer Logic
-    const bars = ['b1', 'b2', 'b3', 'b4'];
-    const interval = setInterval(() => {
-        bars.forEach(id => {
-            document.getElementById(id).style.height = Math.random() * 100 + '%';
-        });
-    }, 100);
+            // Schedule notes
+            function createSequences() {
+                // Lead sequencer (8th notes)
+                leadSeq = new Tone.Sequence((time, note) => {
+                    if (note) {
+                        leadSynth.triggerAttackRelease(note, '8n', time);
+                    }
+                }, melodyLine, '8n');
 
-    setTimeout(() => {
-        clearInterval(interval);
-        bars.forEach(id => document.getElementById(id).style.height = '0%');
-        document.getElementById('display').innerHTML = "SYSTEM READY...<br>LAST_STATUS: COMPLETED";
-        isPlaying = false;
-    }, 2000);
-});
+                // Bass sequencer (quarter notes, bisa kita sederhanakan)
+                bassSeq = new Tone.Sequence((time, note) => {
+                    bassSynth.triggerAttackRelease(note, '4n', time);
+                }, bassLine, '4n');
 
-</script>
+                // Drum sequencer (8th notes, seperti kick)
+                drumSeq = new Tone.Sequence((time, vel) => {
+                    if (vel > 0) {
+                        noiseSynth.triggerAttackRelease('8n', time);
+                    }
+                }, new Array(melodyLine.length).fill(1), '8n');
+            }
+
+            function startPlayback() {
+                if (isPlaying) return;
+                Tone.start();
+                createSequences();
+
+                // Set tempo: 400 BPM in original means 8th note = 400, so quarter = 200
+                Tone.Transport.bpm.value = 400;
+                // Disable loop on sequences, we'll loop the whole transport
+                leadSeq.loop = false;
+                bassSeq.loop = false;
+                drumSeq.loop = false;
+
+                // Play all
+                leadSeq.start(0);
+                bassSeq.start(0);
+                drumSeq.start(0);
+                Tone.Transport.start();
+
+                isPlaying = true;
+                playBtn.classList.add('active');
+                stopBtn.style.display = 'inline-block';
+                playBtn.style.display = 'none';
+            }
+
+            function stopPlayback() {
+                if (!isPlaying) return;
+                Tone.Transport.stop();
+                Tone.Transport.cancel();
+                if (leadSeq) leadSeq.dispose();
+                if (bassSeq) bassSeq.dispose();
+                if (drumSeq) drumSeq.dispose();
+                isPlaying = false;
+                playBtn.classList.remove('active');
+                stopBtn.style.display = 'none';
+                playBtn.style.display = 'inline-block';
+            }
+
+            // ========== VISUAL OSCILLOSCOPE ==========
+            function drawOsc() {
+                if (!canvas || !ctx) return;
+                const w = canvas.width = canvas.clientWidth;
+                const h = canvas.height = canvas.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+
+                if (!isPlaying) {
+                    ctx.strokeStyle = '#3f3f5c';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, h/2);
+                    ctx.lineTo(w, h/2);
+                    ctx.stroke();
+                } else {
+                    const now = Date.now() / 1000;
+                    ctx.strokeStyle = '#e64300';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const center = h/2;
+                    const amp = h * 0.4;
+                    for (let x = 0; x < w; x++) {
+                        const phase = (x / w) * 2 * Math.PI * 1.5 + now * 5;
+                        const y = center + Math.sin(phase) * amp * 0.3;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Pixel grid
+                    ctx.strokeStyle = 'rgba(78,78,104,0.3)';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < w; i += 8) {
+                        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+                    }
+                    for (let i = 0; i < h; i += 8) {
+                        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+                    }
+                }
+                requestAnimationFrame(drawOsc);
+            }
+
+            // ========== BUTTON EVENTS ==========
+            playBtn.addEventListener('click', startPlayback);
+            stopBtn.addEventListener('click', stopPlayback);
+
+            // Initial UI
+            stopBtn.style.display = 'none';
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            drawOsc();
+
+            // Cleanup on page leave
+            window.addEventListener('beforeunload', () => {
+                stopPlayback();
+            });
+        })();
+    </script>
 </body>
 </html>
