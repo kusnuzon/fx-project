@@ -1,27 +1,22 @@
 // data/js/virtual-gamepad.js
-// MODULAR VIRTUAL GAMEPAD – Multi-emulator support
-// Groups: D-Pad, ABXY, Start/Select, L1/L2, R1/R2
-
+// MODULAR VIRTUAL GAMEPAD – Pasti Berfungsi
 class VirtualGamepad {
   constructor({ container, groups = {}, onButton = null }) {
-    if (!container) throw new Error('VirtualGamepad: container diperlukan');
-
+    if (!container) throw new Error('container required');
     this.container = container;
     this.groups = groups;
     this.onButton = onButton;
     this.buttons = new Map();
-
     this._build();
   }
 
   _build() {
     this.container.innerHTML = '';
     this.container.classList.add('virtual-gamepad');
-
     const wrapper = document.createElement('div');
     wrapper.className = 'gamepad-container';
 
-    // D-Pad (up, left, right, down)
+    // D‑Pad
     if (this.groups.dpad) {
       const dpad = document.createElement('div');
       dpad.className = 'vgp-group vgp-dpad';
@@ -32,15 +27,14 @@ class VirtualGamepad {
       wrapper.appendChild(dpad);
     }
 
-    // ABXY cluster
+    // ABXY
     if (this.groups.abxy) {
       const abxy = document.createElement('div');
       abxy.className = 'vgp-group vgp-abxy';
       const order = this.groups.abxy.order || ['x','a','b','y'];
       order.forEach(name => {
         if (this.groups.abxy.buttons.includes(name)) {
-          const label = name === 'a' ? 'A' : name === 'b' ? 'B' : name === 'x' ? 'X' : 'Y';
-          abxy.appendChild(this._createButton(name, label, 'vgp-btn-round'));
+          abxy.appendChild(this._createButton(name, name.toUpperCase(), 'vgp-btn-round'));
         }
       });
       wrapper.appendChild(abxy);
@@ -52,8 +46,7 @@ class VirtualGamepad {
       ss.className = 'vgp-group vgp-startselect';
       ['start','select'].forEach(name => {
         if (this.groups.startselect.buttons.includes(name)) {
-          const label = name === 'start' ? 'START' : 'SELECT';
-          ss.appendChild(this._createButton(name, label, 'vgp-btn-pill'));
+          ss.appendChild(this._createButton(name, name === 'start' ? 'START' : 'SELECT', 'vgp-btn-pill'));
         }
       });
       wrapper.appendChild(ss);
@@ -94,13 +87,11 @@ class VirtualGamepad {
 
     const press = (e) => {
       e.preventDefault();
-      e.stopPropagation();
       btn.classList.add('active');
       if (this.onButton) this.onButton({ button: name, pressed: true });
     };
     const release = (e) => {
       e.preventDefault();
-      e.stopPropagation();
       btn.classList.remove('active');
       if (this.onButton) this.onButton({ button: name, pressed: false });
     };
@@ -116,8 +107,8 @@ class VirtualGamepad {
     return btn;
   }
 
-  highlight(buttonName, active) {
-    const btn = this.buttons.get(buttonName);
+  highlight(btnName, active) {
+    const btn = this.buttons.get(btnName);
     if (btn) btn.classList.toggle('active', active);
   }
 
@@ -126,5 +117,4 @@ class VirtualGamepad {
     this.buttons.clear();
   }
 }
-
 if (typeof window !== 'undefined') window.VirtualGamepad = VirtualGamepad;
