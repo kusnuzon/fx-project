@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Defend the Pip – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .game-wrapper {
+      text-align: center;
+      margin: 1rem auto;
+    }
+    canvas {
+      border: 3px solid #5a5a7a;
+      box-shadow: 0 0 0 4px #1a1a2e, 0 0 0 8px #0a0a14;
+      image-rendering: crisp-edges;
+      background: #101018;
+      display: block;
+      margin: 0 auto;
+    }
+    .game-hud {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      font-size: 0.7rem;
+      margin: 1rem 0 0.5rem;
+      color: #cfba8c;
+    }
+    .game-controls {
+      font-size: 0.6rem;
+      color: #7a7a95;
+      margin-top: 0.8rem;
+    }
+    button.game-btn {
+      width: auto;
+      padding: 0.4rem 1.2rem;
+      margin: 0.5rem;
+      font-size: 0.6rem;
+      background: #3a3a52;
+      color: #d1d1db;
+      border: 1px solid #5a5a7a;
+      cursor: pointer;
+      font-family: 'Press Start 2P', cursive;
+    }
+    button.game-btn:hover {
+      background: #4b4b6e;
+      border-color: #8a8aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛡️ DEFEND THE PIP</h1>
+    <p style="text-align:center;">Tangkap pip hijau, hindari loss merah!</p>
+
+    <div class="game-wrapper">
+      <canvas id="gameCanvas" width="400" height="500"></canvas>
+      <div class="game-hud">
+        <span>💰 <span id="scoreDisplay">0</span></span>
+        <span>❤️ <span id="livesDisplay">3</span></span>
+        <span>🏆 <span id="highScoreDisplay">0</span></span>
+      </div>
+      <div class="game-controls">
+        ← → atau A/D untuk gerak | Spasi mulai ulang
+      </div>
+      <button class="game-btn" id="restartButton">MULAI ULANG</button>
+    </div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Skala untuk tampilan pixel art (semua koordinat logika di grid lebih kecil)
+      const GRID = 20; // ukuran cell
+      const COLS = Math.floor(canvas.width / GRID);
+      const ROWS = Math.floor(canvas.height / GRID);
+
+      // State game
+      let playerX = Math.floor(COLS / 2);
+      const playerY = ROWS - 2; // baris kedua dari bawah
+      let score = 0;
+      let lives = 3;
+      let highScore = 0;
+      let gameOver = false;
+      let gamePaused = false;
+
+      // Objek jatuh: { x, y, type ('pip' atau 'loss'), speed }
+      let fallingItems = [];
+
+      // Kecepatan spawn (frame counter)
+      let spawnTimer = 0;
+      const SPAWN_RATE = 40; // frame sekali
+
+      // Kecepatan jatuh dasar (grid per frame)
+      const BASE_SPEED = 0.03;
+
+      // Input keyboard
+      const keys = {
+        left: false,
+        right: false
+      };
+
+      // Load high score
+      try {
+        const saved = localStorage.getItem('defendThePip_high');
+        if (saved) highScore = parseInt(saved, 10) || 0;
+      } catch(e) {}
+
+      // Update display
+      function updateHUD() {
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('livesDisplay').textContent = lives;
+        document.getElementById('highScoreDisplay').textContent = highScore;
+      }
+
+      // Spawn item baru
+      function spawnItem() {
+        const x = Math.floor(Math.random() * (COLS - 1)) + 0.5; // grid offset
+        const type = Math.random() < 0.7 ? 'pip' : 'loss'; // 70% pip, 30% loss
+        fallingItems.push({
+          x: x,
+          y: 0,
+          type: type,
+          speed: BASE_SPEED + (score / 50) * 0.005 // makin cepat seiring skor
+        });
+      }
+
+      // Reset game
+      function resetGame() {
+        playerX = Math.floor(COLS / 2);
+        score = 0;
+        lives = 3;
+        gameOver = false;
+        gamePaused = false;
+        fallingItems = [];
+        spawnTimer = 0;
+        updateHUD();
+      }
+
+      // Cek tabrakan
+      function checkCollision(item) {
+        // Item di grid y (float)
+        const itemGridY = Math.floor(item.y);
+        const itemGridX = Math.floor(item.x);
+
+        // Player lebar 2 grid (agar mudah), posisi playerX adalah kiri
+        const playerLeft = playerX;
+        const playerRight = playerX + 1; // lebar 2 grid
+
+        // Cek apakah item ada di baris playerY dan di antara kolom player
+        if (itemGridY === playerY) {
+          if (itemGridX >= playerLeft && itemGridX <= playerRight) {
+            return true;
+          }
+        }
+        // Juga cek jika item hampir menyentuh (y >= playerY - 0.2) karena gerakan kontinu
+        if (item.y >= playerY - 0.2 && item.y < playerY + 0.8) {
+          if (item.x >= playerLeft && item.x < playerRight + 1) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // Update game logic
+      function update() {
+        if (gameOver || gamePaused) return;
+
+        // Gerakan player
+        if (keys.left && playerX > 0) {
+          playerX -= 0.12;
+        }
+        if (keys.right && playerX < COLS - 2) { // lebar player 2
+          playerX += 0.12;
+        }
+
+        // Spawn item
+        spawnTimer++;
+        if (spawnTimer >= SPAWN_RATE) {
+          spawnTimer = 0;
+          spawnItem();
+        }
+
+        // Update posisi item
+        for (let i = fallingItems.length - 1; i >= 0; i--) {
+          const item = fallingItems[i];
+          item.y += item.speed;
+
+          // Cek tabrakan dengan player
+          if (checkCollision(item)) {
+            if (item.type === 'pip') {
+              score += 10;
+              // efek bisa ditambah (nanti visual)
+            } else {
+              lives--;
+              if (lives <= 0) {
+                lives = 0;
+                gameOver = true;
+                if (score > highScore) {
+                  highScore = score;
+                  localStorage.setItem('defendThePip_high', highScore);
+                }
+              }
+            }
+            fallingItems.splice(i, 1);
+            continue;
+          }
+
+          // Jika keluar layar bawah
+          if (item.y > ROWS) {
+            // Jika pip hilang tanpa tertangkap, tidak ada penalti
+            fallingItems.splice(i, 1);
+          }
+        }
+
+        updateHUD();
+      }
+
+      // Gambar game
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Grid background (opsional, pixel look)
+        ctx.fillStyle = '#101018';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#2a2a3c';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= COLS; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * GRID, 0);
+          ctx.lineTo(i * GRID, canvas.height);
+          ctx.stroke();
+        }
+        for (let j = 0; j <= ROWS; j++) {
+          ctx.beginPath();
+          ctx.moveTo(0, j * GRID);
+          ctx.lineTo(canvas.width, j * GRID);
+          ctx.stroke();
+        }
+
+        // Gambar player (segitiga / pixel karakter)
+        const px = playerX * GRID;
+        const py = playerY * GRID;
+        ctx.fillStyle = '#b9a88c';
+        // Badan persegi panjang (2 grid lebar, 1 grid tinggi)
+        ctx.fillRect(px, py, GRID * 2, GRID);
+        // Mata
+        ctx.fillStyle = '#101018';
+        ctx.fillRect(px + 6, py + 6, 6, 6);
+        ctx.fillRect(px + GRID + 6, py + 6, 6, 6);
+
+        // Gambar item jatuh
+        for (let item of fallingItems) {
+          const ix = item.x * GRID;
+          const iy = item.y * GRID;
+          ctx.fillStyle = item.type === 'pip' ? '#6c9' : '#e07373';
+          // Bentuk pip: segi delapan atau lingkaran kecil
+          ctx.beginPath();
+          ctx.ellipse(ix + GRID/2, iy + GRID/2, 8, 8, 0, 0, Math.PI*2);
+          ctx.fill();
+          // Detail
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.ellipse(ix + GRID/2 - 2, iy + GRID/2 - 2, 2, 2, 0, 0, Math.PI*2);
+          ctx.fill();
+        }
+
+        // Game over overlay
+        if (gameOver) {
+          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#e07373';
+          ctx.font = '20px "Press Start 2P", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 20);
+          ctx.font = '12px "Press Start 2P", cursive';
+          ctx.fillStyle = '#cfba8c';
+          ctx.fillText('Score: ' + score, canvas.width/2, canvas.height/2 + 20);
+          ctx.fillText('Press Space', canvas.width/2, canvas.height/2 + 50);
+        }
+      }
+
+      // Game loop
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
+      // Event listeners
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          keys.left = true;
+          e.preventDefault();
+        }
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          keys.right = true;
+          e.preventDefault();
+        }
+        if (e.key === ' ') {
+          e.preventDefault();
+          if (gameOver) {
+            resetGame();
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          keys.left = false;
+          e.preventDefault();
+        }
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          keys.right = false;
+          e.preventDefault();
+        }
+      });
+
+      // Tombol restart
+      document.getElementById('restartButton').addEventListener('click', () => {
+        resetGame();
+      });
+
+      // Mulai game
+      resetGame();
+      gameLoop();
+      updateHUD();
+    })();
+  </script>
+</body>
+</html>
