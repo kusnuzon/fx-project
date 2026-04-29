@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>NES Emulator – CARTRIDGE VAULT</title>
 
     <!-- Global Theme & Font -->
@@ -11,17 +11,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <!-- JSNES Library -->
+    <!-- JSNES & JSZip -->
     <script src="https://unpkg.com/jsnes/dist/jsnes.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>🎮 NES EMULATOR</h1>
-        <p class="subtitle" style="text-align:center;">Drag & drop .nes ROM</p>
+        <p class="subtitle" style="text-align:center;">Drop .nes / .zip ROM</p>
 
         <div class="nes-dropzone" id="dropZone">
-            ⬇️ Drop NES ROM here<br>
-            <span style="font-size:0.4rem;">(.nes file)</span>
+            ⬇️ Drop .nes / .zip file here<br>
+            <span style="font-size:0.4rem;">or click to select</span>
         </div>
 
         <canvas class="nes-canvas" id="nesCanvas" width="256" height="240" style="display:none;"></canvas>
@@ -30,6 +31,26 @@
             <button onclick="nes.stop()" title="Stop">⏹️ STOP</button>
             <button onclick="nes.reset()" title="Reset">🔄 RESET</button>
             <button onclick="nes.togglePause()" title="Pause/Resume">⏯️ PAUSE</button>
+        </div>
+
+        <!-- Virtual Gamepad -->
+        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
+            <div class="gamepad-container">
+                <div class="dpad">
+                    <div class="gamepad-btn" data-btn="up">▲</div>
+                    <div class="gamepad-btn" data-btn="left">◀</div>
+                    <div class="gamepad-btn" data-btn="right">▶</div>
+                    <div class="gamepad-btn" data-btn="down">▼</div>
+                </div>
+                <div class="action-buttons">
+                    <div class="gamepad-btn" data-btn="a">A</div>
+                    <div class="gamepad-btn" data-btn="b">B</div>
+                </div>
+                <div class="start-select">
+                    <div class="gamepad-btn" data-btn="start">START</div>
+                    <div class="gamepad-btn" data-btn="select">SELECT</div>
+                </div>
+            </div>
         </div>
 
         <div class="nes-status" id="statusText"></div>
@@ -48,7 +69,7 @@
             init() {
                 this.instance = new jsnes.NES({
                     onFrame: (buffer) => this.drawFrame(buffer),
-                    onAudioSample: () => {} // audio diabaikan untuk kesederhanaan
+                    onAudioSample: () => {}
                 });
 
                 // Keyboard controller (Player 1)
@@ -86,7 +107,8 @@
                 this.paused = false;
                 document.getElementById('nesCanvas').style.display = 'block';
                 document.getElementById('controls').style.display = 'flex';
-                document.getElementById('statusText').textContent = 'ROM loaded. Use keyboard: arrows, Z, X, Enter, Shift.';
+                document.getElementById('virtualGamepad').style.display = 'flex';
+                document.getElementById('statusText').textContent = 'ROM loaded. Use keyboard or on‑screen buttons.';
                 this.startFrameLoop();
             },
 
@@ -96,7 +118,7 @@
                     if (!this.paused) {
                         this.instance.frame();
                     }
-                }, 1000 / 60); // 60 FPS
+                }, 1000 / 60);
             },
 
             stopFrameLoop() {
@@ -122,6 +144,7 @@
                 document.getElementById('statusText').textContent = 'Emulator stopped.';
                 document.getElementById('nesCanvas').style.display = 'none';
                 document.getElementById('controls').style.display = 'none';
+                document.getElementById('virtualGamepad').style.display = 'none';
                 if (this.instance) this.instance.reset();
             },
 
@@ -138,7 +161,73 @@
             }
         };
 
-        // ── Drag and Drop ROM ──
+        // ── Virtual Gamepad setup ──
+        function setupVirtualGamepad() {
+            const buttonMap = {
+                up:     jsnes.Controller.BUTTON_UP,
+                down:   jsnes.Controller.BUTTON_DOWN,
+                left:   jsnes.Controller.BUTTON_LEFT,
+                right:  jsnes.Controller.BUTTON_RIGHT,
+                a:      jsnes.Controller.BUTTON_A,
+                b:      jsnes.Controller.BUTTON_B,
+                start:  jsnes.Controller.BUTTON_START,
+                select: jsnes.Controller.BUTTON_SELECT,
+            };
+
+            const buttons = document.querySelectorAll('.gamepad-btn');
+            buttons.forEach(btn => {
+                const nesButton = buttonMap[btn.dataset.btn];
+                if (!nesButton) return;
+
+                const press = () => {
+                    if (nes.loaded) {
+                        nes.instance.buttonDown(1, nesButton);
+                        btn.classList.add('active');
+                    }
+                };
+                const release = () => {
+                    if (nes.loaded) {
+                        nes.instance.buttonUp(1, nesButton);
+                        btn.classList.remove('active');
+                    }
+                };
+
+                // Pointer events (work with touch and mouse)
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    press();
+                });
+                btn.addEventListener('pointerup', (e) => {
+                    e.preventDefault();
+                    release();
+                });
+                btn.addEventListener('pointerleave', (e) => {
+                    release();
+                });
+            });
+        }
+
+        // ── Helper to process ROM from ArrayBuffer ──
+        async function processROMBuffer(buffer, fileName) {
+            const name = fileName.toLowerCase();
+            if (name.endsWith('.nes')) {
+                return new Uint8Array(buffer);
+            } else if (name.endsWith('.zip')) {
+                try {
+                    const zip = await JSZip.loadAsync(buffer);
+                    const nesFile = Object.keys(zip.files).find(f => f.toLowerCase().endsWith('.nes'));
+                    if (!nesFile) throw new Error('No .nes file found inside ZIP.');
+                    const romData = await zip.files[nesFile].async('uint8array');
+                    return romData;
+                } catch (err) {
+                    throw new Error('Failed to extract ROM from ZIP: ' + err.message);
+                }
+            } else {
+                throw new Error('Unsupported file type. Please use .nes or .zip.');
+            }
+        }
+
+        // ── Drag & Drop / Click setup ──
         function setupDropZone() {
             const dropZone = document.getElementById('dropZone');
 
@@ -151,45 +240,43 @@
                 dropZone.classList.remove('drag-over');
             });
 
-            dropZone.addEventListener('drop', (e) => {
+            dropZone.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 dropZone.classList.remove('drag-over');
                 const file = e.dataTransfer.files[0];
-                if (file && file.name.toLowerCase().endsWith('.nes')) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        const romBytes = new Uint8Array(ev.target.result);
-                        nes.loadROM(romBytes);
-                    };
-                    reader.readAsArrayBuffer(file);
-                } else {
-                    alert('Please drop a valid .nes ROM file.');
-                }
+                if (!file) return;
+                handleFile(file);
             });
 
-            // Fallback: click to open file dialog
             dropZone.addEventListener('click', () => {
                 const input = document.createElement('input');
                 input.type = 'file';
-                input.accept = '.nes';
+                input.accept = '.nes,.zip';
                 input.onchange = (e) => {
                     const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                            const romBytes = new Uint8Array(ev.target.result);
-                            nes.loadROM(romBytes);
-                        };
-                        reader.readAsArrayBuffer(file);
-                    }
+                    if (file) handleFile(file);
                 };
                 input.click();
             });
         }
 
+        async function handleFile(file) {
+            const statusEl = document.getElementById('statusText');
+            statusEl.textContent = 'Processing file...';
+            try {
+                const buffer = await file.arrayBuffer();
+                const romBytes = await processROMBuffer(buffer, file.name);
+                nes.loadROM(romBytes);
+            } catch (err) {
+                statusEl.textContent = 'Error: ' + err.message;
+                alert(err.message);
+            }
+        }
+
         // ── Init ──
         nes.init();
         setupDropZone();
+        setupVirtualGamepad();
     </script>
 </body>
 </html>
