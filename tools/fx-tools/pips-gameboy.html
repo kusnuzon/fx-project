@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Game Boy | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .gameboy-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 400px;
+            margin: 2rem auto;
+            background: #4a4a6e;
+            border: 8px solid #2e2e42;
+            outline: 4px solid #1a1a2e;
+            outline-offset: 4px;
+            box-shadow: 0 0 0 4px #0a0a14, 0 10px 30px rgba(0,0,0,0.6);
+            border-radius: 16px 16px 24px 24px;
+            padding: 1rem;
+        }
+        .gameboy-screen {
+            background: #8bac0f;
+            border: 6px solid #3b3b52;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        .gameboy-screen::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .gb-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.65rem;
+            color: #0f380f;
+            text-align: center;
+            margin-bottom: 0.8rem;
+            text-shadow: 1px 1px 0 #306230;
+        }
+        .gb-input-group {
+            margin-bottom: 0.6rem;
+        }
+        .gb-input-group label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #0f380f;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+        .gb-input-group input, .gb-input-group select {
+            width: 100%;
+            padding: 0.4rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            background: #9bbc0f;
+            border: 2px solid #306230;
+            color: #0f380f;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+        .gb-result {
+            background: #9bbc0f;
+            border: 2px solid #306230;
+            padding: 0.6rem;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: #0f380f;
+            margin-top: 0.8rem;
+        }
+        .gb-dpad {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .gb-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            background: #8b3a62;
+            color: #f0d0e0;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            box-shadow: 3px 3px 0 #4a1a32, inset 0 0 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.05s;
+        }
+        .gb-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #4a1a32;
+        }
+    </style>
+</head>
+<body>
+<div class="gameboy-wrapper">
+    <div class="gameboy-screen">
+        <div class="gb-title">POCKET PIPS</div>
+        <div class="gb-input-group">
+            <label>PAIR</label>
+            <select id="gbPair">
+                <option value="EUR/USD">EUR/USD</option>
+                <option value="GBP/USD">GBP/USD</option>
+                <option value="USD/JPY">USD/JPY</option>
+                <option value="AUD/USD">AUD/USD</option>
+            </select>
+        </div>
+        <div class="gb-input-group">
+            <label>LOT SIZE</label>
+            <input type="number" id="gbLot" value="1.0" step="0.01" min="0.01">
+        </div>
+        <div class="gb-input-group">
+            <label>PIPS</label>
+            <input type="number" id="gbPips" value="10" step="0.1">
+        </div>
+        <div class="gb-result" id="gbResult">$0.00</div>
+    </div>
+    <div class="gb-dpad">
+        <button class="gb-btn" id="gbCalcBtn">A</button>
+        <button class="gb-btn" id="gbResetBtn">B</button>
+    </div>
+</div>
+<script>
+    (function() {
+        const pipValues = { "EUR/USD": 10, "GBP/USD": 10, "USD/JPY": 10, "AUD/USD": 10 };
+        function calc() {
+            const pair = document.getElementById('gbPair').value;
+            const lot = parseFloat(document.getElementById('gbLot').value) || 0;
+            const pips = parseFloat(document.getElementById('gbPips').value) || 0;
+            const val = pipValues[pair] * lot * pips;
+            document.getElementById('gbResult').textContent = `$${val.toFixed(2)}`;
+        }
+        document.getElementById('gbCalcBtn').addEventListener('click', calc);
+        document.getElementById('gbResetBtn').addEventListener('click', () => {
+            document.getElementById('gbLot').value = 1.0;
+            document.getElementById('gbPips').value = 10;
+            calc();
+        });
+        calc();
+    })();
+</script>
+</body>
+</html>
