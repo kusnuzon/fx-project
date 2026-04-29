@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Ticker – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .ticker-display {
+      background: #0e0e1a;
+      border: 3px solid #5a5a7a;
+      padding: 1.5rem;
+      text-align: center;
+      margin: 1.5rem 0;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+    .price-big {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 2.4rem;
+      color: #cfba8c;
+      transition: color 0.2s;
+      margin: 0.3rem 0;
+    }
+    .price-up { color: #6c9; }
+    .price-down { color: #e07373; }
+    .bid-ask {
+      font-size: 0.65rem;
+      color: #8e8ea0;
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 0.3rem;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .live-dot { background: #6c9; }
+    .fallback-dot { background: #f0a040; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📡 LIVE TICKER</h1>
+    <p style="text-align:center;">Harga real-time ala terminal retro</p>
+
+    <div style="text-align:center; margin:1rem 0;">
+      <select id="pairSelect" onchange="switchPair()">
+        <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
+        <option>AUD/USD</option><option>NZD/USD</option><option>USD/CAD</option>
+        <option>USD/CHF</option>
+      </select>
+    </div>
+
+    <div class="ticker-display">
+      <div style="font-size:0.6rem; color:#7a7a95;" id="statusLabel">
+        <span class="status-dot live-dot"></span>LIVE
+      </div>
+      <div class="price-big" id="priceMain">--.----</div>
+      <div class="bid-ask">
+        <span>Bid: <span id="bidPrice">--.----</span></span>
+        <span>Ask: <span id="askPrice">--.----</span></span>
+      </div>
+      <div style="font-size:0.55rem; color:#5a5a6a; margin-top:0.5rem;" id="updateTime">--</div>
+    </div>
+
+    <p style="font-size:0.55rem; text-align:center; color:#7a7a95;">
+      Data dari Twelve Data (demo key). Ganti API key di <code>data/js/live-price.js</code> untuk stabilitas lebih.
+    </p>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script src="../../data/js/live-price.js"></script>
+  <script>
+    let currentPair = 'EUR/USD';
+    let lastPrice = null;
+    let priceTimeout = null;
+
+    // Init modul
+    VaultPrice.init({
+      pairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'NZD/USD', 'USD/CAD', 'USD/CHF']
+    });
+
+    // Subscribe ke perubahan pair saat ini
+    function resubscribe() {
+      // Hentikan sub lama
+      // (VaultPrice tidak punya unsubscribe massal, tapi kita override dengan sub baru)
+      VaultPrice.subscribe(currentPair, onPriceUpdate);
+    }
+
+    function onPriceUpdate(data) {
+      if (!data) return;
+      const mainEl = document.getElementById('priceMain');
+      const bidEl = document.getElementById('bidPrice');
+      const askEl = document.getElementById('askPrice');
+      const updateTimeEl = document.getElementById('updateTime');
+      const statusLabel = document.getElementById('statusLabel');
+
+      // Format angka
+      const decimals = currentPair.includes('JPY') ? 3 : 5;
+      const midStr = data.mid.toFixed(decimals);
+      const bidStr = data.bid.toFixed(decimals);
+      const askStr = data.ask.toFixed(decimals);
+
+      // Perubahan warna
+      if (lastPrice !== null) {
+        mainEl.classList.remove('price-up', 'price-down');
+        if (data.mid > lastPrice) mainEl.classList.add('price-up');
+        else if (data.mid < lastPrice) mainEl.classList.add('price-down');
+      }
+      lastPrice = data.mid;
+      mainEl.textContent = midStr;
+      bidEl.textContent = bidStr;
+      askEl.textContent = askStr;
+
+      // Waktu update
+      const t = new Date(data.ts);
+      updateTimeEl.textContent = t.toLocaleTimeString('id-ID', { hour12: false }) + ' WIB';
+
+      // Status live/fallback
+      const isFallback = VaultPrice.isFallback();
+      statusLabel.innerHTML = isFallback
+        ? '<span class="status-dot fallback-dot"></span>SIMULASI'
+        : '<span class="status-dot live-dot"></span>LIVE';
+    }
+
+    function switchPair() {
+      currentPair = document.getElementById('pairSelect').value;
+      lastPrice = null;
+      resubscribe();
+      // Tampilkan data terakhir jika ada
+      const cached = VaultPrice.getPrice(currentPair);
+      if (cached) onPriceUpdate(cached);
+      else {
+        document.getElementById('priceMain').textContent = '--.----';
+        document.getElementById('bidPrice').textContent = '--.----';
+        document.getElementById('askPrice').textContent = '--.----';
+      }
+    }
+
+    // Mulai
+    VaultPrice.start();
+    resubscribe();
+    const cached = VaultPrice.getPrice(currentPair);
+    if (cached) onPriceUpdate(cached);
+  </script>
+</body>
+</html>
