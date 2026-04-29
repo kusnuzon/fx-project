@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamepad Layout Editor – CARTRIDGE VAULT</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        .editor-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .canvas-area {
+            flex: 1;
+            min-width: 300px;
+            background: #1a1a2e;
+            border: 2px solid #4b4b68;
+            border-radius: 8px;
+            position: relative;
+            height: 500px;
+            touch-action: none;
+        }
+        .canvas-area.portrait-preview {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .canvas-area.landscape-preview {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .draggable-btn {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            background: #2a2a3c;
+            border: 2px solid #5a5a7a;
+            color: #cdcdd4;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            height: 54px;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            transition: box-shadow 0.1s;
+        }
+        .draggable-btn.active {
+            box-shadow: 0 0 10px #cfba8c;
+            border-color: #cfba8c;
+        }
+        .draggable-btn[data-btn="a"],
+        .draggable-btn[data-btn="b"] {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+        .draggable-btn[data-btn="start"],
+        .draggable-btn[data-btn="select"] {
+            width: auto;
+            min-width: 60px;
+            height: 34px;
+            border-radius: 17px;
+            padding: 0 0.5rem;
+            font-size: 0.4rem;
+        }
+        .control-panel {
+            flex: 0 0 300px;
+            background: #1e1e2e;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #4b4b68;
+        }
+        .control-panel h3 {
+            font-size: 0.7rem;
+            margin-bottom: 1rem;
+            color: #cfba8c;
+        }
+        .coord-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+        .coord-input label {
+            font-size: 0.55rem;
+            color: #9da5b4;
+            width: 60px;
+            font-family: 'Press Start 2P', cursive;
+        }
+        .coord-input input {
+            flex: 1;
+            padding: 0.4rem;
+            font-size: 0.7rem;
+            background: #2a2a3c;
+            color: #cdcdd4;
+            border: 1px solid #4b4b68;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .export-box {
+            margin-top: 1.5rem;
+            background: #0a0a14;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #4b4b68;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .export-box pre {
+            font-size: 0.5rem;
+            color: #6c9;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+        .btn-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .btn-row button {
+            font-size: 0.5rem;
+            padding: 0.5rem;
+            flex: 1;
+        }
+        .selected-info {
+            background: #2a2a3c;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            font-size: 0.55rem;
+            color: #cfba8c;
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+        }
+        .orientation-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+        }
+        .orientation-tabs button {
+            flex: 1;
+            font-size: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0;
+            border: 1px solid #4b4b68;
+            background: #2a2a3c;
+            color: #7a7a95;
+            cursor: pointer;
+        }
+        .orientation-tabs button.active {
+            background: #4b4b6e;
+            color: #cfba8c;
+            border-color: #cfba8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 LAYOUT EDITOR</h1>
+        <p class="subtitle" style="text-align:center;">Drag & Drop – Export JSON</p>
+
+        <div class="orientation-tabs">
+            <button id="tabPortrait" class="active" onclick="switchOrientation('portrait')">📱 PORTRAIT</button>
+            <button id="tabLandscape" onclick="switchOrientation('landscape')">🖥️ LANDSCAPE</button>
+        </div>
+
+        <div class="editor-container">
+            <div class="canvas-area portrait-preview" id="canvasArea"></div>
+            <div class="control-panel" id="controlPanel">
+                <h3>🎯 Selected: <span id="selectedName">None</span></h3>
+                <div class="coord-input">
+                    <label>X (%):</label>
+                    <input type="number" id="posX" min="0" max="100" step="0.5" onchange="updatePosition()">
+                </div>
+                <div class="coord-input">
+                    <label>Y (%):</label>
+                    <input type="number" id="posY" min="0" max="100" step="0.5" onchange="updatePosition()">
+                </div>
+                <div class="btn-row">
+                    <button onclick="exportJSON()">📋 EXPORT JSON</button>
+                    <button onclick="importJSON()">📥 IMPORT JSON</button>
+                </div>
+                <div class="export-box">
+                    <pre id="jsonOutput">// JSON akan muncul di sini...</pre>
+                </div>
+                <div class="btn-row" style="margin-top:0.5rem;">
+                    <button onclick="copyJSON()">📝 COPY</button>
+                    <button onclick="resetLayout()">🔄 RESET</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="nes-status" style="margin-top:1rem;">
+            💡 Drag tombol ke posisi yang diinginkan, lalu Export JSON dan kirim ke developer
+        </div>
+    </div>
+
+    <footer>🛠️ CARTRIDGE VAULT</footer>
+
+    <script>
+        // =============================================
+        // GAMEPAD LAYOUT EDITOR
+        // =============================================
+
+        let currentOrientation = 'portrait';
+        let selectedBtn = null;
+        let layoutData = {};
+
+        // Default layout (persentase dari area)
+        const defaultLayout = {
+            portrait: {
+                up:    { x: 25, y: 65 },
+                down:  { x: 25, y: 85 },
+                left:  { x: 15, y: 75 },
+                right: { x: 35, y: 75 },
+                a:     { x: 75, y: 70 },
+                b:     { x: 65, y: 80 },
+                start: { x: 40, y: 93 },
+                select:{ x: 60, y: 93 }
+            },
+            landscape: {
+                up:    { x: 8, y: 30 },
+                down:  { x: 8, y: 50 },
+                left:  { x: 3, y: 40 },
+                right: { x: 13, y: 40 },
+                a:     { x: 88, y: 35 },
+                b:     { x: 88, y: 55 },
+                start: { x: 30, y: 85 },
+                select:{ x: 55, y: 85 }
+            }
+        };
+
+        function init() {
+            layoutData = JSON.parse(JSON.stringify(defaultLayout));
+            renderButtons();
+        }
+
+        function switchOrientation(orientation) {
+            currentOrientation = orientation;
+            document.getElementById('tabPortrait').classList.toggle('active', orientation === 'portrait');
+            document.getElementById('tabLandscape').classList.toggle('active', orientation === 'landscape');
+            
+            const canvas = document.getElementById('canvasArea');
+            canvas.classList.toggle('portrait-preview', orientation === 'portrait');
+            canvas.classList.toggle('landscape-preview', orientation === 'landscape');
+            
+            renderButtons();
+        }
+
+        function renderButtons() {
+            const canvas = document.getElementById('canvasArea');
+            canvas.innerHTML = '';
+            
+            const buttons = layoutData[currentOrientation];
+            if (!buttons) return;
+
+            Object.keys(buttons).forEach(btnName => {
+                const pos = buttons[btnName];
+                const el = document.createElement('div');
+                el.className = 'draggable-btn';
+                el.dataset.btn = btnName;
+                el.style.left = pos.x + '%';
+                el.style.top = pos.y + '%';
+                el.textContent = btnName === 'a' ? 'A' : btnName === 'b' ? 'B' : 
+                                 btnName === 'start' ? 'START' : btnName === 'select' ? 'SELECT' :
+                                 btnName === 'up' ? '▲' : btnName === 'down' ? '▼' : 
+                                 btnName === 'left' ? '◀' : btnName === 'right' ? '▶' : btnName;
+                
+                el.addEventListener('pointerdown', (e) => startDrag(e, el, btnName));
+                el.addEventListener('click', () => selectButton(btnName));
+                
+                canvas.appendChild(el);
+            });
+        }
+
+        function selectButton(btnName) {
+            selectedBtn = btnName;
+            document.getElementById('selectedName').textContent = btnName.toUpperCase();
+            
+            const pos = layoutData[currentOrientation][btnName];
+            document.getElementById('posX').value = pos.x;
+            document.getElementById('posY').value = pos.y;
+            
+            // Highlight selected
+            document.querySelectorAll('.draggable-btn').forEach(el => el.classList.remove('active'));
+            const selectedEl = document.querySelector(`[data-btn="${btnName}"]`);
+            if (selectedEl) selectedEl.classList.add('active');
+        }
+
+        function updatePosition() {
+            if (!selectedBtn) return;
+            const x = parseFloat(document.getElementById('posX').value) || 0;
+            const y = parseFloat(document.getElementById('posY').value) || 0;
+            
+            layoutData[currentOrientation][selectedBtn] = { x, y };
+            
+            const el = document.querySelector(`[data-btn="${selectedBtn}"]`);
+            if (el) {
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+            }
+        }
+
+        function startDrag(e, el, btnName) {
+            e.preventDefault();
+            selectedBtn = btnName;
+            selectButton(btnName);
+            
+            const canvas = document.getElementById('canvasArea');
+            const rect = canvas.getBoundingClientRect();
+            
+            const onMove = (moveEvent) => {
+                moveEvent.preventDefault();
+                const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+                
+                let x = ((clientX - rect.left) / rect.width) * 100;
+                let y = ((clientY - rect.top) / rect.height) * 100;
+                
+                x = Math.max(2, Math.min(98, x));
+                y = Math.max(2, Math.min(98, y));
+                
+                x = Math.round(x * 2) / 2;
+                y = Math.round(y * 2) / 2;
+                
+                layoutData[currentOrientation][btnName] = { x, y };
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                
+                document.getElementById('posX').value = x;
+                document.getElementById('posY').value = y;
+            };
+            
+            const onUp = () => {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onUp);
+            };
+            
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onUp);
+        }
+
+        function exportJSON() {
+            const json = JSON.stringify(layoutData, null, 2);
+            document.getElementById('jsonOutput').textContent = json;
+            return json;
+        }
+
+        function importJSON() {
+            const jsonText = document.getElementById('jsonOutput').textContent.trim();
+            if (!jsonText || jsonText.startsWith('//')) {
+                const input = prompt('Paste JSON layout di sini:');
+                if (!input) return;
+                try {
+                    layoutData = JSON.parse(input);
+                    renderButtons();
+                    document.getElementById('jsonOutput').textContent = JSON.stringify(layoutData, null, 2);
+                } catch (e) {
+                    alert('JSON tidak valid!');
+                }
+            } else {
+                try {
+                    layoutData = JSON.parse(jsonText);
+                    renderButtons();
+                } catch (e) {
+                    alert('JSON tidak valid!');
+                }
+            }
+        }
+
+        function copyJSON() {
+            const json = exportJSON();
+            navigator.clipboard.writeText(json).then(() => {
+                alert('JSON copied to clipboard!');
+            });
+        }
+
+        function resetLayout() {
+            layoutData = JSON.parse(JSON.stringify(defaultLayout));
+            renderButtons();
+            document.getElementById('jsonOutput').textContent = '// JSON akan muncul di sini...';
+            selectedBtn = null;
+            document.getElementById('selectedName').textContent = 'None';
+            document.getElementById('posX').value = '';
+            document.getElementById('posY').value = '';
+        }
+
+        // Init
+        init();
+    </script>
+</body>
+</html>
