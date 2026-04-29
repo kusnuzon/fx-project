@@ -1,4 +1,3 @@
-<!-- tools/emulator-tools/nes-emulator.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,43 +31,10 @@
             <button id="btnStop">⏹️ STOP</button>
             <button id="btnReset">🔄 RESET</button>
             <button id="btnFullscreen">📺 FULLSCREEN</button>
-            <button id="btnSettings" title="Gamepad Layout">⚙️</button>
-        </div>
-
-        <!-- Layout Editor Modal -->
-        <div class="layout-editor-modal" id="layoutEditorModal">
-            <div class="layout-editor-overlay"></div>
-            <div class="layout-editor-content">
-                <div class="layout-editor-header">
-                    <h3>🎮 GAMEPAD LAYOUT</h3>
-                    <button class="close-btn" id="btnCloseEditor">✕</button>
-                </div>
-                <p style="font-size:0.45rem;color:#9da5b4;text-align:center;margin-bottom:0.5rem;">
-                    Drag group boxes to set position
-                </p>
-                <div class="orientation-tabs">
-                    <button class="active" data-ori="portrait">📱 PORTRAIT</button>
-                    <button data-ori="landscape">🖥️ LANDSCAPE</button>
-                </div>
-                <div class="editor-canvas-area" id="editorCanvasArea"></div>
-                <div class="editor-info">
-                    <span id="selectedName">Click a group</span>
-                    <div class="coord-inputs">
-                        <label>X% <input type="number" id="posX" min="0" max="100" step="0.5"></label>
-                        <label>Y% <input type="number" id="posY" min="0" max="100" step="0.5"></label>
-                    </div>
-                </div>
-                <div class="editor-actions">
-                    <button id="btnExport">📋 EXPORT</button>
-                    <button id="btnImport">📥 IMPORT</button>
-                    <button id="btnResetLayout">🔄 RESET</button>
-                </div>
-            </div>
         </div>
 
         <div class="nes-emulator-wrapper" id="emuWrapper"></div>
 
-        <!-- Virtual Gamepad Container -->
         <div class="virtual-gamepad" id="virtualGamepad" style="display:none;"></div>
 
         <div class="nes-status" id="statusText">Ready</div>
