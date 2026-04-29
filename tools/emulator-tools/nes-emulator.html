@@ -11,10 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <!-- Nostalgist.js & JSZip -->
+    <!-- Nostalgist.js, JSZip, dan GamepadZilla -->
     <script src="https://unpkg.com/nostalgist"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="../../data/js/virtual-gamepad.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gamepadzilla@1/dist/gamepadzilla.js"></script>
 </head>
 <body>
     <div class="container">
@@ -33,22 +33,17 @@
             <button onclick="nesEmulator.reset()" title="Reset">🔄 RESET</button>
         </div>
 
-        <!-- Virtual Gamepad -->
+        <!-- Virtual Gamepad via GamepadZilla -->
         <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
             <div class="gamepad-container">
-                <div class="dpad">
-                    <div class="gamepad-btn" data-btn="up">▲</div>
-                    <div class="gamepad-btn" data-btn="left">◀</div>
-                    <div class="gamepad-btn" data-btn="right">▶</div>
-                    <div class="gamepad-btn" data-btn="down">▼</div>
-                </div>
+                <canvas class="gpz-dpad" data-gpz-bind="ArrowUp ArrowLeft ArrowDown ArrowRight"></canvas>
                 <div class="action-buttons">
-                    <div class="gamepad-btn" data-btn="a">A</div>
-                    <div class="gamepad-btn" data-btn="b">B</div>
+                    <canvas class="gpz-btn" data-gpz-bind="KeyX"></canvas>   <!-- A -->
+                    <canvas class="gpz-btn" data-gpz-bind="KeyZ"></canvas>   <!-- B -->
                 </div>
                 <div class="start-select">
-                    <div class="gamepad-btn" data-btn="start">START</div>
-                    <div class="gamepad-btn" data-btn="select">SELECT</div>
+                    <canvas class="gpz-btn" data-gpz-bind="Enter"></canvas>   <!-- Start -->
+                    <canvas class="gpz-btn" data-gpz-bind="ShiftLeft"></canvas><!-- Select -->
                 </div>
             </div>
         </div>
@@ -59,9 +54,9 @@
     <footer>🛠️ CARTRIDGE VAULT</footer>
 
     <script>
+        // ── NES Emulator Core ──
         const nesEmulator = {
             nostalgist: null,
-            gamepad: null,
             loaded: false,
 
             async loadROM(romData, fileName) {
@@ -69,78 +64,31 @@
                 document.getElementById('statusText').textContent = 'Loading emulator...';
 
                 try {
-                    // Hancurkan instance lama
                     if (this.nostalgist) {
                         try { this.nostalgist.exit(); } catch (e) {}
                     }
 
-                    // Siapkan ROM sebagai Blob
                     const romBlob = new Blob([romData], { type: 'application/octet-stream' });
                     const romFile = new File([romBlob], fileName || 'game.nes', { type: 'application/octet-stream' });
 
-                    // Luncurkan emulator Nostalgist.js
                     this.nostalgist = await Nostalgist.nes(romFile);
 
                     const canvas = this.nostalgist.getCanvas();
                     canvas.classList.add('nes-emulator-canvas');
 
-                    // Masukkan ke container
                     const container = document.getElementById('emulatorContainer');
                     container.innerHTML = '';
                     container.appendChild(canvas);
 
-                    // Tampilkan kontrol
                     document.getElementById('controls').style.display = 'flex';
-                    this.showGamepad();
+                    document.getElementById('virtualGamepad').style.display = 'flex';
                     this.loaded = true;
-                    document.getElementById('statusText').textContent = 'ROM loaded. Use keyboard (arrows, Z, X, Enter, Shift) or on‑screen buttons.';
+                    document.getElementById('statusText').textContent = 'ROM loaded. Use keyboard or on‑screen gamepad.';
 
                 } catch (err) {
                     document.getElementById('statusText').textContent = 'Error: ' + err.message;
                     alert('Failed to load ROM: ' + err.message);
                 }
-            },
-
-            showGamepad() {
-                const container = document.getElementById('virtualGamepad');
-                container.style.display = 'flex';
-                if (!this.gamepad) {
-                    this.gamepad = new VirtualGamepad({
-                        containerSelector: '#virtualGamepad',
-                        buttonActions: {
-                            up:    { down: () => this.pressButton('up'),    up: () => this.releaseButton('up') },
-                            down:  { down: () => this.pressButton('down'),  up: () => this.releaseButton('down') },
-                            left:  { down: () => this.pressButton('left'),  up: () => this.releaseButton('left') },
-                            right: { down: () => this.pressButton('right'), up: () => this.releaseButton('right') },
-                            a:     { down: () => this.pressButton('a'),     up: () => this.releaseButton('a') },
-                            b:     { down: () => this.pressButton('b'),     up: () => this.releaseButton('b') },
-                            start: { down: () => this.pressButton('start'), up: () => this.releaseButton('start') },
-                            select:{ down: () => this.pressButton('select'),up: () => this.releaseButton('select') }
-                        }
-                    });
-                }
-            },
-
-            pressButton(btn) {
-                if (!this.nostalgist) return;
-                // Kirim langsung ke canvas
-                const canvas = this.nostalgist.getCanvas();
-                if (!canvas) return;
-                canvas.dispatchEvent(new KeyboardEvent('keydown', { key: this.mapButtonToKey(btn), bubbles: true }));
-            },
-            releaseButton(btn) {
-                if (!this.nostalgist) return;
-                const canvas = this.nostalgist.getCanvas();
-                if (!canvas) return;
-                canvas.dispatchEvent(new KeyboardEvent('keyup', { key: this.mapButtonToKey(btn), bubbles: true }));
-            },
-
-            mapButtonToKey(btn) {
-                const map = {
-                    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-                    a: 'x', b: 'z', start: 'Enter', select: 'Shift'
-                };
-                return map[btn] || '';
             },
 
             stop() {
