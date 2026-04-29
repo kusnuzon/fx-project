@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Weather | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .weather-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 450px;
+            margin: 2rem auto;
+            background: rgba(12, 12, 24, 0.95);
+            backdrop-filter: blur(4px);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            padding: 2rem 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .weather-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .weather-wrapper > * { position: relative; z-index: 20; }
+
+        .weather-icon {
+            font-size: 5rem;
+            line-height: 1;
+            margin: 0.5rem 0;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 12px currentColor);
+            transition: all 0.3s;
+        }
+        .temperature {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5rem;
+            color: #cfba8c;
+            text-shadow: 3px 3px 0 #4a3e2c;
+            margin: 0.5rem 0;
+        }
+        .condition {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            color: #9da5b4;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .weather-detail {
+            display: flex;
+            justify-content: space-around;
+            margin: 1rem 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #8e8ea0;
+        }
+        .weather-detail span {
+            display: block;
+        }
+        .location {
+            font-size: 0.5rem;
+            color: #b9a88c;
+            margin-bottom: 1rem;
+            font-family: 'Press Start 2P', cursive;
+        }
+        .refresh-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            padding: 0.5rem 1rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #cfba8c;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .refresh-btn:hover {
+            background: #4b4b6e;
+            border-color: #b9a88c;
+        }
+        .error-msg {
+            color: #e07373;
+            font-size: 0.6rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-wrapper">
+        <h2 style="font-family:'Press Start 2P',cursive;font-size:0.9rem;color:#cfba8c;">🌤️ PIXEL WEATHER</h2>
+        <div class="location" id="locationDisplay">--</div>
+        <div class="weather-icon" id="weatherIcon">🌈</div>
+        <div class="temperature" id="temperature">--°</div>
+        <div class="condition" id="condition">--</div>
+        <div class="weather-detail">
+            <div>💧 <span id="humidity">--</span>%</div>
+            <div>🌬️ <span id="wind">--</span> km/h</div>
+        </div>
+        <button class="refresh-btn" id="refreshBtn">⟳ REFRESH</button>
+        <p class="error-msg" id="errorMsg" style="display:none;"></p>
+    </div>
+
+    <script>
+        (function() {
+            const iconEl = document.getElementById('weatherIcon');
+            const tempEl = document.getElementById('temperature');
+            const condEl = document.getElementById('condition');
+            const humEl = document.getElementById('humidity');
+            const windEl = document.getElementById('wind');
+            const locEl = document.getElementById('locationDisplay');
+            const errorEl = document.getElementById('errorMsg');
+
+            // Mapping weather code (WMO) to pixel icon emoji/text
+            function getWeatherIcon(code) {
+                if (code <= 1) return '☀️'; // clear
+                if (code <= 3) return '⛅'; // partly cloudy
+                if (code <= 48) return '☁️'; // cloudy, fog
+                if (code <= 57) return '🌧️'; // drizzle
+                if (code <= 67) return '🌧️'; // rain
+                if (code <= 77) return '❄️'; // snow
+                if (code <= 82) return '🌊'; // rain showers
+                if (code <= 86) return '🌨️'; // snow showers
+                if (code >= 95) return '⛈️'; // thunderstorm
+                return '🌈';
+            }
+
+            function getConditionText(code) {
+                if (code <= 1) return 'Clear Sky';
+                if (code <= 3) return 'Partly Cloudy';
+                if (code <= 48) return 'Cloudy/Fog';
+                if (code <= 57) return 'Drizzle';
+                if (code <= 67) return 'Rain';
+                if (code <= 77) return 'Snow';
+                if (code <= 82) return 'Rain Showers';
+                if (code <= 86) return 'Snow Showers';
+                if (code >= 95) return 'Thunderstorm';
+                return 'Unknown';
+            }
+
+            async function fetchWeather(lat, lon) {
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m&timezone=auto`);
+                    if (!res.ok) throw new Error('Weather fetch failed');
+                    const data = await res.json();
+                    const current = data.current_weather;
+                    tempEl.textContent = `${Math.round(current.temperature)}°C`;
+                    condEl.textContent = getConditionText(current.weathercode);
+                    iconEl.textContent = getWeatherIcon(current.weathercode);
+                    windEl.textContent = current.windspeed;
+                    // Humidity from hourly (take first)
+                    if (data.hourly && data.hourly.relativehumidity_2m) {
+                        humEl.textContent = data.hourly.relativehumidity_2m[0];
+                    } else {
+                        humEl.textContent = '--';
+                    }
+                    errorEl.style.display = 'none';
+                } catch (err) {
+                    errorEl.textContent = '⚠ Could not load weather';
+                    errorEl.style.display = 'block';
+                    console.error(err);
+                }
+            }
+
+            async function getLocation() {
+                errorEl.style.display = 'none';
+                try {
+                    // Try to get IP-based location
+                    const ipRes = await fetch('https://ipapi.co/json/');
+                    if (!ipRes.ok) throw new Error('IP location failed');
+                    const ipData = await ipRes.json();
+                    locEl.textContent = `${ipData.city || 'Unknown'}, ${ipData.country_code || '??'}`;
+                    await fetchWeather(ipData.latitude, ipData.longitude);
+                } catch (e) {
+                    // Fallback to default location (Jakarta)
+                    locEl.textContent = 'Jakarta, ID';
+                    await fetchWeather(-6.2088, 106.8456);
+                }
+            }
+
+            document.getElementById('refreshBtn').addEventListener('click', getLocation);
+            getLocation();
+        })();
+    </script>
+</body>
+</html>
