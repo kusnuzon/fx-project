@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Position Size Calc – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 POSITION SIZE</h1>
+    <p style="text-align:center; font-size:0.7rem;">Calculator ala cartridge vault</p>
+
+    <form id="calcForm">
+      <label>Balance ($)</label>
+      <input type="number" id="balance" value="1000" step="0.01" required>
+
+      <label>Risk (%)</label>
+      <input type="number" id="riskPercent" value="2" step="0.01" min="0.1" max="100" required>
+
+      <label>Stop Loss (pips)</label>
+      <input type="number" id="stopLossPips" value="30" step="0.1" min="0.1" required>
+
+      <label>Pair</label>
+      <select id="pairSelect" onchange="togglePriceField()">
+        <option value="EURUSD">EUR/USD</option>
+        <option value="GBPUSD">GBP/USD</option>
+        <option value="AUDUSD">AUD/USD</option>
+        <option value="NZDUSD">NZD/USD</option>
+        <option value="USDJPY">USD/JPY</option>
+        <option value="USDCAD">USD/CAD</option>
+        <option value="USDCHF">USD/CHF</option>
+      </select>
+
+      <div id="priceFieldWrapper" style="display:none;">
+        <label>Current Price (for non‑USD counter)</label>
+        <input type="number" id="currentPrice" step="0.001" placeholder="e.g. 150.00">
+      </div>
+
+      <label>Reward (pips, optional)</label>
+      <input type="number" id="rewardPips" step="0.1" placeholder="Optional">
+
+      <button type="button" onclick="calculate()">HITUNG LOT</button>
+      <button type="button" onclick="resetForm()" style="margin-top:0;">RESET</button>
+    </form>
+
+    <div id="result" class="result-box" style="display:none;"></div>
+    <div id="riskStatus" class="risk-status" style="display:none;"></div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    function togglePriceField() {
+      const pair = document.getElementById('pairSelect').value;
+      const needPrice = ['USDJPY','USDCAD','USDCHF'].includes(pair);
+      document.getElementById('priceFieldWrapper').style.display = needPrice ? 'block' : 'none';
+      if (!needPrice) document.getElementById('currentPrice').value = '';
+    }
+
+    function getPipValue(pair, currentPrice) {
+      // pip dalam satuan counter currency per standard lot (100k)
+      if (['EURUSD','GBPUSD','AUDUSD','NZDUSD'].includes(pair)) return 10; // counter USD, 1 pip = $10
+      if (pair === 'USDJPY') return (1000 / (currentPrice || 150)) * 1; // 1000 JPY per pip, convert to USD
+      if (pair === 'USDCAD') return (10 / (currentPrice || 1.35)) * 1;
+      if (pair === 'USDCHF') return (10 / (currentPrice || 0.90)) * 1;
+      return 10; // fallback
+    }
+
+    function calculate() {
+      const balance = parseFloat(document.getElementById('balance').value);
+      const riskPercent = parseFloat(document.getElementById('riskPercent').value);
+      const slPips = parseFloat(document.getElementById('stopLossPips').value);
+      const pair = document.getElementById('pairSelect').value;
+      const currentPrice = parseFloat(document.getElementById('currentPrice').value) || 0;
+      const reward = parseFloat(document.getElementById('rewardPips').value) || 0;
+
+      if (isNaN(balance) || isNaN(riskPercent) || isNaN(slPips) || balance<=0 || riskPercent<=0 || slPips<=0) {
+        alert('Mohon isi semua field dengan benar.');
+        return;
+      }
+
+      if (['USDJPY','USDCAD','USDCHF'].includes(pair) && currentPrice <= 0) {
+        alert('Masukkan current price untuk pair ini.');
+        return;
+      }
+
+      const pipValue = getPipValue(pair, currentPrice);
+      const dollarRisk = balance * (riskPercent / 100);
+      const lotStandard = dollarRisk / (slPips * pipValue);    // lot standar (100k)
+      const lotMini = lotStandard * 10;
+      const lotMicro = lotStandard * 100;
+
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').innerHTML = `
+        <strong>Lot Size:</strong><br>
+        Standard: ${lotStandard.toFixed(2)} lot<br>
+        Mini: ${lotMini.toFixed(1)} lot<br>
+        Micro: ${lotMicro.toFixed(0)} lot<br>
+        Risiko: $${dollarRisk.toFixed(2)}
+        ${reward ? `<br>Potensi Profit (${reward} pips): $${(reward * pipValue * lotStandard).toFixed(2)}` : ''}
+      `;
+
+      // Risk status
+      const statusDiv = document.getElementById('riskStatus');
+      statusDiv.style.display = 'block';
+      if (riskPercent <= 2) {
+        statusDiv.className = 'risk-status risk-safe';
+        statusDiv.innerHTML = '✅ RISIKO AMAN (≤2%)';
+      } else if (riskPercent <= 5) {
+        statusDiv.className = 'risk-status risk-safe';
+        statusDiv.innerHTML = '⚠️ RISIKO MODERAT (2-5%)';
+      } else {
+        statusDiv.className = 'risk-status risk-danger';
+        statusDiv.innerHTML = '🚫 RISIKO TINGGI (>5%)';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('calcForm').reset();
+      document.getElementById('pairSelect').value = 'EURUSD';
+      togglePriceField();
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('riskStatus').style.display = 'none';
+    }
+
+    // init
+    togglePriceField();
+  </script>
+</body>
+</html>
