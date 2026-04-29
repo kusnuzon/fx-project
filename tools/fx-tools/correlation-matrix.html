@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Cipher | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .cipher-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 750px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            backdrop-filter: blur(4px);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.4);
+            padding: 2rem;
+            border-radius: 4px;
+        }
+        .cipher-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .cipher-wrapper > * { position: relative; z-index: 20; }
+        h2 { font-family: 'Press Start 2P', cursive; font-size: 0.9rem; color: #cfba8c; text-align: center; margin-bottom: 0.5rem; text-shadow: 2px 2px 0 #4a3e2c; }
+        .sub { font-family: 'Press Start 2P', cursive; font-size: 0.45rem; color: #8e8ea0; text-align: center; margin-bottom: 1.5rem; }
+        .key-selector { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; align-items: center; }
+        .key-selector label { font-family: 'Press Start 2P', cursive; font-size: 0.5rem; color: #9da5b4; }
+        .key-selector select { padding: 0.5rem; background: #2a2a3c; border: 2px solid #4b4b68; color: #f0e6d2; font-family: 'Courier New', monospace; }
+        .decrypt-btn { font-family: 'Press Start 2P', cursive; font-size: 0.5rem; background: #3a3a52; color: #cfba8c; border: 2px solid #5a5a7a; padding: 0.6rem 1rem; cursor: pointer; box-shadow: 3px 3px 0 #0a0a14; transition: all 0.1s; }
+        .decrypt-btn:hover { background: #4b4b6e; border-color: #cfba8c; color: #fff; transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #0a0a14; }
+        .matrix-panel { overflow-x: auto; }
+        table.matrix { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        table.matrix th { background: #3f3f5c; color: #f0e6d2; padding: 0.5rem; font-family: 'Press Start 2P', cursive; font-size: 0.5rem; border: 1px solid #4b4b68; }
+        table.matrix td { text-align: center; padding: 0.4rem; border: 1px solid #3f3f5c; font-family: 'Courier New', monospace; font-weight: bold; }
+        .pos-strong { background: #2a3a2a; color: #6c9; }
+        .pos-weak { background: #1e2e1e; color: #8ab88a; }
+        .neg-strong { background: #3a2a2a; color: #e07373; }
+        .neg-weak { background: #2e1e1e; color: #b88a8a; }
+        .neutral { background: #2a2a3c; color: #9da5b4; }
+        @media (max-width: 600px) { table.matrix th, table.matrix td { font-size: 0.55rem; padding: 0.3rem; } }
+    </style>
+</head>
+<body>
+<div class="cipher-wrapper">
+    <h2>🔐 PIXEL CIPHER</h2>
+    <p class="sub">CORRELATION MATRIX / DECODER</p>
+    <div class="key-selector">
+        <label for="cipherKey">CIPHER KEY:</label>
+        <select id="cipherKey">
+            <option value="EUR/USD">EUR/USD</option>
+            <option value="GBP/USD">GBP/USD</option>
+            <option value="USD/JPY">USD/JPY</option>
+            <option value="AUD/USD">AUD/USD</option>
+        </select>
+        <button class="decrypt-btn" id="decryptBtn">DECRYPT</button>
+    </div>
+    <div class="matrix-panel" id="matrixContainer">
+        <div style="text-align:center;color:#9a9ab0;font-family:'Press Start 2P',cursive;font-size:0.55rem;padding:2rem;">SELECT KEY TO DECRYPT</div>
+    </div>
+</div>
+<script>
+    (function() {
+        const corrData = {
+            "EUR/USD": { "EUR/USD": 1.0, "GBP/USD": 0.82, "USD/JPY": -0.75, "AUD/USD": 0.68 },
+            "GBP/USD": { "EUR/USD": 0.82, "GBP/USD": 1.0, "USD/JPY": -0.6, "AUD/USD": 0.72 },
+            "USD/JPY": { "EUR/USD": -0.75, "GBP/USD": -0.6, "USD/JPY": 1.0, "AUD/USD": -0.45 },
+            "AUD/USD": { "EUR/USD": 0.68, "GBP/USD": 0.72, "USD/JPY": -0.45, "AUD/USD": 1.0 }
+        };
+        const pairs = Object.keys(corrData);
+        const container = document.getElementById('matrixContainer');
+        document.getElementById('decryptBtn').addEventListener('click', renderMatrix);
+        function renderMatrix() {
+            const key = document.getElementById('cipherKey').value;
+            const data = corrData[key];
+            let html = '<table class="matrix"><thead><tr><th>PAIR</th>';
+            pairs.forEach(p => html += `<th>${p}</th>`);
+            html += '</tr></thead><tbody>';
+            pairs.forEach(row => {
+                html += `<tr><th>${row}</th>`;
+                pairs.forEach(col => {
+                    const val = data[col] !== undefined ? data[col] : 0;
+                    let cls = 'neutral';
+                    if (val >= 0.8) cls = 'pos-strong';
+                    else if (val >= 0.5) cls = 'pos-weak';
+                    else if (val <= -0.8) cls = 'neg-strong';
+                    else if (val <= -0.5) cls = 'neg-weak';
+                    html += `<td class="${cls}">${val.toFixed(2)}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        renderMatrix();
+    })();
+</script>
+</body>
+</html>
