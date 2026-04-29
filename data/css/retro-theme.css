@@ -551,6 +551,49 @@ footer {
     margin-top: 0.5rem;
 }
 
+/* --- Virtual Gamepad (GamepadZilla) --- */
+.virtual-gamepad {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0 0.5rem;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.gamepad-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+}
+
+/* D‑Pad layout */
+.gpz-dpad {
+    width: 150px;
+    height: 150px;
+    border: 2px solid #5a5a7a;
+    border-radius: 12px;
+    background: #1e1e2e;
+}
+
+/* Tombol aksi */
+.gpz-btn {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #5a5a7a;
+    border-radius: 50%;
+    background: #2a2a3c;
+}
+
+/* Tombol start/select lebih kecil */
+.start-select .gpz-btn {
+    width: 80px;
+    height: 40px;
+    border-radius: 8px;
+}
+
 /* --- Responsif dasar --- */
 @media (max-width: 700px) {
     .cal-table th, .cal-table td { font-size: 0.55rem; padding: 0.3rem 0.2rem; }
