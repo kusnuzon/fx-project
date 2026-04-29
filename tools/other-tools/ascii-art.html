@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .ascii-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            border: 4px solid #6e6e8a;
+            padding: 1.5rem;
+            border-radius: 4px;
+        }
+        .ascii-output {
+            background: #0a0a14;
+            color: #6c9;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            padding: 1rem;
+            border: 2px solid #3f3f5c;
+            white-space: pre;
+            overflow-x: auto;
+            min-height: 100px;
+        }
+        .ascii-input { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .ascii-input input { flex: 1; min-width: 200px; }
+    </style>
+</head>
+<body>
+<div class="ascii-wrapper">
+    <h2 style="font-family:'Press Start 2P',cursive;font-size:0.9rem;color:#cfba8c;text-align:center;">🎨 ASCII ART</h2>
+    <div class="ascii-input">
+        <input type="text" id="asciiText" placeholder="Enter text..." maxlength="30">
+        <button id="generateBtn" class="pet-btn" style="font-family:'Press Start 2P',cursive;">GENERATE</button>
+    </div>
+    <div class="ascii-output" id="asciiOutput">Type something...</div>
+</div>
+<script>
+    const fonts = {
+        doom: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        banner: ['#####','#   #','#   #','#####','#   #','#   #']
+    };
+    document.getElementById('generateBtn').addEventListener('click', () => {
+        const text = document.getElementById('asciiText').value.toUpperCase();
+        let result = '';
+        for (const ch of text) {
+            if (ch === ' ') { result += '\n'; continue; }
+            const idx = fonts.doom.indexOf(ch);
+            if (idx >= 0) {
+                result += fonts.banner.map(line => line.replace(/#/g, ch)).join('\n') + '\n\n';
+            } else {
+                result += ch + '\n';
+            }
+        }
+        document.getElementById('asciiOutput').textContent = result || 'No text.';
+    });
+</script>
+</body>
+</html>
