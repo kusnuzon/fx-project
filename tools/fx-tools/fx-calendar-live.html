@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FX Calendar Live – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+    .status-indicator {
+      font-size: 0.55rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
+    .dot.live { background: #6c9; }
+    .dot.cache { background: #f0a040; }
+    .dot.simulasi { background: #e07373; }
+    .refresh-btn {
+      font-size: 0.55rem;
+      font-family: 'Press Start 2P', cursive;
+      background: #3a3a52;
+      color: #cdcdd4;
+      border: 1px solid #5a5a7a;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+    }
+    .refresh-btn:hover { background: #4b4b6e; }
+    .cal-table th { font-size: 0.6rem; }
+    .cal-table td { font-size: 0.7rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 KALENDER LIVE</h1>
+    <p style="text-align:center;">Data minggu ini – diperbarui real-time</p>
+
+    <div class="status-bar">
+      <div class="status-indicator" id="statusIndicator">
+        <span class="dot loading"></span> <span id="statusText">LOADING...</span>
+      </div>
+      <button class="refresh-btn" onclick="refreshCalendar()">⟳ REFRESH</button>
+    </div>
+
+    <div class="filter-row">
+      <label>Mata Uang:</label>
+      <select id="filterCurrency" onchange="render()"><option value="ALL">ALL</option></select>
+      <label>Dampak:</label>
+      <select id="filterImpact" onchange="render()">
+        <option value="ALL">ALL</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <label>Cari:</label>
+      <input type="text" id="filterSearch" placeholder="Cari event..." oninput="render()">
+    </div>
+
+    <div id="calendarContainer"><div class="loading">Memuat kalender...</div></div>
+  </div>
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script src="../../data/js/economic-calendar.js"></script>
+  <script>
+    const COUNTRY_MAP = {
+      USD:'🇺🇸 USD', EUR:'🇪🇺 EUR', GBP:'🇬🇧 GBP', JPY:'🇯🇵 JPY',
+      AUD:'🇦🇺 AUD', NZD:'🇳🇿 NZD', CAD:'🇨🇦 CAD', CHF:'🇨🇭 CHF',
+      CNY:'🇨🇳 CNY'
+    };
+
+    let events = [];
+
+    function updateStatus() {
+      const status = VaultCalendar.getStatus();
+      const dotEl = document.querySelector('#statusIndicator .dot');
+      const textEl = document.getElementById('statusText');
+      dotEl.className = 'dot ' + status;
+      const labels = { live:'LIVE', cache:'CACHE', simulasi:'SIMULASI', loading:'LOADING' };
+      textEl.textContent = labels[status] || status.toUpperCase();
+    }
+
+    async function loadCalendar() {
+      document.getElementById('calendarContainer').innerHTML = '<div class="loading">Memuat kalender...</div>';
+      events = await VaultCalendar.getEvents();
+      updateStatus();
+      populateCurrencyFilter();
+      render();
+    }
+
+    function populateCurrencyFilter() {
+      const currencies = [...new Set(events.map(e=>e.country))].sort();
+      const sel = document.getElementById('filterCurrency');
+      sel.innerHTML = '<option value="ALL">ALL</option>';
+      currencies.forEach(c => {
+        const label = COUNTRY_MAP[c] || c;
+        sel.innerHTML += `<option value="${c}">${label}</option>`;
+      });
+    }
+
+    function getDayLabel(isoStr) {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function getDayKey(isoStr) {
+      return new Date(isoStr).toISOString().slice(0,10);
+    }
+
+    function render() {
+      const currency = document.getElementById('filterCurrency').value;
+      const impact = document.getElementById('filterImpact').value;
+      const search = document.getElementById('filterSearch').value.toLowerCase();
+
+      let filtered = events.filter(e => {
+        if (currency !== 'ALL' && e.country !== currency) return false;
+        if (impact !== 'ALL' && e.impact !== impact) return false;
+        if (search && !e.title.toLowerCase().includes(search) && !e.country.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('calendarContainer').innerHTML = '<div class="loading">Tidak ada event.</div>';
+        return;
+      }
+
+      filtered.sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const groups = {};
+      filtered.forEach(e => {
+        const key = getDayKey(e.date);
+        if (!groups[key]) groups[key] = { label: getDayLabel(e.date), events: [] };
+        groups[key].events.push(e);
+      });
+
+      let html = '<table class="cal-table"><thead><tr><th>Waktu</th><th>Pair</th><th>Event</th><th>Dampak</th><th>For</th><th>Prev</th></tr></thead><tbody>';
+      Object.keys(groups).sort().forEach(key => {
+        const group = groups[key];
+        html += `<tr class="day-group"><td colspan="6">📅 ${group.label}</td></tr>`;
+        group.events.forEach(e => {
+          const impactClass = 'impact-' + (e.impact || 'low').toLowerCase();
+          const time = new Date(e.date).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'UTC' });
+          html += `<tr>
+            <td>${time}</td>
+            <td>${COUNTRY_MAP[e.country] || e.country}</td>
+            <td style="text-align:left;">${e.title}</td>
+            <td><span class="impact ${impactClass}">${e.impact}</span></td>
+            <td>${e.forecast || '-'}</td>
+            <td>${e.previous || '-'}</td>
+          </tr>`;
+        });
+      });
+      html += '</tbody></table>';
+      document.getElementById('calendarContainer').innerHTML = html;
+    }
+
+    async function refreshCalendar() {
+      await VaultCalendar.refresh();
+      events = await VaultCalendar.getEvents();
+      updateStatus();
+      populateCurrencyFilter();
+      render();
+    }
+
+    // Init
+    loadCalendar();
+  </script>
+</body>
+</html>
