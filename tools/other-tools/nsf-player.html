@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <!-- NSFPlayer by bbbradsmith (WASM) -->
     <script src="https://bbbradsmith.github.io/nsfplay/nsfplayer.js"></script>
 
     <style>
@@ -103,23 +102,23 @@
             background: #4b4a6e;
             border-color: #cfba8c;
         }
-        .track-item.active {
-            background: #4b4a6e;
-            border-color: #cfba8c;
+        .track-item.selected {
+            background: #3a3a52;
+            border-color: #7a8cbf;
             color: #f0e6d2;
-            box-shadow: 0 0 8px rgba(207,186,140,0.4);
+            box-shadow: 0 0 6px rgba(122,140,191,0.4);
         }
 
         .player-controls {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.8rem;
             margin-top: 1rem;
         }
         .pixel-btn {
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.45rem;
-            padding: 0.5rem 1.2rem;
+            font-size: 0.5rem;
+            padding: 0.6rem 1.5rem;
             background: #2a2a3c;
             border: 2px solid #4b4b68;
             color: #d1d1db;
@@ -131,7 +130,14 @@
             transform: translate(2px, 2px);
             box-shadow: 1px 1px 0 #0a0a14;
             background: #4b4a6e;
-            border-color: #cfba8c;
+        }
+        .pixel-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            background: #2a2a3c;
+            color: #6b6b80;
         }
 
         canvas#oscCanvas {
@@ -152,7 +158,7 @@
         <div class="file-area">
             <label for="nsfFile">📁 SELECT NSF</label>
             <input type="file" id="nsfFile" accept=".nsf">
-            <label for="m3uFile" style="margin-left:0.5rem;">📋 SELECT M3U (OPT)</label>
+            <label for="m3uFile" style="margin-left:0.5rem;">📋 M3U (OPT)</label>
             <input type="file" id="m3uFile" accept=".m3u">
         </div>
 
@@ -162,13 +168,13 @@
             <tr><td>COPYRIGHT</td><td id="nsfCopyright">-</td></tr>
             <tr><td>VERSION</td><td id="nsfVersion">-</td></tr>
             <tr><td>TOTAL SONGS</td><td id="nsfTotalSongs">-</td></tr>
-            <tr><td>STARTING SONG</td><td id="nsfStartingSong">-</td></tr>
         </table>
 
         <div class="track-list" id="trackList"></div>
 
-        <div class="player-controls" style="display:none;" id="playerControls">
-            <button class="pixel-btn" id="stopBtn">⏹ STOP</button>
+        <div class="player-controls" id="playerControls" style="display:none;">
+            <button class="pixel-btn" id="playBtn">▶ PLAY</button>
+            <button class="pixel-btn" id="stopBtn" disabled>⏹ STOP</button>
         </div>
 
         <canvas id="oscCanvas"></canvas>
@@ -180,48 +186,41 @@
             const m3uInput = document.getElementById('m3uFile');
             const trackListDiv = document.getElementById('trackList');
             const playerControls = document.getElementById('playerControls');
+            const playBtn = document.getElementById('playBtn');
             const stopBtn = document.getElementById('stopBtn');
             const canvas = document.getElementById('oscCanvas');
             const ctx = canvas.getContext('2d');
 
             let nsfData = null;
             let m3uData = null;
-            let currentTrack = 1;
             let totalSongs = 0;
             let player = null;
             let audioCtx = null;
             let analyser = null;
             let isPlaying = false;
+            let selectedTrackIndex = null;   // track yang dipilih (indeks 0-based)
+            let playlist = [];               // hasil parse M3U atau default
 
-            // Init NSFPlayer
             async function initPlayer() {
                 if (player) return;
                 player = new NSFPlayer();
                 await player.ready;
-                // Set up audio context and analyser
                 audioCtx = player.context;
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 256;
                 analyser.smoothingTimeConstant = 0.7;
-                // Connect analyser to destination
                 analyser.connect(audioCtx.destination);
-                // Override player output to analyser
                 player.output = analyser;
             }
 
-            // Parse NSF header
             function parseNSFHeader(buffer) {
                 const view = new DataView(buffer);
                 if (view.getUint8(0) !== 0x4E || view.getUint8(1) !== 0x45 || view.getUint8(2) !== 0x53 || view.getUint8(3) !== 0x4D || view.getUint8(4) !== 0x1A) {
-                    throw new Error('Not a valid NSF file (missing NESM\x1A)');
+                    throw new Error('Not a valid NSF file');
                 }
                 const version = view.getUint8(5);
                 totalSongs = view.getUint8(6);
                 const startingSong = view.getUint8(7);
-                const loadAddr = view.getUint16(8, true);
-                const initAddr = view.getUint16(0x0A, true);
-                const playAddr = view.getUint16(0x0C, true);
-
                 let gameName = '';
                 for (let i = 0x0E; i < 0x0E+16; i++) {
                     const byte = view.getUint8(i);
@@ -240,17 +239,14 @@
                     if (byte === 0) break;
                     copyright += String.fromCharCode(byte);
                 }
-
                 return { version, totalSongs, startingSong, gameName, artist, copyright };
             }
 
-            // Parse M3U playlist
             function parseM3U(text) {
                 const lines = text.split(/\r?\n/);
                 const tracks = [];
                 for (const line of lines) {
                     if (line.startsWith('#') || line.trim() === '') continue;
-                    // Format: filename::NSF,track,name,min,sec,fade
                     const match = line.match(/::NSF,(\d+),(.*),(\d+),(\d+),(\d+)/);
                     if (match) {
                         tracks.push({
@@ -260,7 +256,6 @@
                             fade: parseInt(match[5]),
                         });
                     } else {
-                        // Just a reference line, maybe only track number
                         const parts = line.split(',');
                         if (parts.length >= 2) {
                             tracks.push({ track: parseInt(parts[0]), name: parts[1] });
@@ -270,45 +265,68 @@
                 return tracks;
             }
 
-            function renderTrackList(playlist) {
+            function renderTrackList() {
                 trackListDiv.innerHTML = '';
                 if (playlist.length > 0) {
                     playlist.forEach((item, index) => {
                         const div = document.createElement('div');
                         div.className = 'track-item';
+                        div.dataset.index = index;
                         div.innerHTML = `<span>${item.track}. ${item.name}</span><span class="track-num">TRACK ${item.track}</span>`;
-                        div.addEventListener('click', () => playTrack(index));
+                        div.addEventListener('click', () => selectTrack(index));
                         trackListDiv.appendChild(div);
                     });
                 } else {
                     for (let i = 1; i <= totalSongs; i++) {
-                        const name = `Track ${i}`;
+                        const index = i - 1;
                         const div = document.createElement('div');
                         div.className = 'track-item';
-                        div.innerHTML = `<span>${name}</span><span class="track-num">TRACK ${i}</span>`;
-                        div.addEventListener('click', () => playTrack(i-1));
+                        div.dataset.index = index;
+                        div.innerHTML = `<span>Track ${i}</span><span class="track-num">TRACK ${i}</span>`;
+                        div.addEventListener('click', () => selectTrack(index));
                         trackListDiv.appendChild(div);
                     }
                 }
             }
 
-            async function playTrack(index) {
-                if (!nsfData) return;
+            function selectTrack(index) {
+                selectedTrackIndex = index;
+                // Highlight
+                const items = trackListDiv.querySelectorAll('.track-item');
+                items.forEach((item, i) => {
+                    if (i === index) item.classList.add('selected');
+                    else item.classList.remove('selected');
+                });
+                // Jika sedang main, hentikan otomatis? Tidak, biarkan saja, tetapi Play akan menghentikan dulu nanti.
+            }
+
+            async function playSelectedTrack() {
+                if (selectedTrackIndex === null) return;
                 if (!player) await initPlayer();
-                const trackNum = index + 1;
-                // Load ROM into player
+                // Jika sedang main, hentikan dulu
+                if (isPlaying) {
+                    player.stop();
+                    isPlaying = false;
+                }
+                const trackNum = selectedTrackIndex + 1;
                 player.rom = new Uint8Array(nsfData);
                 player.start(trackNum);
                 isPlaying = true;
-                playerControls.style.display = 'flex';
-                highlightActiveTrack(index);
+                playBtn.disabled = true;
+                stopBtn.disabled = false;
+                // Highlight sekarang menjadi "active"? Biarkan selected tetap, mungkin tambah class active
+                highlightPlayingTrack(selectedTrackIndex);
             }
 
-            function highlightActiveTrack(index) {
+            function highlightPlayingTrack(index) {
                 const items = trackListDiv.querySelectorAll('.track-item');
                 items.forEach((item, i) => {
-                    if (i === index) item.classList.add('active');
-                    else item.classList.remove('active');
+                    if (i === index) {
+                        item.classList.add('selected');
+                        // Bisa tambahkan animasi lain
+                    } else {
+                        item.classList.remove('selected');
+                    }
                 });
             }
 
@@ -316,12 +334,16 @@
                 if (player) {
                     player.stop();
                     isPlaying = false;
-                    playerControls.style.display = 'none';
-                    highlightActiveTrack(-1);
+                    playBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    // Kembalikan highlight ke pilihan biasa (selected tetap)
+                    // Tapi kita hapus tanda playing
+                    const items = trackListDiv.querySelectorAll('.track-item');
+                    items.forEach(item => item.classList.remove('playing'));
                 }
             }
 
-            // Load file and process
+            // Load NSF
             async function loadNSF(file) {
                 const buffer = await file.arrayBuffer();
                 nsfData = buffer;
@@ -331,45 +353,55 @@
                 document.getElementById('nsfCopyright').textContent = info.copyright || 'Unknown';
                 document.getElementById('nsfVersion').textContent = info.version;
                 document.getElementById('nsfTotalSongs').textContent = info.totalSongs;
-                document.getElementById('nsfStartingSong').textContent = info.startingSong;
                 document.getElementById('infoTable').style.display = 'table';
                 totalSongs = info.totalSongs;
 
-                // If M3U already loaded, combine
+                // Cek M3U
                 if (m3uData) {
-                    const playlist = parseM3U(new TextDecoder().decode(m3uData));
-                    renderTrackList(playlist);
+                    playlist = parseM3U(new TextDecoder().decode(m3uData));
                 } else {
-                    renderTrackList([]);
+                    playlist = [];
                 }
+                renderTrackList();
+                playerControls.style.display = 'flex';
+                playBtn.disabled = true;  // belum ada pilihan
+                stopBtn.disabled = true;
+                selectedTrackIndex = null;
             }
 
             async function loadM3U(file) {
                 const buffer = await file.arrayBuffer();
                 m3uData = buffer;
                 if (nsfData) {
-                    const playlist = parseM3U(new TextDecoder().decode(buffer));
-                    renderTrackList(playlist);
+                    playlist = parseM3U(new TextDecoder().decode(buffer));
+                    renderTrackList();
                 }
             }
 
             nsfInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    loadNSF(file);
-                }
+                if (file) loadNSF(file);
             });
 
             m3uInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    loadM3U(file);
+                if (file) loadM3U(file);
+            });
+
+            playBtn.addEventListener('click', () => {
+                if (selectedTrackIndex !== null) {
+                    playSelectedTrack();
                 }
             });
 
-            stopBtn.addEventListener('click', stopPlayback);
+            stopBtn.addEventListener('click', () => {
+                stopPlayback();
+                // Tetap pertahankan pilihan track, hanya berhenti
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+            });
 
-            // Oscilloscope
+            // Osiloskop
             function drawOsc() {
                 if (!canvas || !ctx) return;
                 const w = canvas.width = canvas.clientWidth;
@@ -402,7 +434,6 @@
                     ctx.stroke();
                 }
 
-                // Pixel grid
                 ctx.strokeStyle = 'rgba(78,78,104,0.3)';
                 ctx.lineWidth = 1;
                 for (let i = 0; i < w; i += 8) {
@@ -413,7 +444,6 @@
                 }
                 requestAnimationFrame(drawOsc);
             }
-
             drawOsc();
         })();
     </script>
