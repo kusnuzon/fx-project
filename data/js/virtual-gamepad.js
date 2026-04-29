@@ -1,8 +1,9 @@
 // data/js/virtual-gamepad.js
-// MODULAR VIRTUAL GAMEPAD – Teruji Berfungsi
+// MODULAR VIRTUAL GAMEPAD
+
 class VirtualGamepad {
   constructor({ container, groups = {}, onButton = null }) {
-    if (!container) throw new Error('container required');
+    if (!container) throw new Error('VirtualGamepad: container diperlukan');
     this.container = container;
     this.groups = groups;
     this.onButton = onButton;
@@ -114,4 +115,5 @@ class VirtualGamepad {
     this.buttons.clear();
   }
 }
+
 if (typeof window !== 'undefined') window.VirtualGamepad = VirtualGamepad;
