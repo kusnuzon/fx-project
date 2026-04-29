@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Log | Cartridge Vault</title>
+
+    <!-- Google Pixel Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- Global Retro Theme -->
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        /* ========== QUEST LOG SPECIFIC ========== */
+        .quest-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 750px;
+            margin: 2rem auto;
+            background: rgba(16, 16, 24, 0.92);
+            backdrop-filter: blur(4px);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow:
+                0 0 0 4px #1e1e2f,
+                0 0 0 8px #0a0a14,
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.4);
+            padding: 2rem;
+            border-radius: 4px;
+        }
+
+        .quest-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.05) 0px,
+                rgba(0,0,0,0.05) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+        .quest-wrapper > * {
+            position: relative;
+            z-index: 20;
+        }
+
+        h2.quest-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: #cfba8c;
+            text-align: center;
+            margin-bottom: 0.3rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
+        }
+
+        .sub-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #8e8ea0;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ---- XP & Level Bar ---- */
+        .xp-section {
+            background: #1e1e2e;
+            border: 2px solid #4b4b68;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .level-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            color: #f0e6d2;
+        }
+
+        .xp-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #0e0e1a;
+            border: 2px solid #5a5a7a;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: repeating-linear-gradient(
+                90deg,
+                #7a8cbf 0px,
+                #7a8cbf 4px,
+                #5a6c9f 4px,
+                #5a6c9f 8px
+            );
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(120,140,200,0.5);
+        }
+
+        .xp-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+            margin-top: 0.4rem;
+            text-align: right;
+        }
+
+        /* ---- Quest Entry Form ---- */
+        .quest-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .input-group label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #f0e6d2;
+            padding: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+        }
+
+        .btn-add-quest {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            background: #3a3a52;
+            color: #cfba8c;
+            border: 2px solid #5a5a7a;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #0a0a14;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .btn-add-quest:hover {
+            background: #4b4b6e;
+            border-color: #cfba8c;
+            color: #fff;
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #0a0a14;
+        }
+
+        .btn-add-quest:active {
+            transform: translate(0, 0);
+            box-shadow: 2px 2px 0 #0a0a14;
+        }
+
+        /* ---- Quest Log List ---- */
+        .quest-log-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.65rem;
+            color: #9da5b4;
+            border-bottom: 2px solid #4d4d6e;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .quest-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .quest-entry {
+            background: #1e1e2e;
+            border: 1px solid #3f3f5c;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            animation: typewriter 0.3s steps(30) 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 6px solid #4d4d6e;
+            transition: all 0.1s;
+        }
+
+        .quest-entry.profit {
+            border-left-color: #6c9;
+        }
+
+        .quest-entry.loss {
+            border-left-color: #e07373;
+        }
+
+        .quest-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .quest-name {
+            color: #cfba8c;
+            font-weight: bold;
+        }
+
+        .quest-meta {
+            color: #8e8ea0;
+            font-size: 0.65rem;
+        }
+
+        .quest-loot {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #f0e6d2;
+            background: #2a2a3c;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid #4b4b68;
+        }
+
+        .loot-profit { color: #6c9; }
+        .loot-loss { color: #e07373; }
+
+        .empty-log {
+            text-align: center;
+            color: #6b6b80;
+            font-style: italic;
+            padding: 2rem;
+            font-size: 0.8rem;
+        }
+
+        @keyframes typewriter {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Scrollbar Styling */
+        .quest-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .quest-list::-webkit-scrollbar-track {
+            background: #0e0e1a;
+        }
+        .quest-list::-webkit-scrollbar-thumb {
+            background: #4b4b68;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="quest-wrapper">
+        <h2 class="quest-title">⚔️ QUEST LOG</h2>
+        <p class="sub-title">TRADE JOURNAL / RPG EDITION</p>
+
+        <!-- XP & Level Bar -->
+        <div class="xp-section">
+            <div class="level-display">
+                <span>LV. <span id="currentLevel">1</span></span>
+                <span>TRADER</span>
+            </div>
+            <div class="xp-bar-container">
+                <div class="xp-bar-fill" id="xpBarFill" style="width: 0%;"></div>
+            </div>
+            <div class="xp-text">
+                XP: <span id="currentXP">0</span> / <span id="xpToNext">100</span>
+            </div>
+        </div>
+
+        <!-- Add New Quest Form -->
+        <div class="quest-form">
+            <div class="input-group">
+                <label>⚔️ Pair</label>
+                <input type="text" id="questPair" placeholder="EUR/USD" maxlength="10">
+            </div>
+            <div class="input-group">
+                <label>📜 Quest Name</label>
+                <input type="text" id="questName" placeholder="Slay the Dragon" maxlength="30">
+            </div>
+            <div class="input-group">
+                <label>💰 Pips (Loot)</label>
+                <input type="number" id="questPips" placeholder="+35" step="0.1">
+            </div>
+            <button class="btn-add-quest" id="btnAddQuest">ADD QUEST</button>
+        </div>
+
+        <!-- Quest Log List -->
+        <div class="quest-log-header">
+            <span>QUEST LOG</span>
+            <span id="questCount">0 QUESTS</span>
+        </div>
+        <ul class="quest-list" id="questList">
+            <li class="empty-log">No quests completed yet...</li>
+        </ul>
+    </div>
+
+    <script>
+        (function() {
+            // ========== GAME STATE ==========
+            const STORAGE_KEY = 'cartridge_quest_log';
+            let level = 1;
+            let xp = 0;
+            const XP_BASE = 100; // XP needed for level 1 -> 2
+            let quests = [];
+
+            // Load from localStorage
+            function loadState() {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        level = data.level || 1;
+                        xp = data.xp || 0;
+                        quests = data.quests || [];
+                    } catch (e) {
+                        console.error('Failed to load quest log', e);
+                    }
+                }
+            }
+
+            // Save to localStorage
+            function saveState() {
+                const data = { level, xp, quests };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            }
+
+            // Calculate XP required for current level
+            function getXPForNextLevel() {
+                return level * XP_BASE;
+            }
+
+            // Render everything
+            function render() {
+                renderXPBar();
+                renderQuestList();
+            }
+
+            // Update XP bar and level
+            function renderXPBar() {
+                const xpNeeded = getXPForNextLevel();
+                const percentage = Math.min((xp / xpNeeded) * 100, 100);
+
+                document.getElementById('currentLevel').textContent = level;
+                document.getElementById('currentXP').textContent = xp;
+                document.getElementById('xpToNext').textContent = xpNeeded;
+                document.getElementById('xpBarFill').style.width = `${percentage}%`;
+            }
+
+            // Render quest list
+            function renderQuestList() {
+                const listEl = document.getElementById('questList');
+                const countEl = document.getElementById('questCount');
+                
+                countEl.textContent = `${quests.length} QUESTS`;
+
+                if (quests.length === 0) {
+                    listEl.innerHTML = '<li class="empty-log">No quests completed yet...</li>';
+                    return;
+                }
+
+                listEl.innerHTML = quests.slice().reverse().map(q => {
+                    const isProfit = q.pips >= 0;
+                    const entryClass = isProfit ? 'profit' : 'loss';
+                    const lootClass = isProfit ? 'loot-profit' : 'loot-loss';
+                    const lootSign = isProfit ? '+' : '';
+                    
+                    return `
+                        <li class="quest-entry ${entryClass}">
+                            <div class="quest-info">
+                                <span class="quest-name">🗡️ ${escapeHTML(q.questName)}</span>
+                                <span class="quest-meta">${escapeHTML(q.pair)} | Day ${q.day || '?'}</span>
+                            </div>
+                            <div class="quest-loot ${lootClass}">
+                                ${lootSign}${q.pips} PIPS
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+            }
+
+            // Add new quest
+            function addQuest() {
+                const pairInput = document.getElementById('questPair');
+                const nameInput = document.getElementById('questName');
+                const pipsInput = document.getElementById('questPips');
+
+                const pair = pairInput.value.trim();
+                let questName = nameInput.value.trim();
+                const pipsValue = parseFloat(pipsInput.value);
+
+                // Validation
+                if (!pair) {
+                    alert('Please enter a currency pair!');
+                    return;
+                }
+                if (isNaN(pipsValue)) {
+                    alert('Please enter a valid number for Pips (Loot)!');
+                    return;
+                }
+                if (!questName) {
+                    questName = `${pair} Quest`;
+                }
+
+                // Create quest entry
+                const quest = {
+                    id: Date.now(),
+                    pair: pair,
+                    questName: questName,
+                    pips: pipsValue,
+                    day: quests.length + 1,
+                    date: new Date().toISOString()
+                };
+
+                quests.push(quest);
+
+                // Update XP & Level
+                if (pipsValue > 0) {
+                    xp += Math.floor(pipsValue);
+                    // Check level up
+                    while (xp >= getXPForNextLevel()) {
+                        xp -= getXPForNextLevel();
+                        level++;
+                        // Optional: Show "Level Up!" message briefly
+                        showLevelUp();
+                    }
+                } else if (pipsValue < 0) {
+                    // Lose some XP for losses
+                    xp = Math.max(0, xp - Math.floor(Math.abs(pipsValue) / 2));
+                }
+
+                // Save and refresh UI
+                saveState();
+                render();
+
+                // Clear inputs
+                pairInput.value = '';
+                nameInput.value = '';
+                pipsInput.value = '';
+                pairInput.focus();
+            }
+
+            // Simple level up notification
+            function showLevelUp() {
+                const wrapper = document.querySelector('.quest-wrapper');
+                const notif = document.createElement('div');
+                notif.textContent = 'LEVEL UP!';
+                notif.style.cssText = `
+                    position: fixed;
+                    top: 20%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-family: 'Press Start 2P', cursive;
+                    font-size: 1.5rem;
+                    color: #f0e6d2;
+                    background: #2a2a3c;
+                    border: 4px solid #cfba8c;
+                    padding: 1rem 2rem;
+                    z-index: 100;
+                    text-shadow: 3px 3px 0 #000;
+                    animation: fadeInOut 2s forwards;
+                `;
+                document.body.appendChild(notif);
+                setTimeout(() => notif.remove(), 2000);
+            }
+
+            // Utility to escape HTML
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // Add CSS for level up animation dynamically
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                    30% { transform: translate(-50%, -50%) scale(1); }
+                    80% { opacity: 1; }
+                    100% { opacity: 0; transform: translate(-50%, -100%); }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+
+            // Initialize
+            loadState();
+            render();
+
+            // Event Listener
+            document.getElementById('btnAddQuest').addEventListener('click', addQuest);
+            // Allow Enter key to submit (optional but nice)
+            document.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON') {
+                    addQuest();
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>
