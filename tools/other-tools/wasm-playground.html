@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Playground | Cartridge Vault</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+
+    <style>
+        .wasm-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 2rem auto;
+            background: rgba(18, 18, 30, 0.9);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.5);
+            padding: 2rem;
+            border-radius: 4px;
+        }
+        .wasm-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .wasm-wrapper > * { position: relative; z-index: 20; }
+
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
+        }
+        .subtitle {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #8e8ea0;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .editor-area {
+            margin-bottom: 1rem;
+        }
+        .editor-area label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            color: #9da5b4;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #0e0e1a;
+            color: #6c9;
+            border: 2px solid #4b4b68;
+            padding: 0.8rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            resize: vertical;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        .pixel-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #d1d1db;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #0a0a14;
+            transition: all 0.1s;
+        }
+        .pixel-btn:hover {
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+        }
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #0a0a14;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .input-group input {
+            width: 80px;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #f0e6d2;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+        }
+        .result-box {
+            background: #1e1e2e;
+            border: 2px solid #4e4e68;
+            padding: 1rem;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: #cfba8c;
+            margin-top: 1rem;
+            box-shadow: 0 0 10px rgba(207,186,140,0.2);
+        }
+        .error-box {
+            background: #2a1a1a;
+            border: 2px solid #a05050;
+            padding: 1rem;
+            color: #dbb0b0;
+            font-size: 0.65rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 500px) {
+            .input-group input { width: 60px; font-size: 0.55rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wasm-wrapper">
+        <h2>🧪 WASM PLAYGROUND</h2>
+        <p class="subtitle">COMPILE WAT → RUN WASM</p>
+
+        <div class="editor-area">
+            <label>WAT CODE:</label>
+            <textarea id="watCode" spellcheck="false">;; Simple add function
+(module
+  (func $add (param i32 i32) (result i32)
+    local.get 0
+    local.get 1
+    i32.add)
+  (export "add" (func $add))
+)</textarea>
+        </div>
+
+        <div class="controls">
+            <button class="pixel-btn" id="compileBtn">⚙️ COMPILE</button>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="inputA" value="10" placeholder="A">
+            <span style="font-family:'Press Start 2P',cursive;color:#9da5b4;">+</span>
+            <input type="number" id="inputB" value="20" placeholder="B">
+            <button class="pixel-btn" id="runBtn">▶ RUN</button>
+        </div>
+
+        <div id="resultDisplay" class="result-box">Result: --</div>
+        <div id="errorDisplay" class="error-box" style="display:none;"></div>
+    </div>
+
+    <!-- WABT.js library untuk compile WAT ke Wasm -->
+    <script src="https://unpkg.com/wabt@1.0.33/index.js"></script>
+
+    <script>
+        (function() {
+            let wasmModule = null;
+            let wasmInstance = null;
+
+            const watTextarea = document.getElementById('watCode');
+            const compileBtn = document.getElementById('compileBtn');
+            const runBtn = document.getElementById('runBtn');
+            const resultDisplay = document.getElementById('resultDisplay');
+            const errorDisplay = document.getElementById('errorDisplay');
+            const inputA = document.getElementById('inputA');
+            const inputB = document.getElementById('inputB');
+
+            async function compileWAT() {
+                errorDisplay.style.display = 'none';
+                resultDisplay.textContent = 'Compiling...';
+                try {
+                    const wabt = await WabtModule();
+                    const wat = watTextarea.value;
+                    const module = wabt.parseWat('inline', wat);
+                    module.resolveNames();
+                    module.validate();
+                    const binary = module.toBinary({});
+                    const wasmBytes = binary.buffer;
+                    
+                    const wasmModuleCompiled = await WebAssembly.compile(wasmBytes);
+                    wasmModule = wasmModuleCompiled;
+                    // Instantiate
+                    wasmInstance = await WebAssembly.instantiate(wasmModule, {});
+                    
+                    resultDisplay.textContent = '✅ WASM module ready!';
+                    resultDisplay.style.color = '#6c9';
+                } catch (err) {
+                    console.error(err);
+                    errorDisplay.style.display = 'block';
+                    errorDisplay.textContent = '⚠️ Compile Error: ' + err.message;
+                    resultDisplay.textContent = 'Result: --';
+                    wasmModule = null;
+                    wasmInstance = null;
+                }
+            }
+
+            async function runWasm() {
+                if (!wasmInstance) {
+                    resultDisplay.textContent = '❌ Compile first!';
+                    resultDisplay.style.color = '#e07373';
+                    return;
+                }
+                const a = parseInt(inputA.value) || 0;
+                const b = parseInt(inputB.value) || 0;
+                try {
+                    const addFunc = wasmInstance.exports.add;
+                    const result = addFunc(a, b);
+                    resultDisplay.textContent = `Result: ${a} + ${b} = ${result}`;
+                    resultDisplay.style.color = '#cfba8c';
+                } catch (err) {
+                    errorDisplay.style.display = 'block';
+                    errorDisplay.textContent = '⚠️ Runtime Error: ' + err.message;
+                    resultDisplay.textContent = 'Result: --';
+                }
+            }
+
+            compileBtn.addEventListener('click', compileWAT);
+            runBtn.addEventListener('click', runWasm);
+
+            // Compile default example saat halaman dimuat
+            window.addEventListener('load', () => {
+                compileWAT();
+            });
+        })();
+    </script>
+</body>
+</html>
