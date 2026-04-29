@@ -5,33 +5,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>NES Emulator – CARTRIDGE VAULT</title>
+
+    <!-- Font & global retro styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../data/css/retro-theme.css">
     <link rel="stylesheet" href="../../data/css/nes-emulator.css">
+
+    <!-- External libraries: JSZip + EmulatorJS (stable) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/nostalgist"></script>
+    <script src="https://cdn.emulatorjs.org/EmulatorJS/4.0.12/emulator.min.js"></script>
+
+    <!-- Local modules -->
     <script src="../../data/js/virtual-gamepad.js"></script>
     <script src="../../data/js/nes-emulator.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>🎮 NES EMULATOR</h1>
-        <p class="subtitle" style="text-align:center;">Drop .nes / .zip ROM</p>
+        <p class="subtitle" style="text-align:center;">Drop .nes / .zip file here</p>
+
+        <!-- Dropzone -->
         <div class="nes-dropzone" id="dropZone">
-            ⬇️ Drop .nes / .zip file here<br>
+            ⬇️ Drop your ROM (.nes, .zip, .rar, .7z) here<br>
             <span style="font-size:0.4rem;">or click to select</span>
         </div>
+
+        <!-- Control bar -->
         <div class="nes-controls" id="controls" style="display:none;">
             <button id="btnStop">⏹️ STOP</button>
             <button id="btnReset">🔄 RESET</button>
             <button id="btnFullscreen">📺 FULLSCREEN</button>
         </div>
-        <div class="nes-emulator-wrapper" id="emuWrapper"></div>
+
+        <!-- EmulatorJS will attach here -->
+        <div id="game" style="display:none;"></div>
+
+        <!-- Virtual gamepad (re‑used for touch controls) -->
         <div class="virtual-gamepad" id="virtualGamepad" style="display:none;"></div>
+
         <div class="nes-status" id="statusText">Ready</div>
     </div>
+
     <footer>🛠️ CARTRIDGE VAULT</footer>
 </body>
 </html>
