@@ -8,10 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../../data/css/retro-theme.css">
 
-    <script src="https://unpkg.com/nostalgist"></script>
+    <!-- Global Theme + NES Emulator CSS -->
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <link rel="stylesheet" href="../../data/css/nes-emulator.css">
+
+    <!-- JSZip & Nostalgist.js & Emulator Core -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/nostalgist"></script>
+    <script src="../../data/js/nes-emulator.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,176 +29,36 @@
         </div>
 
         <div class="nes-controls" id="controls" style="display:none;">
-            <button onclick="emu.stop()">⏹️ STOP</button>
-            <button onclick="emu.reset()">🔄 RESET</button>
-            <button class="fullscreen-btn" onclick="emu.toggleFullscreen()">📺 FULLSCREEN</button>
+            <button onclick="window.nesEmulator.stop()">⏹️ STOP</button>
+            <button onclick="window.nesEmulator.reset()">🔄 RESET</button>
+            <button class="fullscreen-btn" onclick="window.nesEmulator.toggleFullscreen()">📺 FULLSCREEN</button>
         </div>
 
         <div class="nes-emulator-wrapper" id="emuWrapper"></div>
+
+        <!-- Virtual Gamepad (akan ditampilkan oleh JS) -->
+        <div class="virtual-gamepad" id="virtualGamepad" style="display:none;">
+            <div class="gamepad-container">
+                <div class="dpad">
+                    <div class="gamepad-btn" data-btn="up">▲</div>
+                    <div class="gamepad-btn" data-btn="left">◀</div>
+                    <div class="gamepad-btn" data-btn="right">▶</div>
+                    <div class="gamepad-btn" data-btn="down">▼</div>
+                </div>
+                <div class="action-buttons">
+                    <div class="gamepad-btn" data-btn="a">A</div>
+                    <div class="gamepad-btn" data-btn="b">B</div>
+                </div>
+                <div class="start-select">
+                    <div class="gamepad-btn" data-btn="start">START</div>
+                    <div class="gamepad-btn" data-btn="select">SELECT</div>
+                </div>
+            </div>
+        </div>
+
         <div class="nes-status" id="statusText"></div>
     </div>
 
     <footer>🛠️ CARTRIDGE VAULT</footer>
-
-    <script>
-        const KEY_MAP = {
-            'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
-            'z': 'a', 'x': 'b', 'Enter': 'start', 'Shift': 'select'
-        };
-
-        const emu = {
-            nostalgist: null,
-            loaded: false,
-
-            async loadROM(romData, fileName) {
-                this.stop();
-                document.getElementById('statusText').textContent = 'Loading...';
-                try {
-                    if (this.nostalgist) { try { this.nostalgist.exit(); } catch(e) {} }
-                    const blob = new Blob([romData], { type: 'application/octet-stream' });
-                    const file = new File([blob], fileName || 'game.nes');
-                    this.nostalgist = await Nostalgist.nes(file);
-                    const canvas = this.nostalgist.getCanvas();
-                    canvas.classList.add('nes-emulator-canvas');
-                    this.buildUI(canvas);
-                    this.loaded = true;
-                    document.getElementById('controls').style.display = 'flex';
-                    document.getElementById('statusText').textContent = 'ROM loaded';
-                } catch (e) {
-                    document.getElementById('statusText').textContent = 'Error: ' + e.message;
-                }
-            },
-
-            buildUI(canvas) {
-                const wrapper = document.getElementById('emuWrapper');
-                wrapper.innerHTML = '';
-
-                const container = document.createElement('div');
-                container.className = 'emu-container';
-                container.appendChild(canvas);
-
-                // Virtual Gamepad
-                const gamepad = document.createElement('div');
-                gamepad.className = 'virtual-gamepad';
-                gamepad.innerHTML = `
-                    <div class="gamepad-container">
-                        <div class="dpad">
-                            <div class="gamepad-btn" data-btn="up">▲</div>
-                            <div class="gamepad-btn" data-btn="left">◀</div>
-                            <div class="gamepad-btn" data-btn="right">▶</div>
-                            <div class="gamepad-btn" data-btn="down">▼</div>
-                        </div>
-                        <div class="action-buttons">
-                            <div class="gamepad-btn" data-btn="a">A</div>
-                            <div class="gamepad-btn" data-btn="b">B</div>
-                        </div>
-                        <div class="start-select">
-                            <div class="gamepad-btn" data-btn="start">START</div>
-                            <div class="gamepad-btn" data-btn="select">SELECT</div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(gamepad);
-                wrapper.appendChild(container);
-                this.bindGamepad(gamepad);
-                this.applyLayout();
-                window.addEventListener('resize', () => this.applyLayout());
-            },
-
-            bindGamepad(gamepad) {
-                gamepad.querySelectorAll('.gamepad-btn').forEach(btn => {
-                    const dataBtn = btn.dataset.btn;
-                    if (!dataBtn) return;
-                    const press = (e) => {
-                        e.preventDefault();
-                        btn.classList.add('active');
-                        const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === dataBtn);
-                        if (key && this.nostalgist) {
-                            const canvas = this.nostalgist.getCanvas();
-                            if (canvas) canvas.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-                        }
-                    };
-                    const release = (e) => {
-                        e.preventDefault();
-                        btn.classList.remove('active');
-                        const key = Object.keys(KEY_MAP).find(k => KEY_MAP[k] === dataBtn);
-                        if (key && this.nostalgist) {
-                            const canvas = this.nostalgist.getCanvas();
-                            if (canvas) canvas.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
-                        }
-                    };
-                    btn.addEventListener('pointerdown', press);
-                    btn.addEventListener('pointerup', release);
-                    btn.addEventListener('pointerleave', release);
-                });
-            },
-
-            applyLayout() {
-                const container = document.querySelector('.emu-container');
-                if (!container) return;
-                const isPortrait = window.innerHeight > window.innerWidth;
-                container.classList.toggle('emu-portrait', isPortrait);
-                container.classList.toggle('emu-landscape', !isPortrait);
-            },
-
-            stop() {
-                document.getElementById('emuWrapper').innerHTML = '';
-                document.getElementById('controls').style.display = 'none';
-                document.getElementById('statusText').textContent = 'Stopped.';
-                this.loaded = false;
-                if (this.nostalgist) { try { this.nostalgist.exit(); } catch(e) {} }
-            },
-
-            reset() {
-                if (this.nostalgist) { try { this.nostalgist.restart(); } catch(e) {} }
-                document.getElementById('statusText').textContent = 'Reset.';
-            },
-
-            toggleFullscreen() {
-                const wrapper = document.getElementById('emuWrapper');
-                if (!document.fullscreenElement) {
-                    wrapper.requestFullscreen();
-                } else {
-                    document.exitFullscreen();
-                }
-            }
-        };
-
-        // Drag & Drop
-        (function() {
-            const drop = document.getElementById('dropZone');
-            drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
-            drop.addEventListener('dragleave', e => { drop.classList.remove('drag-over'); });
-            drop.addEventListener('drop', async e => {
-                e.preventDefault(); drop.classList.remove('drag-over');
-                if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-            });
-            drop.addEventListener('click', () => {
-                const inp = document.createElement('input'); inp.type='file'; inp.accept='.nes,.zip';
-                inp.onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
-                inp.click();
-            });
-        })();
-
-        async function handleFile(file) {
-            const status = document.getElementById('statusText');
-            status.textContent = 'Processing...';
-            try {
-                const buf = await file.arrayBuffer();
-                let data, name;
-                if (file.name.toLowerCase().endsWith('.zip')) {
-                    const zip = await JSZip.loadAsync(buf);
-                    const nFile = Object.keys(zip.files).find(f => f.toLowerCase().endsWith('.nes'));
-                    if (!nFile) throw new Error('No .nes in zip');
-                    data = await zip.files[nFile].async('uint8array');
-                    name = nFile;
-                } else {
-                    data = new Uint8Array(buf);
-                    name = file.name;
-                }
-                await emu.loadROM(data, name);
-            } catch(e) { status.textContent = 'Error: ' + e.message; }
-        }
-    </script>
 </body>
 </html>
