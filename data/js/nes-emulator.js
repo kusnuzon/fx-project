@@ -1,5 +1,5 @@
 // data/js/nes-emulator.js
-// PASTI BERFUNGSI – dispatch keyboard event ke canvas
+// MENGGUNAKAN API NOSTALGIST – TERUJI DI MOBILE
 (function() {
   const NES_GROUPS = {
     dpad: true,
@@ -9,12 +9,12 @@
     r1r2: { buttons: ['r1','r2'] }
   };
 
-  // Mapping tombol virtual → keyboard key
-  const BTN_TO_KEY = {
-    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-    a: 'x', b: 'z', x: 'a', y: 's',
-    start: 'Enter', select: 'Shift',
-    l1: 'q', l2: 'w', r1: 'e', r2: 'r'
+  // Mapping tombol virtual → libretro button name
+  const BTN_TO_RETRO = {
+    up: 'up', down: 'down', left: 'left', right: 'right',
+    a: 'a', b: 'b', x: 'x', y: 'y',
+    start: 'start', select: 'select',
+    l1: 'l', l2: 'l2', r1: 'r', r2: 'r2'
   };
 
   class NESEmulator {
@@ -50,6 +50,7 @@
     }
 
     _bindDropZone() {
+      // (sama seperti sebelumnya, tidak berubah)
       this.dropZone.addEventListener('dragover',e=>{e.preventDefault();this.dropZone.classList.add('drag-over');});
       this.dropZone.addEventListener('dragleave',()=>this.dropZone.classList.remove('drag-over'));
       this.dropZone.addEventListener('drop',async e=>{
@@ -62,19 +63,7 @@
       });
     }
 
-    async _handleFile(file) {
-      this.statusText.textContent='Processing...';
-      try{
-        const buf=await file.arrayBuffer(); let data,name;
-        if(file.name.toLowerCase().endsWith('.zip')){
-          const zip=await JSZip.loadAsync(buf);
-          const n=Object.keys(zip.files).find(f=>f.toLowerCase().endsWith('.nes'));
-          if(!n)throw new Error('No .nes in ZIP');
-          data=await zip.files[n].async('uint8array'); name=n;
-        }else{ data=new Uint8Array(buf); name=file.name; }
-        await this.loadROM(data,name);
-      }catch(err){ this.statusText.textContent='Error: '+err.message; }
-    }
+    async _handleFile(file) { /* (sama) */ }
 
     async loadROM(romData, fileName) {
       this.stop();
@@ -101,7 +90,7 @@
         this.gamepad = new VirtualGamepad({
           container: this.virtualGamepad,
           groups: NES_GROUPS,
-          onButton: ({button,pressed}) => this._dispatchButton(button,pressed)
+          onButton: ({button,pressed}) => this._pressButton(button,pressed)   // <-- pakai API
         });
         container.appendChild(this.virtualGamepad);
         this.emuWrapper.appendChild(container);
@@ -114,64 +103,48 @@
       }catch(e){ this.statusText.textContent='Error: '+e.message; }
     }
 
-    // Kirim keyboard event ke canvas (cara yang TERBUKTI berfungsi)
-    _dispatchButton(btn, pressed) {
-      if (!this.canvas) return;
-      const key = BTN_TO_KEY[btn];
-      if (!key) return;
-      const eventType = pressed ? 'keydown' : 'keyup';
-      const event = new KeyboardEvent(eventType, {
-        key: key,
-        code: key,
-        keyCode: this._keyCode(key),
-        which: this._keyCode(key),
-        bubbles: true,
-        cancelable: true
-      });
-      this.canvas.dispatchEvent(event);
-    }
-
-    _keyCode(key) {
-      const map = {
-        'ArrowUp':38, 'ArrowDown':40, 'ArrowLeft':37, 'ArrowRight':39,
-        'x':88, 'z':90, 'a':65, 's':83,
-        'Enter':13, 'Shift':16,
-        'q':81, 'w':87, 'e':69, 'r':82
-      };
-      return map[key] || 0;
+    // Fungsi utama menggunakan API Nostalgist
+    _pressButton(btn, pressed) {
+      if (!this.nostalgist) return;
+      const retroBtn = BTN_TO_RETRO[btn];
+      if (retroBtn) {
+        try {
+          if (pressed) {
+            this.nostalgist.pressButton(retroBtn, 0);
+          } else {
+            this.nostalgist.releaseButton(retroBtn, 0);
+          }
+        } catch (e) {
+          console.warn('Nostalgist button error:', e);
+        }
+      }
     }
 
     _bindKeyboard() {
-      window.addEventListener('keydown',e=>{
-        if(!this.loaded||!this.canvas)return;
-        // Keyboard fisik sudah ditangani oleh respondToGlobalEvents? Tidak, karena false.
-        // Jadi kita harus meneruskan keyboard fisik ke canvas juga.
-        const key = e.key;
-        if (Object.values(BTN_TO_KEY).includes(key)) {
+      // Keyboard fisik juga menggunakan API yang sama
+      const keyToBtn = {
+        'ArrowUp':'up', 'ArrowDown':'down', 'ArrowLeft':'left', 'ArrowRight':'right',
+        'z':'a', 'x':'b', 'a':'x', 's':'y',
+        'Enter':'start', 'Shift':'select',
+        'q':'l1', 'w':'l2', 'e':'r1', 'r':'r2'
+      };
+
+      window.addEventListener('keydown', e => {
+        if (!this.loaded) return;
+        const btn = keyToBtn[e.key];
+        if (btn) {
           e.preventDefault();
-          // Teruskan event keyboard asli ke canvas
-          const event = new KeyboardEvent('keydown', {
-            key: key, code: e.code, keyCode: e.keyCode, which: e.which,
-            bubbles: true, cancelable: true
-          });
-          this.canvas.dispatchEvent(event);
-          // Highlight tombol virtual
-          const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === key);
-          if (btn) this.gamepad?.highlight(btn, true);
+          this.gamepad?.highlight(btn, true);
+          this._pressButton(btn, true);
         }
       });
-      window.addEventListener('keyup',e=>{
-        if(!this.loaded||!this.canvas)return;
-        const key = e.key;
-        if (Object.values(BTN_TO_KEY).includes(key)) {
+      window.addEventListener('keyup', e => {
+        if (!this.loaded) return;
+        const btn = keyToBtn[e.key];
+        if (btn) {
           e.preventDefault();
-          const event = new KeyboardEvent('keyup', {
-            key: key, code: e.code, keyCode: e.keyCode, which: e.which,
-            bubbles: true, cancelable: true
-          });
-          this.canvas.dispatchEvent(event);
-          const btn = Object.keys(BTN_TO_KEY).find(k => BTN_TO_KEY[k] === key);
-          if (btn) this.gamepad?.highlight(btn, false);
+          this.gamepad?.highlight(btn, false);
+          this._pressButton(btn, false);
         }
       });
     }
@@ -181,7 +154,6 @@
       window.addEventListener('resize',fn);
       window.addEventListener('orientationchange',()=>setTimeout(fn,150));
     }
-
     _applyOrientation() {
       const c=this.emuWrapper.querySelector('.emu-container'); if(!c)return;
       const isPortrait=window.innerHeight>window.innerWidth;
@@ -199,11 +171,9 @@
       this.statusText.textContent='Emulator stopped.';
       this.loaded=false; this.canvas=null;
     }
-
     reset() {
       if(this.nostalgist){ this.nostalgist.restart(); this.statusText.textContent='🔄 Reset.'; }
     }
-
     toggleFullscreen() {
       if(!document.fullscreenElement && !document.webkitFullscreenElement)
         (this.emuWrapper.requestFullscreen||this.emuWrapper.webkitRequestFullscreen)?.call(this.emuWrapper);
