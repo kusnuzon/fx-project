@@ -1,14 +1,8 @@
 // data/js/virtual-gamepad.js
-// MODULAR VIRTUAL GAMEPAD – NO LAYOUT EDITOR
-// Digunakan oleh berbagai emulator
+// MODULAR VIRTUAL GAMEPAD – Multi-emulator support
+// Groups: D-Pad, ABXY, Start/Select, L1/L2, R1/R2
 
 class VirtualGamepad {
-  /**
-   * @param {Object} options
-   * @param {HTMLElement} options.container - DOM element untuk gamepad
-   * @param {Object} options.groups - Grup tombol yang akan dirender
-   * @param {Function} options.onButton - Callback({ button, pressed })
-   */
   constructor({ container, groups = {}, onButton = null }) {
     if (!container) throw new Error('VirtualGamepad: container diperlukan');
 
@@ -27,7 +21,7 @@ class VirtualGamepad {
     const wrapper = document.createElement('div');
     wrapper.className = 'gamepad-container';
 
-    // D-Pad
+    // D-Pad (up, left, right, down)
     if (this.groups.dpad) {
       const dpad = document.createElement('div');
       dpad.className = 'vgp-group vgp-dpad';
@@ -38,7 +32,7 @@ class VirtualGamepad {
       wrapper.appendChild(dpad);
     }
 
-    // ABXY
+    // ABXY cluster
     if (this.groups.abxy) {
       const abxy = document.createElement('div');
       abxy.className = 'vgp-group vgp-abxy';
@@ -65,25 +59,25 @@ class VirtualGamepad {
       wrapper.appendChild(ss);
     }
 
-    // L1 / L2 (jika dibutuhkan)
+    // L1 / L2
     if (this.groups.l1l2) {
       const l = document.createElement('div');
-      l.className = 'vgp-group vgp-l1l2';
+      l.className = 'vgp-group vgp-shoulder';
       ['l1','l2'].forEach(name => {
         if (this.groups.l1l2.buttons.includes(name)) {
-          l.appendChild(this._createButton(name, name.toUpperCase(), 'vgp-btn-pill'));
+          l.appendChild(this._createButton(name, name.toUpperCase(), 'vgp-btn-pill vgp-shoulder-btn'));
         }
       });
       wrapper.appendChild(l);
     }
 
-    // R1 / R2 (jika dibutuhkan)
+    // R1 / R2
     if (this.groups.r1r2) {
       const r = document.createElement('div');
-      r.className = 'vgp-group vgp-r1r2';
+      r.className = 'vgp-group vgp-shoulder';
       ['r1','r2'].forEach(name => {
         if (this.groups.r1r2.buttons.includes(name)) {
-          r.appendChild(this._createButton(name, name.toUpperCase(), 'vgp-btn-pill'));
+          r.appendChild(this._createButton(name, name.toUpperCase(), 'vgp-btn-pill vgp-shoulder-btn'));
         }
       });
       wrapper.appendChild(r);
@@ -100,11 +94,13 @@ class VirtualGamepad {
 
     const press = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       btn.classList.add('active');
       if (this.onButton) this.onButton({ button: name, pressed: true });
     };
     const release = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       btn.classList.remove('active');
       if (this.onButton) this.onButton({ button: name, pressed: false });
     };
@@ -112,6 +108,7 @@ class VirtualGamepad {
     btn.addEventListener('pointerdown', press);
     btn.addEventListener('pointerup', release);
     btn.addEventListener('pointerleave', release);
+    btn.addEventListener('pointercancel', release);
     btn.addEventListener('touchstart', press, { passive: false });
     btn.addEventListener('touchend', release);
 
