@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NES BGM Player | Cartridge Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../data/css/retro-theme.css">
+    <style>
+        .nes-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 580px;
+            margin: 2rem auto;
+            background: rgba(12, 12, 24, 0.95);
+            border: 4px solid #6e6e8a;
+            outline: 4px solid #3d3d56;
+            outline-offset: 6px;
+            box-shadow: 0 0 0 4px #1e1e2f, 0 0 0 8px #0a0a14, 0 10px 30px rgba(0,0,0,0.7);
+            padding: 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .nes-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .nes-wrapper > * { position: relative; z-index: 20; }
+
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: #cfba8c;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #4a3e2c;
+        }
+
+        .track-info {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #9da5b4;
+            margin-bottom: 1rem;
+            min-height: 2em;
+        }
+
+        .oscilloscope {
+            width: 100%;
+            height: 100px;
+            background: #0a0a14;
+            border: 2px solid #4b4b68;
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+            position: relative;
+            overflow: hidden;
+        }
+        canvas#oscCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .nes-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.45rem;
+            padding: 0.6rem 1.2rem;
+            background: #2a2a3c;
+            border: 2px solid #4b4b68;
+            color: #d1d1db;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #0a0a14;
+            transition: all 0.05s;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .nes-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #0a0a14;
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+        }
+        .nes-btn.active {
+            background: #4b4a6e;
+            border-color: #cfba8c;
+            color: #f0e6d2;
+            box-shadow: 0 0 8px rgba(207,186,140,0.4);
+        }
+
+        .track-selector {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="nes-wrapper">
+        <h2>🎵 NES BGM PLAYER</h2>
+        <div class="track-info" id="trackName">SELECT A TRACK</div>
+        
+        <!-- Track selector -->
+        <div class="track-selector">
+            <button class="nes-btn" data-track="0">TRACK A</button>
+            <button class="nes-btn" data-track="1">TRACK B</button>
+            <button class="nes-btn" data-track="2">TRACK C</button>
+        </div>
+
+        <!-- Oscilloscope CRT -->
+        <div class="oscilloscope">
+            <canvas id="oscCanvas"></canvas>
+        </div>
+
+        <!-- Transport controls -->
+        <div class="controls">
+            <button class="nes-btn" id="playBtn">▶ PLAY</button>
+            <button class="nes-btn" id="stopBtn">⏹ STOP</button>
+        </div>
+        <p style="font-family:'Press Start 2P',cursive;font-size:0.4rem;color:#5e5e78;">8-BIT MONO SYNTH</p>
+    </div>
+
+    <script>
+        (() => {
+            const canvas = document.getElementById('oscCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Audio context
+            let audioCtx = null;
+            let masterGain = null;
+            let currentOscillators = [];
+            let animFrameId = null;
+
+            // Track definitions: array of notes for lead (square) and bass (triangle) and drum pattern (noise)
+            // Each note: frequency (Hz), duration in beats (16th notes)
+            const tracks = [
+                { // Track A: simple happy melody
+                    name: 'TRACK A: BUBBLE BOBBLE STYLE',
+                    tempo: 140,
+                    lead: [
+                        523, 0, 587, 0, 659, 0, 784, 0,
+                        784, 0, 659, 0, 587, 0, 523, 0,
+                        659, 0, 784, 0, 880, 0, 784, 0,
+                        659, 0, 587, 0, 523, 0, 440, 0
+                    ],
+                    bass: [
+                        131, 0, 147, 0, 165, 0, 196, 0,
+                        196, 0, 165, 0, 147, 0, 131, 0,
+                        165, 0, 196, 0, 220, 0, 196, 0,
+                        165, 0, 147, 0, 131, 0, 110, 0
+                    ],
+                    drumPattern: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+                },
+                { // Track B: upbeat adventure
+                    name: 'TRACK B: ADVENTURE THEME',
+                    tempo: 150,
+                    lead: [
+                        392, 0, 440, 0, 494, 0, 587, 0,
+                        587, 0, 494, 0, 440, 0, 392, 0,
+                        330, 0, 392, 0, 440, 0, 494, 0,
+                        494, 0, 587, 0, 494, 0, 440, 0
+                    ],
+                    bass: [
+                        98, 0, 110, 0, 123, 0, 147, 0,
+                        147, 0, 123, 0, 110, 0, 98, 0,
+                        82, 0, 98, 0, 110, 0, 123, 0,
+                        123, 0, 147, 0, 123, 0, 110, 0
+                    ],
+                    drumPattern: [1,0,0,0, 1,0,1,0, 1,0,0,0, 1,0,1,0]
+                },
+                { // Track C: mysterious dungeon
+                    name: 'TRACK C: DUNGEON MYSTERY',
+                    tempo: 120,
+                    lead: [
+                        262, 0, 294, 0, 330, 0, 349, 0,
+                        392, 0, 349, 0, 330, 0, 294, 0,
+                        262, 0, 294, 0, 330, 0, 392, 0,
+                        523, 0, 494, 0, 440, 0, 392, 0
+                    ],
+                    bass: [
+                        65, 0, 73, 0, 82, 0, 87, 0,
+                        98, 0, 87, 0, 82, 0, 73, 0,
+                        65, 0, 73, 0, 82, 0, 98, 0,
+                        131, 0, 123, 0, 110, 0, 98, 0
+                    ],
+                    drumPattern: [1,0,0,1, 1,0,0,1, 1,0,0,1, 1,0,1,0]
+                }
+            ];
+
+            let currentTrackIdx = 0;
+            let isPlaying = false;
+            let stepIndex = 0; // current position in pattern (0..15)
+            let intervalId = null;
+
+            // DOM elements
+            const trackNameEl = document.getElementById('trackName');
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const trackButtons = document.querySelectorAll('[data-track]');
+
+            // Initialize audio context on user interaction
+            function initAudio() {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    masterGain = audioCtx.createGain();
+                    masterGain.gain.value = 0.15; // volume low for background
+                    masterGain.connect(audioCtx.destination);
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            function stopAllOscillators() {
+                currentOscillators.forEach(osc => {
+                    try { osc.stop(); } catch(e) {}
+                });
+                currentOscillators = [];
+            }
+
+            function stopPlayback() {
+                if (intervalId) clearInterval(intervalId);
+                intervalId = null;
+                stopAllOscillators();
+                isPlaying = false;
+                playBtn.classList.remove('active');
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+            }
+
+            function playNote(freq, type = 'square', durationSec = 0.12) {
+                if (!audioCtx || !masterGain) return;
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now);
+                osc.stop(now + durationSec);
+                currentOscillators.push(osc);
+            }
+
+            function playNoise(durationSec = 0.08) {
+                if (!audioCtx || !masterGain) return;
+                const now = audioCtx.currentTime;
+                const bufferSize = audioCtx.sampleRate * durationSec;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+                noise.connect(gain);
+                gain.connect(masterGain);
+                noise.start(now);
+                noise.stop(now + durationSec);
+                currentOscillators.push(noise);
+            }
+
+            function advanceStep() {
+                const track = tracks[currentTrackIdx];
+                const leadNote = track.lead[stepIndex];
+                const bassNote = track.bass[stepIndex];
+                const hasDrum = track.drumPattern[stepIndex] === 1;
+
+                // Clear previous short oscillators (they will stop automatically, but keep array clean)
+                currentOscillators = currentOscillators.filter(osc => {
+                    try { return osc.playbackState !== 'finished'; } catch(e) { return false; }
+                });
+
+                const beatDurationSec = 60 / track.tempo / 4; // each step is a 16th note
+
+                // Play lead if frequency > 0
+                if (leadNote > 0) {
+                    playNote(leadNote, 'square', beatDurationSec * 0.8);
+                }
+                // Play bass
+                if (bassNote > 0) {
+                    playNote(bassNote, 'triangle', beatDurationSec * 0.9);
+                }
+                // Play drum
+                if (hasDrum) {
+                    playNoise(beatDurationSec * 0.7);
+                }
+
+                // Update step index
+                stepIndex = (stepIndex + 1) % track.lead.length;
+            }
+
+            function startPlayback() {
+                if (isPlaying) return;
+                initAudio();
+                stopPlayback(); // ensure clean state
+                isPlaying = true;
+                playBtn.classList.add('active');
+                stepIndex = 0;
+                const track = tracks[currentTrackIdx];
+                const stepIntervalMs = (60 / track.tempo / 4) * 1000;
+                intervalId = setInterval(advanceStep, stepIntervalMs);
+                // Start oscilloscope animation
+                animateOscilloscope();
+            }
+
+            function selectTrack(index) {
+                stopPlayback();
+                currentTrackIdx = index;
+                trackNameEl.textContent = tracks[index].name;
+                // Update track button active states
+                trackButtons.forEach(btn => {
+                    const t = parseInt(btn.getAttribute('data-track'));
+                    if (t === index) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+            }
+
+            // Oscilloscope visualization (simple waveform based on master gain)
+            function animateOscilloscope() {
+                if (!isPlaying) {
+                    // Draw flat line
+                    drawFlatLine();
+                    animFrameId = requestAnimationFrame(animateOscilloscope);
+                    return;
+                }
+
+                // Get time-domain data from master gain? We'll simulate by generating a simple waveform based on active oscillators
+                // Since we don't have analyser node, we'll draw a stylized pixel wave that moves.
+                drawStylizedWave();
+                animFrameId = requestAnimationFrame(animateOscilloscope);
+            }
+
+            function drawFlatLine() {
+                const w = canvas.width = canvas.clientWidth;
+                const h = canvas.height = canvas.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+                ctx.strokeStyle = '#3f3f5c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, h/2);
+                ctx.lineTo(w, h/2);
+                ctx.stroke();
+            }
+
+            function drawStylizedWave() {
+                const w = canvas.width = canvas.clientWidth;
+                const h = canvas.height = canvas.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+                ctx.strokeStyle = '#6c9';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const time = Date.now() / 1000;
+                const freq = tracks[currentTrackIdx].lead[stepIndex] || 440;
+                const amplitude = h * 0.4;
+                const cx = h/2;
+                for (let x = 0; x < w; x++) {
+                    const t = (x / w) * 2 * Math.PI * (freq / 100) + time * 5;
+                    const y = cx + Math.sin(t) * amplitude * 0.3;
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                // Draw pixel grid lines
+                ctx.strokeStyle = 'rgba(78,78,104,0.5)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < w; i += 8) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, h);
+                    ctx.stroke();
+                }
+                for (let i = 0; i < h; i += 8) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(w, i);
+                    ctx.stroke();
+                }
+            }
+
+            // Event listeners
+            playBtn.addEventListener('click', startPlayback);
+            stopBtn.addEventListener('click', stopPlayback);
+            trackButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-track'));
+                    selectTrack(idx);
+                });
+            });
+
+            // Initial setup
+            selectTrack(0);
+            // Draw initial flat line
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            drawFlatLine();
+            // Start oscilloscope loop anyway
+            animFrameId = requestAnimationFrame(animateOscilloscope);
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                stopPlayback();
+                if (audioCtx) audioCtx.close();
+            });
+
+        })();
+    </script>
+</body>
+</html>
