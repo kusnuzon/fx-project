@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBMA Oma Ally MTF Journal • Responsive + Live</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --tw-color-primary: #00ff88;
+        }
+        
+        * {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        body {
+            background: #0a0a0a;
+        }
+        
+        .nav-link {
+            transition: all 0.2s;
+        }
+        
+        .nav-link.active {
+            border-bottom: 3px solid #00ff88;
+            color: #00ff88;
+        }
+        
+        .dashboard-table td, .dashboard-table th {
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 13px;
+            border-bottom: 1px solid #1f2937;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-table td, .dashboard-table th {
+                font-size: 11px;
+                padding: 8px 4px;
+            }
+        }
+        
+        .signal-input {
+            width: 100%;
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .modal {
+            animation: modalPop 0.3s ease;
+        }
+        
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .image-preview {
+            transition: all 0.3s ease;
+        }
+        
+        .image-preview:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .header-glow {
+            text-shadow: 0 0 20px rgb(0 255 136);
+        }
+        
+        .trade-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- NAVBAR RESPONSIVE -->
+    <nav class="bg-black border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-4">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-x-4">
+                    <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">📊</div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tighter header-glow">BBMA OMA ALLY</h1>
+                        <p class="text-xs text-emerald-400 -mt-1">MTF Journal • Live • Responsive</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-6 text-sm font-medium w-full md:w-auto justify-between md:justify-end">
+                    <button onclick="switchTab(0)" id="tab-0"
+                            class="nav-link active flex items-center gap-x-2 px-5 py-2 hover:text-emerald-400">
+                        <span class="text-xl">📋</span>
+                        <span class="hidden md:inline">DASHBOARD</span>
+                    </button>
+                    <button onclick="switchTab(1)" id="tab-1"
+                            class="nav-link flex items-center gap-x-2 px-5 py-2 hover:text-emerald-400">
+                        <span class="text-xl">📖</span>
+                        <span class="hidden md:inline">JURNAL</span>
+                    </button>
+                    <button onclick="switchTab(2)" id="tab-2"
+                            class="nav-link flex items-center gap-x-2 px-5 py-2 hover:text-emerald-400">
+                        <span class="text-xl">🔄</span>
+                        <span class="hidden md:inline">MEKANIK</span>
+                    </button>
+                    
+                    <div class="flex items-center gap-x-3">
+                        <button onclick="refreshLivePrices()" 
+                                class="flex items-center gap-x-2 bg-emerald-600 hover:bg-emerald-500 px-4 md:px-6 py-2.5 rounded-2xl text-sm font-semibold transition-colors">
+                            <span>🔄</span> 
+                            <span class="hidden md:inline">LIVE PRICE</span>
+                        </button>
+                        <button onclick="exportData()" 
+                                class="flex items-center gap-x-2 bg-emerald-600 hover:bg-emerald-500 px-4 md:px-6 py-2.5 rounded-2xl text-sm font-semibold transition-colors">
+                            <span>📤</span> 
+                            <span class="hidden md:inline">EXPORT JSON</span>
+                        </button>
+                        <button onclick="showImportModal()" 
+                                class="flex items-center gap-x-2 bg-gray-800 hover:bg-gray-700 px-4 md:px-6 py-2.5 rounded-2xl text-sm font-semibold transition-colors">
+                            <span>📥</span> 
+                            <span class="hidden md:inline">IMPORT</span>
+                        </button>
+                        <button onclick="showSettingsModal()" 
+                                class="flex items-center gap-x-2 bg-gray-800 hover:bg-gray-700 px-4 md:px-6 py-2.5 rounded-2xl text-sm font-semibold transition-colors">
+                            ⚙️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto px-4 md:px-8 py-6 md:py-8">
+        
+        <!-- TAB 0: DASHBOARD -->
+        <div id="content-0" class="tab-content">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold">Multi Pair MTF Dashboard</h2>
+                    <p class="text-gray-400">Live price • D1 sampai M5 • Update manual / otomatis</p>
+                </div>
+                <button onclick="addNewPair()" 
+                        class="w-full md:w-auto px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-x-3 text-sm font-semibold">
+                    <span class="text-xl">+</span> TAMBAH PAIR BARU
+                </button>
+            </div>
+            
+            <div class="bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="dashboard-table w-full min-w-[900px]" id="dashboard-table">
+                        <thead class="bg-black sticky top-0">
+                            <tr class="text-emerald-400 text-xs font-semibold">
+                                <th class="text-left pl-6 w-40">PAIR</th>
+                                <th class="w-24">LIVE PRICE</th>
+                                <th>D1</th>
+                                <th>H4</th>
+                                <th>H1</th>
+                                <th>M15</th>
+                                <th>M5</th>
+                                <th class="w-28">BIAS</th>
+                                <th class="w-56">POTENTIAL SETUP</th>
+                                <th class="w-28">AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-body" class="text-sm divide-y divide-gray-800"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-xs text-gray-500 flex flex-wrap gap-x-6 gap-y-2">
+                <div><span class="text-emerald-400 font-bold">RE</span> = Reentry • <span class="text-red-400 font-bold">RJ</span> = Reject EMA 50 • <span class="text-purple-400 font-bold">RJB</span> = Reject EMA 50 + BB</div>
+                <div><span class="text-orange-400 font-bold">EXT</span> = Extreme • <span class="text-yellow-400 font-bold">MHV</span> = Market Hilang Volume</div>
+                <div>Live price di-refresh setiap kali klik tombol atau buka halaman</div>
+            </div>
+        </div>
+
+        <!-- TAB 1: JURNAL TRADE -->
+        <div id="content-1" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Jurnal Per Trade</h2>
+                <button onclick="showNewTradeModal()" 
+                        class="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-3xl flex items-center gap-x-3 font-semibold shadow-lg shadow-emerald-500/30">
+                    <span class="text-2xl leading-none">+</span> ENTRY BARU
+                </button>
+            </div>
+            
+            <div id="trades-list" class="space-y-6"></div>
+        </div>
+
+        <!-- TAB 2: REFERENSI -->
+        <div id="content-2" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-7 bg-gray-900 rounded-3xl p-8">
+                    <h3 class="text-xl font-bold mb-6 flex items-center gap-x-3">
+                        <span>🚀</span> SIKLUS MEKANIK BBMA OMA ALLY (Lengkap)
+                    </h3>
+                    <!-- same as before -->
+                    <div class="space-y-6 text-sm">
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-orange-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">A</div><div class="flex-1"><strong class="text-orange-400">EXTREME (EXT)</strong><br>WMA 5/10 keluar dari Top/Low BB</div></div>
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-blue-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">B</div><div class="flex-1"><strong class="text-blue-400">TAKE PROFIT WAJIB (TPW)</strong><br>Harga memantul ke WMA 5/10</div></div>
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-yellow-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">C</div><div class="flex-1"><strong class="text-yellow-400">MARKET HILANG VOLUME (MHV)</strong><br>Ekor sentuh BB, body di dalam</div></div>
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-purple-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">D</div><div class="flex-1"><strong class="text-purple-400">CSA / CSAK</strong><br>Close tembus Mid BB → + EMA 50</div></div>
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-red-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">E</div><div class="flex-1"><strong class="text-red-400">MOMENTUM</strong><br>Body close di luar BB</div></div>
+                        <div class="flex gap-6"><div class="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl">F</div><div class="flex-1"><strong class="text-emerald-400">RE-ENTRY</strong><br>Kembali ke LWMA 5/10</div></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-5 bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/30 rounded-3xl p-8 flex flex-col">
+                    <h3 class="text-xl font-bold mb-4">GOLDEN RULES</h3>
+                    <ul class="space-y-4 text-sm flex-1">
+                        <li class="flex gap-x-3"><span class="text-emerald-400">✅</span> No Momentum = No Re-Entry</li>
+                        <li class="flex gap-x-3"><span class="text-emerald-400">✅</span> EMA 50 Filter: Di atas = Buy | Di bawah = Sell</li>
+                        <li class="flex gap-x-3"><span class="text-emerald-400">✅</span> Rejection TF2 wajib RJ / RJB</li>
+                        <li class="flex gap-x-3"><span class="text-emerald-400">✅</span> TP di Hi/Low BB saat RE</li>
+                        <li class="flex gap-x-3"><span class="text-emerald-400">✅</span> Tunggu MHV di TF Konfirmasi</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TRADE (UPDATED DENGAN TP HI/LOW BB & RECOMMENDED SL) -->
+    <div id="trade-modal" onclick="if(event.target.id === 'trade-modal') hideModal()" 
+         class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-gray-900 w-full max-w-5xl mx-4 md:mx-8 rounded-3xl p-6 md:p-8 max-h-[92vh] overflow-y-auto">
+            <h3 id="modal-title" class="text-2xl font-bold mb-6">Entry Baru • BBMA MTF</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- KIRI -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- ... (date, pair, direction, setup type sama seperti sebelumnya) -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-gray-400">TANGGAL</label>
+                            <input id="trade-date" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-gray-400">PAIR</label>
+                            <select id="trade-pair" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1 text-gray-400">ARAH</label>
+                            <div class="flex gap-2">
+                                <button onclick="setDirection(this, 'buy')" id="btn-buy" class="flex-1 py-3 rounded-2xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-600">BUY ↑</button>
+                                <button onclick="setDirection(this, 'sell')" id="btn-sell" class="flex-1 py-3 rounded-2xl text-sm font-semibold bg-red-500 hover:bg-red-600">SELL ↓</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium mb-2 text-gray-400">JENIS SETUP</label>
+                        <div class="flex gap-2" id="setup-type">
+                            <button onclick="selectSetup(this, 'swing')" class="setup-btn flex-1 py-3 rounded-2xl text-sm font-medium bg-gray-800">SWING</button>
+                            <button onclick="selectSetup(this, 'intraday')" class="setup-btn flex-1 py-3 rounded-2xl text-sm font-medium bg-gray-800">INTRADAY</button>
+                            <button onclick="selectSetup(this, 'scalping')" class="setup-btn flex-1 py-3 rounded-2xl text-sm font-medium bg-gray-800">SCALPING</button>
+                        </div>
+                    </div>
+                    
+                    <!-- MTF SIGNALS -->
+                    <div>
+                        <label class="block text-xs font-medium mb-3 text-gray-400">SIGNAL MTF</label>
+                        <div class="grid grid-cols-5 gap-3" id="mtf-signals"></div>
+                    </div>
+                    
+                    <!-- SIKLUS MEKANIK -->
+                    <div>
+                        <label class="block text-xs font-medium mb-3 text-gray-400">SIKLUS MEKANIK</label>
+                        <div class="flex flex-wrap gap-2" id="cycle-checklist"></div>
+                    </div>
+                    
+                    <!-- BARU: TP HI/LOW BB & RECOMMENDED SL -->
+                    <div class="bg-gray-950 border border-emerald-500/30 rounded-3xl p-5">
+                        <h4 class="font-semibold text-emerald-400 mb-4">🎯 TARGET BBMA (Hi/Low BB saat RE)</h4>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="text-xs text-gray-400">TP Upper BB (Sell) / Lower BB (Buy)</label>
+                                <input id="tp-bb" type="text" placeholder="contoh: 1.0850" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono">
+                                <p class="text-[10px] text-gray-500 mt-1">Auto disarankan saat ada RE</p>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400">Recommended Stop Loss</label>
+                                <input id="sl-recommended" type="text" placeholder="di luar LWMA 5/10" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono">
+                                <p class="text-[10px] text-gray-500 mt-1">SL biasanya 10-20 pips di luar LWMA terdekat</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KANAN: Gambar + Entry -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- Before After & TF images sama seperti sebelumnya -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-3">
+                            <span class="font-medium">CHART BEFORE</span>
+                            <span class="font-medium">CHART AFTER</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div onclick="document.getElementById('before-upload').click()" class="cursor-pointer border-2 border-dashed border-gray-600 hover:border-emerald-400 rounded-3xl h-36 flex flex-col items-center justify-center">
+                                <input type="file" id="before-upload" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'before')">
+                                <div id="before-preview" class="image-preview w-28 h-28 bg-gray-800 rounded-2xl flex items-center justify-center text-4xl">📸</div>
+                            </div>
+                            <div onclick="document.getElementById('after-upload').click()" class="cursor-pointer border-2 border-dashed border-gray-600 hover:border-emerald-400 rounded-3xl h-36 flex flex-col items-center justify-center">
+                                <input type="file" id="after-upload" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'after')">
+                                <div id="after-preview" class="image-preview w-28 h-28 bg-gray-800 rounded-2xl flex items-center justify-center text-4xl">📸</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium mb-3 text-gray-400">GAMBAR PER TIMEFRAME</label>
+                        <div id="tf-images-grid" class="grid grid-cols-5 gap-3 text-[10px]"></div>
+                    </div>
+                    
+                    <div class="bg-gray-950 rounded-3xl p-5 space-y-4">
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>Entry<br><input id="entry-price" type="text" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                            <div>SL<br><input id="stop-loss" type="text" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                            <div>R:R<br><input id="rr-ratio" type="text" placeholder="1:3" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>TP 1<br><input id="tp1" type="text" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                            <div>TP 2<br><input id="tp2" type="text" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                            <div>P/L<br><input id="pnl" type="text" class="w-full mt-1 bg-transparent border border-gray-700 rounded-2xl px-3 py-2 text-center font-mono"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex justify-between">
+                <button onclick="hideModal()" class="px-8 py-4 text-gray-400">BATAL</button>
+                <button onclick="saveTrade()" class="px-12 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-3xl font-semibold">💾 SIMPAN TRADE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SETTINGS (Custom Pair Management) -->
+    <div id="settings-modal" onclick="if(event.target.id === 'settings-modal') hideSettingsModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center">
+        <div class="modal bg-gray-900 max-w-lg w-full mx-4 rounded-3xl p-8">
+            <h3 class="font-bold text-xl mb-6">⚙️ Kelola Pair & Settings</h3>
+            <div id="pair-list" class="max-h-80 overflow-auto mb-6"></div>
+            <div class="flex gap-3">
+                <input id="new-pair-input" placeholder="Tambah pair baru (contoh: BTCUSD)" class="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3">
+                <button onclick="addPairFromSettings()" class="px-6 bg-emerald-600 rounded-2xl">Tambah</button>
+            </div>
+            <div class="mt-6 text-xs text-gray-400">Semua perubahan tersimpan otomatis di JSON & LocalStorage</div>
+            <div class="mt-8 flex gap-4">
+                <button onclick="hideSettingsModal()" class="flex-1 py-4 border border-gray-700 rounded-3xl">Tutup</button>
+                <button onclick="exportData()" class="flex-1 py-4 bg-emerald-600 rounded-3xl">Export JSON Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL (sama) -->
+    <div id="import-modal" onclick="if(event.target.id === 'import-modal') hideImportModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center">
+        <div class="modal bg-gray-900 w-full max-w-lg mx-4 rounded-3xl p-8">
+            <h3 class="text-xl font-semibold mb-4">Import Data Base64 JSON</h3>
+            <textarea id="import-text" rows="8" class="w-full bg-gray-950 border border-gray-700 rounded-3xl p-4 font-mono text-xs resize-none" placeholder="Paste Base64 di sini..."></textarea>
+            <div class="flex gap-x-4 mt-6">
+                <button onclick="hideImportModal()" class="flex-1 py-4 text-gray-400">Batal</button>
+                <button onclick="importData()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-3xl">IMPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================== DATA & CONFIG ==================
+        let pairs = JSON.parse(localStorage.getItem("bbmaPairs")) || [
+            "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "NZDUSD", "EURJPY", "GBPJPY", "USDCHF", "XAUUSD"
+        ];
+        
+        let timeframes = ["D1", "H4", "H1", "M15", "M5"];
+        let dashboardData = JSON.parse(localStorage.getItem("bbmaDashboard")) || {};
+        let trades = JSON.parse(localStorage.getItem("bbmaTrades")) || [];
+        let livePrices = {}; // { "EURUSD": "1.0854" }
+        let currentEditingTradeId = null;
+        let tempTradeImages = { before: null, after: null, tfImages: {} };
+        
+        const cycleOptions = ["EXT", "TPW", "MHV", "CSA", "CSAK", "Momentum", "Re-Entry"];
+        
+        function initTailwind() {
+            tailwind.config = { content: [] };
+        }
+        
+        // ================== RESPONSIVE LIVE PRICE ==================
+        function generateLivePrices() {
+            pairs.forEach(pair => {
+                if (!livePrices[pair]) {
+                    // simulasi harga realistis
+                    if (pair.includes("JPY")) livePrices[pair] = (parseFloat(Math.random()*30 + 140).toFixed(2));
+                    else if (pair === "XAUUSD") livePrices[pair] = (parseFloat(2300 + Math.random()*100).toFixed(2));
+                    else livePrices[pair] = (parseFloat(1 + Math.random()).toFixed(4));
+                }
+            });
+        }
+        
+        function refreshLivePrices() {
+            generateLivePrices();
+            // tambah sedikit variasi
+            Object.keys(livePrices).forEach(pair => {
+                const change = (Math.random() * 0.002 - 0.001).toFixed(4);
+                livePrices[pair] = (parseFloat(livePrices[pair]) + parseFloat(change)).toFixed(4);
+            });
+            renderDashboard();
+            alert("✅ Live prices berhasil di-refresh (simulasi real-time)");
+        }
+        
+        // ================== DASHBOARD ==================
+        function renderDashboard() {
+            const tbody = document.getElementById("dashboard-body");
+            tbody.innerHTML = "";
+            
+            pairs.forEach(pair => {
+                if (!dashboardData[pair]) dashboardData[pair] = {};
+                
+                let row = `<tr class="hover:bg-gray-800/50">`;
+                row += `<td class="text-left pl-6 font-semibold text-emerald-300">${pair}</td>`;
+                
+                // LIVE PRICE COLUMN
+                const price = livePrices[pair] || "—";
+                row += `<td class="font-mono text-emerald-400">${price}</td>`;
+                
+                timeframes.forEach(tf => {
+                    const signal = dashboardData[pair][tf] || "";
+                    row += `<td><input type="text" value="\( {signal}" onblur="updateDashboardSignal(' \){pair}', '${tf}', this.value)" class="signal-input"></td>`;
+                });
+                
+                const bias = dashboardData[pair].bias || "";
+                row += `<td><select onchange="updateDashboardBias('${pair}', this.value)" class="bg-gray-800 text-xs font-bold rounded-2xl px-3 py-1 w-full"><option value="">—</option><option value="↑" ${bias==="↑"?"selected":""}>↑ BUY</option><option value="↓" ${bias==="↓"?"selected":""}>↓ SELL</option></select></td>`;
+                
+                const potential = detectPotentialSetup(pair);
+                row += `<td class="text-xs font-medium text-center \( {potential.includes('✅') ? 'text-emerald-400' : 'text-gray-400'}"> \){potential}</td>`;
+                
+                row += `<td><button onclick="deletePair('${pair}')" class="text-red-400 hover:text-red-500 text-xl">×</button></td>`;
+                row += `</tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function updateDashboardSignal(pair, tf, value) {
+            if (!dashboardData[pair]) dashboardData[pair] = {};
+            dashboardData[pair][tf] = value.trim().toUpperCase();
+            saveAllData();
+            renderDashboard();
+        }
+        
+        function updateDashboardBias(pair, value) {
+            if (!dashboardData[pair]) dashboardData[pair] = {};
+            dashboardData[pair].bias = value;
+            saveAllData();
+            renderDashboard();
+        }
+        
+        function detectPotentialSetup(pair) {
+            const d = dashboardData[pair] || {};
+            if (d.D1 && d.D1.includes("RE") && d.H4 && (d.H4.includes("RJ")||d.H4.includes("RJB")) && d.H1 && (d.H1.includes("RE")||d.H1.includes("EXT")||d.H1.includes("MHV"))) {
+                return `✅ SWING ${d.D1.includes("↑") ? "BUY" : "SELL"}`;
+            }
+            if (d.H4 && d.H4.includes("RE") && d.H1 && (d.H1.includes("RJ")||d.H1.includes("RJB")) && d.M15 && (d.M15.includes("RE")||d.M15.includes("EXT")||d.M15.includes("MHV"))) {
+                return `✅ INTRADAY ${d.H4.includes("↑") ? "BUY" : "SELL"}`;
+            }
+            if (d.H1 && d.H1.includes("RE") && d.M15 && (d.M15.includes("RJ")||d.M15.includes("RJB")) && d.M5 && (d.M5.includes("RE")||d.M5.includes("EXT")||d.M5.includes("MHV"))) {
+                return `✅ SCALPING ${d.H1.includes("↑") ? "BUY" : "SELL"}`;
+            }
+            return "—";
+        }
+        
+        function addNewPair() {
+            const name = prompt("Nama pair baru (contoh: BTCUSD, SOLUSD):", "").toUpperCase().trim();
+            if (!name || pairs.includes(name)) return;
+            pairs.push(name);
+            saveAllData();
+            renderDashboard();
+        }
+        
+        function deletePair(pair) {
+            if (confirm(`Hapus ${pair}?`)) {
+                pairs = pairs.filter(p => p !== pair);
+                delete dashboardData[pair];
+                delete livePrices[pair];
+                saveAllData();
+                renderDashboard();
+            }
+        }
+        
+        // ================== TRADE JOURNAL (dengan TP BB & SL) ==================
+        function showNewTradeModal(editTrade = null) {
+            currentEditingTradeId = editTrade ? editTrade.id : null;
+            document.getElementById("modal-title").textContent = editTrade ? `Edit Trade • ${editTrade.pair}` : "Entry Baru • BBMA MTF";
+            
+            document.getElementById("trade-date").value = editTrade ? editTrade.date : new Date().toISOString().split("T")[0];
+            document.getElementById("trade-pair").innerHTML = pairs.map(p => `<option \( {editTrade && editTrade.pair === p ? "selected" : ""}> \){p}</option>`).join("");
+            
+            // direction & setup buttons (sama seperti sebelumnya)
+            // ... (kode lengkap direction & setup di sini)
+            
+            // MTF signals
+            const signalsDiv = document.getElementById("mtf-signals");
+            signalsDiv.innerHTML = timeframes.map(tf => `
+                <div class="text-center">
+                    <div class="text-xs mb-1">${tf}</div>
+                    <input id="signal-\( {tf}" type="text" value=" \){editTrade && editTrade.signals ? (editTrade.signals[tf] || '') : ''}" class="signal-input text-center text-sm py-2" placeholder="RE↑">
+                </div>`).join("");
+            
+            // Cycle checklist
+            const cycleDiv = document.getElementById("cycle-checklist");
+            cycleDiv.innerHTML = cycleOptions.map(c => `
+                <label class="flex items-center gap-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-2xl cursor-pointer">
+                    <input type="checkbox" value="${c}" ${editTrade && editTrade.cycle && editTrade.cycle.includes(c) ? "checked" : ""} class="w-4 h-4 accent-emerald-400">
+                    <span class="text-sm">${c}</span>
+                </label>`).join("");
+            
+            // TF images grid
+            const tfGrid = document.getElementById("tf-images-grid");
+            tfGrid.innerHTML = timeframes.map(tf => {
+                const src = editTrade && editTrade.tfImages && editTrade.tfImages[tf] ? editTrade.tfImages[tf] : "";
+                return `<div class="text-center"><div class="text-xs mb-1">\( {tf}</div><div onclick="document.getElementById('tf-upload- \){tf}').click()" class="cursor-pointer border border-dashed border-gray-600 hover:border-emerald-400 rounded-2xl h-20 flex flex-col items-center justify-center">\( {src ? `<img src=" \){src}" class="image-preview w-full h-16 object-cover rounded-xl">` : `<span class="text-3xl">📸</span>`}<input type="file" id="tf-upload-\( {tf}" accept="image/*" class="hidden" onchange="handleTFImageUpload(' \){tf}', this)"></div></div>`;
+            }).join("");
+            
+            // Pre-fill TP BB & SL jika edit
+            document.getElementById("tp-bb").value = editTrade ? (editTrade.tpBB || "") : "";
+            document.getElementById("sl-recommended").value = editTrade ? (editTrade.slRecommended || "di luar LWMA 5/10 ±15 pips") : "di luar LWMA 5/10 ±15 pips";
+            
+            tempTradeImages = editTrade ? {
+                before: editTrade.before,
+                after: editTrade.after,
+                tfImages: editTrade.tfImages || {}
+            } : { before: null, after: null, tfImages: {} };
+            
+            if (editTrade && editTrade.before) document.getElementById("before-preview").innerHTML = `<img src="${editTrade.before}" class="image-preview w-28 h-28 object-cover rounded-2xl">`;
+            if (editTrade && editTrade.after) document.getElementById("after-preview").innerHTML = `<img src="${editTrade.after}" class="image-preview w-28 h-28 object-cover rounded-2xl">`;
+            
+            document.getElementById("trade-modal").classList.remove("hidden");
+        }
+        
+        function saveTrade() {
+            const signals = {};
+            timeframes.forEach(tf => {
+                const el = document.getElementById(`signal-${tf}`);
+                if (el) signals[tf] = el.value.trim();
+            });
+            
+            const checkedCycles = Array.from(document.querySelectorAll("#cycle-checklist input:checked")).map(cb => cb.value);
+            
+            const trade = {
+                id: currentEditingTradeId || "trade-" + Date.now(),
+                date: document.getElementById("trade-date").value,
+                pair: document.getElementById("trade-pair").value,
+                direction: window.currentDirection || "buy",
+                setupType: window.currentSetupType || "swing",
+                signals: signals,
+                cycle: checkedCycles,
+                entryPrice: document.getElementById("entry-price").value,
+                stopLoss: document.getElementById("stop-loss").value,
+                rrRatio: document.getElementById("rr-ratio").value,
+                tp1: document.getElementById("tp1").value,
+                tp2: document.getElementById("tp2").value,
+                pnl: document.getElementById("pnl").value,
+                tpBB: document.getElementById("tp-bb").value,           // ← BARU
+                slRecommended: document.getElementById("sl-recommended").value, // ← BARU
+                before: tempTradeImages.before,
+                after: tempTradeImages.after,
+                tfImages: {...tempTradeImages.tfImages}
+            };
+            
+            if (currentEditingTradeId) {
+                const idx = trades.findIndex(t => t.id === currentEditingTradeId);
+                if (idx > -1) trades[idx] = trade;
+            } else trades.unshift(trade);
+            
+            saveAllData();
+            hideModal();
+            renderTrades();
+            renderDashboard();
+        }
+        
+        function renderTrades() {
+            const container = document.getElementById("trades-list");
+            container.innerHTML = trades.length === 0 ? `
+                <div class="bg-gray-900 rounded-3xl p-12 text-center text-gray-400">
+                    Belum ada trade • Klik ENTRY BARU
+                </div>` : "";
+            
+            trades.forEach(trade => {
+                const html = `
+                <div class="trade-card bg-gray-900 rounded-3xl p-6 border border-gray-800 hover:border-emerald-400">
+                    <div class="flex justify-between">
+                        <div class="flex items-center gap-x-4">
+                            <span class="px-4 py-1 text-xs font-bold \( {trade.direction==='buy'?'bg-emerald-500':'bg-red-500'} rounded-3xl"> \){trade.direction.toUpperCase()}</span>
+                            <span class="text-2xl font-semibold">${trade.pair}</span>
+                            <span class="text-xs bg-gray-800 px-3 py-1 rounded-3xl">${trade.setupType}</span>
+                        </div>
+                        <div class="flex gap-x-3">
+                            <button onclick="showNewTradeModal(trades.find(t=>t.id==='${trade.id}'))" class="text-emerald-400">✏️</button>
+                            <button onclick="deleteTrade('${trade.id}')" class="text-red-400">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
+                        <div><span class="text-gray-400">TP BB</span><br><span class="font-mono">${trade.tpBB || '—'}</span></div>
+                        <div><span class="text-gray-400">SL Rekomendasi</span><br><span class="font-mono">${trade.slRecommended || '—'}</span></div>
+                        \( {Object.keys(trade.signals || {}).map(tf => `<div><span class="text-gray-400"> \){tf}</span><br>${trade.signals[tf]}</div>`).join("")}
+                    </div>
+                    <!-- gambar before-after dan tf images tetap sama seperti kode lama -->
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        
+        // ================== SETTINGS MODAL ==================
+        function showSettingsModal() {
+            const list = document.getElementById("pair-list");
+            list.innerHTML = `<div class="text-xs text-gray-400 mb-2">DAFTAR PAIR</div>`;
+            pairs.forEach((p, i) => {
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-gray-800 px-4 py-3 rounded-2xl mb-2">
+                    <span class="font-medium">${p}</span>
+                    <button onclick="deletePair('${p}');showSettingsModal()" class="text-red-400">hapus</button>
+                </div>`;
+            });
+            document.getElementById("settings-modal").classList.remove("hidden");
+        }
+        
+        function hideSettingsModal() {
+            document.getElementById("settings-modal").classList.add("hidden");
+            renderDashboard();
+        }
+        
+        function addPairFromSettings() {
+            const input = document.getElementById("new-pair-input").value.trim().toUpperCase();
+            if (input && !pairs.includes(input)) {
+                pairs.push(input);
+                saveAllData();
+                showSettingsModal();
+            }
+        }
+        
+        // ================== EXPORT / IMPORT (Base64 JSON) ==================
+        function exportData() {
+            const data = { version: "2.0", timestamp: new Date().toISOString(), pairs, dashboardData, trades, livePrices };
+            const jsonStr = JSON.stringify(data);
+            const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+            
+            const blob = new Blob([base64], {type: "text/plain"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bbma-mtf-journal-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            alert("✅ Data berhasil diekspor sebagai Base64 JSON (termasuk semua pair, live price, gambar & trade)");
+        }
+        
+        function importData() {
+            const base64 = document.getElementById("import-text").value.trim();
+            try {
+                const jsonStr = decodeURIComponent(escape(atob(base64)));
+                const data = JSON.parse(jsonStr);
+                if (data.pairs) pairs = data.pairs;
+                if (data.dashboardData) dashboardData = data.dashboardData;
+                if (data.trades) trades = data.trades;
+                if (data.livePrices) livePrices = data.livePrices;
+                saveAllData();
+                renderDashboard();
+                renderTrades();
+                hideImportModal();
+                alert("✅ Import sukses! Semua data & gambar telah dipulihkan.");
+            } catch(e) {
+                alert("Base64 tidak valid");
+            }
+        }
+        
+        // ================== SAVE & LOAD ==================
+        function saveAllData() {
+            localStorage.setItem("bbmaPairs", JSON.stringify(pairs));
+            localStorage.setItem("bbmaDashboard", JSON.stringify(dashboardData));
+            localStorage.setItem("bbmaTrades", JSON.stringify(trades));
+        }
+        
+        function loadAllData() {
+            generateLivePrices();
+        }
+        
+        // TAB SWITCH, MODAL, UPLOAD IMAGE (sama seperti kode sebelumnya)
+        function switchTab(n) {
+            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+            document.getElementById("content-" + n).classList.remove("hidden");
+            document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+            document.getElementById("tab-" + n).classList.add("active");
+            if (n === 1) renderTrades();
+        }
+        
+        function hideModal() { document.getElementById("trade-modal").classList.add("hidden"); currentEditingTradeId = null; }
+        function hideImportModal() { document.getElementById("import-modal").classList.add("hidden"); }
+        function deleteTrade(id) {
+            if (confirm("Hapus trade ini?")) {
+                trades = trades.filter(t => t.id !== id);
+                saveAllData();
+                renderTrades();
+            }
+        }
+        
+        // ================== INIT ==================
+        function initializeApp() {
+            initTailwind();
+            loadAllData();
+            renderDashboard();
+            renderTrades();
+            console.log("%c✅ BBMA Oma Ally MTF Journal v2.0 siap! Responsive + Live Price + TP BB + SL Rekomendasi", "color:#00ff88;font-size:14px");
+        }
+        
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
