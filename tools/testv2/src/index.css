@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* BBMA Oma Ally Custom Styles */
+:root {
+  --wma-area-high: rgba(239, 68, 68, 0.08);
+  --wma-area-low: rgba(34, 197, 94, 0.08);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dashboard table sticky column */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+/* Pulse animation for active signals */
+@keyframes signal-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.signal-active {
+  animation: signal-pulse 2s ease-in-out infinite;
+}
+
+/* Print styles */
+@media print {
+  header, footer, button, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .table-cell-sm {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+}
+
+/* WMA band transparency (5-10 high/low tidak kosong) */
+.wma-band {
+  background: linear-gradient(
+    180deg,
+    rgba(239, 68, 68, 0.06) 0%,
+    rgba(239, 68, 68, 0.12) 50%,
+    rgba(239, 68, 68, 0.06) 100%
+  );
+}
+
+.wma-band-low {
+  background: linear-gradient(
+    180deg,
+    rgba(34, 197, 94, 0.06) 0%,
+    rgba(34, 197, 94, 0.12) 50%,
+    rgba(34, 197, 94, 0.06) 100%
+  );
+}
