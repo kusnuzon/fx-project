@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBMA MTF Journal - Oma Ally System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-input: #1a1a25;
+            --border: #2a2a3a;
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --text: #e4e4eb;
+            --text-dim: #888899;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --pixel: #fbbf24;
+            --reentry: #22c55e;
+            --reject: #f59e0b;
+            --rejectbb: #ef4444;
+            --mhv: #8b5cf6;
+            --ext: #ec4899;
+        }
+        
+        body {
+            font-family: 'VT323', monospace;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 18px;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+        }
+        
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 3px solid var(--border);
+            background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-dark) 100%);
+            margin-bottom: 20px;
+        }
+        
+        header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(14px, 3vw, 24px);
+            color: var(--pixel);
+            text-shadow: 3px 3px 0 #000, 0 0 20px rgba(251, 191, 36, 0.5);
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+        
+        header p {
+            color: var(--text-dim);
+            font-size: 20px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .nav-tab {
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            color: var(--text);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        
+        .nav-tab:hover {
+            border-color: var(--accent);
+            background: var(--bg-input);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        
+        .nav-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Dashboard Styles */
+        .dashboard-container {
+            overflow-x: auto;
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .dashboard-table {
+            min-width: 1000px;
+            border-collapse: collapse;
+        }
+        
+        .dashboard-table th,
+        .dashboard-table td {
+            border: 2px solid var(--border);
+            padding: 10px;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .dashboard-table th {
+            background: var(--bg-input);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            padding: 15px 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .dashboard-table th.pair-header {
+            background: linear-gradient(180deg, var(--accent) 0%, var(--bg-input) 100%);
+            min-width: 120px;
+            left: 0;
+            z-index: 20;
+        }
+        
+        .dashboard-table th.tf-header {
+            background: linear-gradient(90deg, var(--accent-light) 0%, var(--accent) 100%);
+        }
+        
+        .dashboard-table td.pair-cell {
+            background: var(--bg-input);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            left: 0;
+            position: sticky;
+            z-index: 5;
+        }
+        
+        .signal-cell {
+            min-width: 100px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .signal-cell:hover {
+            background: var(--bg-input);
+        }
+        
+        .signal-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-family: 'VT323', monospace;
+        }
+        
+        .RE { background: rgba(34, 197, 94, 0.2); color: var(--reentry); border: 1px solid var(--reentry); }
+        .RJ { background: rgba(245, 158, 11, 0.2); color: var(--reject); border: 1px solid var(--reject); }
+        .RJB { background: rgba(239, 68, 68, 0.2); color: var(--rejectbb); border: 1px solid var(--rejectbb); }
+        .MHV { background: rgba(139, 92, 246, 0.2); color: var(--mhv); border: 1px solid var(--mhv); }
+        .EXT { background: rgba(236, 72, 153, 0.2); color: var(--ext); border: 1px solid var(--ext); }
+        .BUY { background: rgba(34, 197, 94, 0.3); color: var(--success); border: 2px solid var(--success); }
+        .SELL { background: rgba(239, 68, 68, 0.3); color: var(--danger); border: 2px solid var(--danger); }
+        
+        .setup-column {
+            min-width: 150px;
+            background: var(--bg-input);
+        }
+        
+        .setup-badge {
+            display: block;
+            padding: 8px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .setup-swing { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(124, 58, 237, 0.3)); border: 2px solid var(--pixel); }
+        .setup-intraday { background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.3)); border: 2px solid var(--info); }
+        .setup-scalping { background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(139, 92, 246, 0.3)); border: 2px solid var(--ext); }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            color: var(--text);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+        
+        /* Journal Form Styles */
+        .journal-form {
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+        }
+        
+        .form-section h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: var(--pixel);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            color: var(--text);
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            border-radius: 4px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+        }
+        
+        .tf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .tf-card {
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .tf-card h4 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-light);
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .indicator-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .checkbox-group:hover {
+            border-color: var(--accent);
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group span {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .image-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .image-upload-btn {
+            padding: 10px 15px;
+            background: var(--bg-input);
+            border: 2px dashed var(--border);
+            color: var(--text-dim);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        
+        .image-upload-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .image-preview {
+            width: 100%;
+            height: 120px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .image-preview .placeholder {
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+        
+        /* Journal List Styles */
+        .journal-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .journal-card {
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .journal-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
+        }
+        
+        .journal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .journal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: var(--pixel);
+        }
+        
+        .journal-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .journal-meta span {
+            background: var(--bg-input);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .journal-setup {
+            display: flex;
+            gap: 10px;
+            align-wrap: wrap;
+        }
+        
+        .journal-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .journal-section h5 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            color: var(--accent-light);
+            margin-bottom: 10px;
+            margin-top: 15px;
+        }
+        
+        .journal-signals {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .journal-images {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .journal-images img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .journal-images img:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .journal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid var(--border);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover {
+            color: var(--accent);
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            border: 3px solid var(--border);
+            border-radius: 6px;
+        }
+        
+        /* Signal Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+        
+        /* Config Panel */
+        .config-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: var(--bg-card);
+            border-left: 3px solid var(--border);
+            z-index: 900;
+            padding: 20px;
+            overflow-y: auto;
+            transition: right 0.3s;
+        }
+        
+        .config-panel.active {
+            display: block;
+            right: 0;
+        }
+        
+        .config-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 800;
+        }
+        
+        .config-overlay.active {
+            display: block;
+        }
+        
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .config-header h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--pixel);
+        }
+        
+        .config-close {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-dim);
+        }
+        
+        .pair-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .pair-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .pair-item input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            color: var(--text);
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+        }
+        
+        .pair-item button {
+            padding: 6px 12px;
+            background: var(--danger);
+            border: 2px solid var(--danger);
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .add-pair-btn {
+            padding: 12px;
+            background: var(--accent);
+            border: 2px solid var(--accent);
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+        }
+        
+        /* Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            color: var(--pixel);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 12px;
+            }
+            
+            .nav-tab {
+                padding: 10px 15px;
+                font-size: 8px;
+            }
+            
+            .dashboard-table th,
+            .dashboard-table td {
+                padding: 5px;
+                min-width: 60px;
+                font-size: 12px;
+            }
+            
+            .signal-badge {
+                padding: 2px 4px;
+                font-size: 10px;
+            }
+            
+            .tf-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .journal-images {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .btn, .nav-tab, .controls, .config-panel {
+                display: none;
+            }
+        }
+        
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .setup-matching {
+            background: linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(245, 158, 11, 0.3));
+            border-left: 4px solid var(--pixel);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚔️ BBMA MTF JOURNAL ⚔️</h1>
+        <p>Oma Ally Trading System - Multi Timeframe Dashboard</p>
+    </header>
+    
+    <div class="container">
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="journal">📝 New Entry</button>
+            <button class="nav-tab" data-tab="history">📜 History</button>
+            <button class="nav-tab" data-tab="stats">📈 Statistics</button>
+            <button class="nav-tab" data-tab="guide">📖 Guide</button>
+        </nav>
+        
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard">
+            <div class="controls">
+                <button class="btn" onclick="openConfig()">⚙️ Configure Pairs</button>
+                <button class="btn" onclick="refreshDashboard()">🔄 Refresh</button>
+                <button class="btn" onclick="exportData()">💾 Export JSON</button>
+                <button class="btn" onclick="document.getElementById('importFile').click()">📂 Import JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color RE"></div> RE = Reentry</div>
+                <div class="legend-item"><div class="legend-color RJ"></div> RJ = Reject EMA 50</div>
+                <div class="legend-item"><div class="legend-color RJB"></div> RJB = Reject EMA+BB</div>
+                <div class="legend-item"><div class="legend-color MHV"></div> MHV = Market Hilang Volume</div>
+                <div class="legend-item"><div class="legend-color EXT"></div> EXT = Extreme</div>
+                <div class="legend-item"><div class="legend-color BUY"></div> 🟢 BUY SETUP</div>
+                <div class="legend-item"><div class="legend-color SELL"></div> 🔴 SELL SETUP</div>
+            </div>
+            
+            <div class="dashboard-container">
+                <table class="dashboard-table" id="dashboardTable">
+                    <thead>
+                        <tr id="tableHeader"></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            
+            <p style="text-align:center; margin-top:20px; color:var(--text-dim); font-size:14px;">
+                Click on any cell to update signals • Setup matching is automatic
+            </p>
+        </div>
+        
+        <!-- Journal Form Tab -->
+        <div class="tab-content" id="journal">
+            <form class="journal-form" id="journalForm">
+                <div class="form-section">
+                    <h3>🎯 Basic Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Pair</label>
+                            <select id="pairSelect" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Setup Type</label>
+                            <select id="setupType" required>
+                                <option value="">Select Setup</option>
+                                <option value="swing">Swing (D1-H4-H1)</option>
+                                <option value="intraday">Intraday (H4-H1-M15)</option>
+                                <option value="scalping">Scalping (H1-M15-M5)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Direction</label>
+                            <select id="direction" required>
+                                <option value="">Select Direction</option>
+                                <option value="BUY">BUY 🟢</option>
+                                <option value="SELL">SELL 🔴</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Entry Date</label>
+                            <input type="datetime-local" id="entryDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Entry Price</label>
+                            <input type="number" step="0.00001" id="entryPrice" placeholder="0.00000">
+                        </div>
+                        <div class="form-group">
+                            <label>Lot Size</label>
+                            <input type="number" step="0.01" id="lotSize" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>🎯 Target & Stop Loss</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Take Profit (High/Low BB)</label>
+                            <input type="number" step="0.00001" id="takeProfit" placeholder="0.00000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Stop Loss (Below/Above WMA 10)</label>
+                            <input type="number" step="0.00001" id="stopLoss" placeholder="0.00000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Risk:Reward Ratio</label>
+                            <input type="text" id="rrRatio" readonly placeholder="Auto calculated">
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="status">
+                                <option value="OPEN">OPEN</option>
+                                <option value="TP">TAKE PROFIT</option>
+                                <option value="SL">STOP LOSS</option>
+                                <option value="MANUAL">MANUAL CLOSE</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>📊 Timeframe Analysis</h3>
+                    <div class="tf-grid" id="tfGrid"></div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>📝 Notes</h3>
+                    <div class="form-group">
+                        <textarea id="notes" rows="4" placeholder="Additional notes about this trade..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">💾 Save Entry</button>
+                    <button type="reset" class="btn btn-danger">🗑️ Clear Form</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- History Tab -->
+        <div class="tab-content" id="history">
+            <div class="controls">
+                <button class="btn" onclick="filterHistory('all')">All</button>
+                <button class="btn" onclick="filterHistory('OPEN')">Open</button>
+                <button class="btn" onclick="filterHistory('TP')">TP</button>
+                <button class="btn" onclick="filterHistory('SL')">SL</button>
+                <button class="btn btn-success" onclick="exportAllImages()">📷 Export All Images</button>
+            </div>
+            <div class="journal-list" id="journalList"></div>
+        </div>
+        
+        <!-- Statistics Tab -->
+        <div class="tab-content" id="stats">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTrades">0</div>
+                    <div class="stat-label">Total Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="winRate">0%</div>
+                    <div class="stat-label">Win Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalPips">0</div>
+                    <div class="stat-label">Total Pips</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRR">0</div>
+                    <div class="stat-label">Avg R:R</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="swingCount">0</div>
+                    <div class="stat-label">Swing Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="intradayCount">0</div>
+                    <div class="stat-label">Intraday Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="scalpingCount">0</div>
+                    <div class="stat-label">Scalping Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="buyCount">0</div>
+                    <div class="stat-label">BUY Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sellCount">0</div>
+                    <div class="stat-label">SELL Trades</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guide Tab -->
+        <div class="tab-content" id="guide">
+            <div class="journal-form">
+                <div class="form-section">
+                    <h3>📜 BBMA Oma Ally Complete Guide</h3>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🔧 INDICATORS</h4>
+                    <ul style="margin-left:20px; line-height:1.8;">
+                        <li><strong>LWMA 5 & 10 High:</strong> Area Reentry Sell (Apply to High)</li>
+                        <li><strong>LWMA 5 & 10 Low:</strong> Area Reentry Buy (Apply to Low)</li>
+                        <li><strong>EMA 50:</strong> Filter Tren & Rejection Zone</li>
+                        <li><strong>Bollinger Bands (20):</strong> Batas Volatilitas</li>
+                    </ul>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">📊 SIGNAL CODES</h4>
+                    <ul style="margin-left:20px; line-height:1.8;">
+                        <li><strong>RE (Reentry):</strong> Harga menyentuh area LWMA 5/10</li>
+                        <li><strong>RJ (Reject EMA 50):</strong> Harga memantul di EMA 50</li>
+                        <li><strong>RJB (Reject EMA+BB):</strong> Harga memantul di EMA 50 + BB (Powerful!)</li>
+                        <li><strong>MHV (Market Hilang Volume):</strong> Ekor sentuh BB tapi body tetap di dalam</li>
+                        <li><strong>EXT (Extreme):</strong> WMA 5/10 keluar dari BB</li>
+                    </ul>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">⚙️ SETUP MATCHING RULES</h4>
+                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
+                        <p style="color:var(--reentry); font-weight:bold;">🟢 SWING SETUP (D1-H4-H1):</p>
+                        <p>D1 RE + H4 RJ/RJB + H1 RE/EXT/MHV</p>
+                    </div>
+                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
+                        <p style="color:var(--info); font-weight:bold;">🔵 INTRADAY SETUP (H4-H1-M15):</p>
+                        <p>H4 RE + H1 RJ/RJB + M15 RE/EXT/MHV</p>
+                    </div>
+                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
+                        <p style="color:var(--ext); font-weight:bold;">🟣 SCALPING SETUP (H1-M15-M5):</p>
+                        <p>H1 RE + M15 RJ/RJB + M5 RE/EXT/MHV</p>
+                    </div>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🔄 BBMA CYCLE</h4>
+                    <ol style="margin-left:20px; line-height:1.8;">
+                        <li><strong>EXT →</strong> WMA keluar dari BB (Harga ekstrem)</li>
+                        <li><strong>TPW →</strong> Pantul ke WMA sebaliknya (Wajib TP)</li>
+                        <li><strong>MHV →</strong> Gagal breakout lagi (Bensin habis)</li>
+                        <li><strong>CSA →</strong> Tembus Mid BB (Sinyal awal)</li>
+                        <li><strong>CSAK →</strong> Tembus Mid BB + EMA 50 (Konfirmasi)</li>
+                        <li><strong>Momentum →</strong> Candle close di luar BB (Tren kuat!)</li>
+                        <li><strong>Re-Entry →</strong> Balik ke WMA 5/10 (Entry point)</li>
+                    </ol>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🎯 TARGET & STOP LOSS</h4>
+                    <ul style="margin-left:20px; line-height:1.8;">
+                        <li><strong>Take Profit:</strong> High/ Low BB di timeframe signal RE</li>
+                        <li><strong>Stop Loss BUY:</strong> Di bawah WMA 10 Low + buffer</li>
+                        <li><strong>Stop Loss SELL:</strong> Di atas WMA 10 High + buffer</li>
+                    </ul>
+                    
+                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">⚠️ GOLDEN RULES</h4>
+                    <ul style="margin-left:20px; line-height:1.8;">
+                        <li>❌ No Momentum = No Re-Entry</li>
+                        <li>✅ Di atas EMA 50 = Fokus Buy saja</li>
+                        <li>✅ Di bawah EMA 50 = Fokus Sell saja</li>
+                        <li>⏳ Tunggu EXT → TPW → MHV selesai di TF konfirmasi</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signal Modal -->
+    <div class="modal" id="signalModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeSignalModal()">&times;</span>
+            <h3 style="font-family:'Press Start 2P',cursive; font-size:11px; color:var(--pixel); margin-bottom:20px;">
+                Edit: <span id="modalPair"></span> - <span id="modalTF"></span>
+            </h3>
+            <div class="form-group">
+                <label>Signals (Select all that apply)</label>
+                <div class="indicator-checkboxes">
+                    <label class="checkbox-group">
+                        <input type="checkbox" value="RE" id="chkRE">
+                        <span class="RE">RE</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" value="RJ" id="chkRJ">
+                        <span class="RJ">RJ</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" value="RJB" id="chkRJB">
+                        <span class="RJB">RJB</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" value="MHV" id="chkMHV">
+                        <span class="MHV">MHV</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" value="EXT" id="chkEXT">
+                        <span class="EXT">EXT</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+                <label>Trend Direction (Optional)</label>
+                <select id="modalTrend">
+                    <option value="">-- Select --</option>
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                    <option value="NEUTRAL">NEUTRAL</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+                <label>Notes</label>
+                <textarea id="modalNotes" rows="3" placeholder="Notes for this TF..."></textarea>
+            </div>
+            <button class="btn btn-primary" style="margin-top:20px; width:100%;" onclick="saveSignal()">💾 Save Signal</button>
+        </div>
+    </div>
+    
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <span class="modal-close" onclick="closeImageModal()" style="position:fixed; top:20px; right:30px; z-index:1001; color:white; font-size:40px; cursor:pointer;">&times;</span>
+        <img id="modalImage" class="modal-image" src="" alt="Preview">
+    </div>
+    
+    <!-- Config Panel -->
+    <div class="config-overlay" id="configOverlay" onclick="closeConfig()"></div>
+    <div class="config-panel" id="configPanel">
+        <div class="config-header">
+            <h3>⚙️ Configure</h3>
+            <span class="config-close" onclick="closeConfig()">&times;</span>
+        </div>
+        <div class="form-section">
+            <h3 style="font-size:10px;">💱 Currency Pairs</h3>
+            <div class="pair-list" id="pairList"></div>
+            <button class="add-pair-btn" onclick="addPair()">+ Add Pair</button>
+        </div>
+        <button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="saveConfig()">💾 Save Configuration</button>
+    </div>
+
+    <script>
+        // ==================== DATA STRUCTURES ====================
+        let appData = {
+            pairs: [
+                'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 
+                'NZDUSD', 'USDCHF', 'EURGBP', 'EURJPY', 'GBPJPY',
+                'AUDJPY', 'CADJPY', 'NZDJPY', 'XAUUSD', 'XAGUSD',
+                'BTCUSD', 'ETHUSD', 'EURUSD', 'GBPJPY', 'AUDJPY'
+            ],
+            timeframes: ['W1', 'D1', 'H4', 'H1', 'M15', 'M5', 'M1'],
+            journal: [],
+            dashboard: {}
+        };
+        
+        let currentModalCell = null;
+        
+        // ==================== INITIALIZATION ====================
+        function init() {
+            loadData();
+            renderDashboard();
+            renderTFCards();
+            renderPairSelect();
+            renderJournalList();
+            updateStats();
+            setDefaultDate();
+        }
+        
+        function setDefaultDate() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('entryDate').value = now.toISOString().slice(0, 16);
+        }
+        
+        function loadData() {
+            const saved = localStorage.getItem('bbmaJournal_v1');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appData = { ...appData, ...parsed };
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                }
+            }
+            
+            // Initialize dashboard structure
+            appData.timeframes.forEach(tf => {
+                if (!appData.dashboard[tf]) {
+                    appData.dashboard[tf] = {};
+                }
+            });
+        }
+        
+        function saveData() {
+            localStorage.setItem('bbmaJournal_v1', JSON.stringify(appData));
+        }
+        
+        // ==================== DASHBOARD ====================
+        function renderDashboard() {
+            const thead = document.getElementById('tableHeader');
+            const tbody = document.getElementById('tableBody');
+            
+            // Render header
+            let headerHTML = '<th class="pair-header">PAIR 📊</th>';
+            appData.timeframes.forEach(tf => {
+                headerHTML += `<th class="tf-header">${tf}</th>`;
+            });
+            headerHTML += '<th class="setup-column">SETUP</th>';
+            thead.innerHTML = headerHTML;
+            
+            // Render body
+            let bodyHTML = '';
+            appData.pairs.forEach(pair => {
+                bodyHTML += `<tr>`;
+                bodyHTML += `<td class="pair-cell">${pair}</td>`;
+                
+                appData.timeframes.forEach(tf => {
+                    const cellData = appData.dashboard[tf]?.[pair] || {};
+                    const signals = cellData.signals || [];
+                    const trend = cellData.trend || '';
+                    
+                    let signalHTML = '';
+                    if (signals.length > 0) {
+                        signalHTML = signals.map(s => `<span class="signal-badge ${s}">${s}</span>`).join(' ');
+                    } else {
+                        signalHTML = '<span style="color:var(--text-dim);">-</span>';
+                    }
+                    
+                    let trendIcon = '';
+                    if (trend === 'BUY') trendIcon = '<span style="color:var(--success);">▲</span>';
+                    if (trend === 'SELL') trendIcon = '<span style="color:var(--danger);">▼</span>';
+                    
+                    bodyHTML += `<td class="signal-cell" onclick="openSignalModal('${pair}', '${tf}')" data-pair="${pair}" data-tf="${tf}">
+                        ${trendIcon} ${signalHTML}
+                    </td>`;
+                });
+                
+                // Detect setups
+                const setups = detectSetups(pair);
+                bodyHTML += `<td class="setup-column">${setups}</td>`;
+                
+                bodyHTML += `</tr>`;
+            });
+            
+            tbody.innerHTML = bodyHTML;
+        }
+        
+        function detectSetups(pair) {
+            const d = appData.dashboard;
+            const s = (tf, p) => d[tf]?.[p]?.signals || [];
+            
+            let setups = [];
+            const hasSignal = (signals, types) => types.some(t => signals.includes(t));
+            
+            // Swing: D1 RE + H4 RJ/RJB + H1 RE/EXT/MHV
+            const d1 = s('D1', pair);
+            const h4 = s('H4', pair);
+            const h1 = s('H1', pair);
+            
+            if (hasSignal(d1, ['RE']) && hasSignal(h4, ['RJ', 'RJB']) && hasSignal(h1, ['RE', 'EXT', 'MHV'])) {
+                const trendD1 = d['D1']?.[pair]?.trend || '';
+                const dir = trendD1 === 'BUY' ? 'BUY 🟢' : (trendD1 === 'SELL' ? 'SELL 🔴' : '⚠️');
+                setups.push(`<span class="setup-badge setup-swing">SWING ${dir}</span>`);
+            }
+            
+            // Intraday: H4 RE + H1 RJ/RJB + M15 RE/EXT/MHV
+            const m15 = s('M15', pair);
+            if (hasSignal(h4, ['RE']) && hasSignal(h1, ['RJ', 'RJB']) && hasSignal(m15, ['RE', 'EXT', 'MHV'])) {
+                const trendH4 = d['H4']?.[pair]?.trend || '';
+                const dir = trendH4 === 'BUY' ? 'BUY 🟢' : (trendH4 === 'SELL' ? 'SELL 🔴' : '⚠️');
+                setups.push(`<span class="setup-badge setup-intraday">INTRADAY ${dir}</span>`);
+            }
+            
+            // Scalping: H1 RE + M15 RJ/RJB + M5 RE/EXT/MHV
+            const m5 = s('M5', pair);
+            if (hasSignal(h1, ['RE']) && hasSignal(m15, ['RJ', 'RJB']) && hasSignal(m5, ['RE', 'EXT', 'MHV'])) {
+                const trendH1 = d['H1']?.[pair]?.trend || '';
+                const dir = trendH1 === 'BUY' ? 'BUY 🟢' : (trendH1 === 'SELL' ? 'SELL 🔴' : '⚠️');
+                setups.push(`<span class="setup-badge setup-scalping">SCALPING ${dir}</span>`);
+            }
+            
+            return setups.join('');
+        }
+        
+        function openSignalModal(pair, tf) {
+            currentModalCell = { pair, tf };
+            const cellData = appData.dashboard[tf]?.[pair] || {};
+            
+            document.getElementById('modalPair').textContent = pair;
+            document.getElementById('modalTF').textContent = tf;
+            
+            // Reset checkboxes
+            ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
+                document.getElementById('chk' + sig).checked = (cellData.signals || []).includes(sig);
+            });
+            
+            document.getElementById('modalTrend').value = cellData.trend || '';
+            document.getElementById('modalNotes').value = cellData.notes || '';
+            
+            document.getElementById('signalModal').classList.add('active');
+        }
+        
+        function closeSignalModal() {
+            document.getElementById('signalModal').classList.remove('active');
+            currentModalCell = null;
+        }
+        
+        function saveSignal() {
+            if (!currentModalCell) return;
+            
+            const { pair, tf } = currentModalCell;
+            const signals = [];
+            
+            ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
+                if (document.getElementById('chk' + sig).checked) {
+                    signals.push(sig);
+                }
+            });
+            
+            if (!appData.dashboard[tf]) appData.dashboard[tf] = {};
+            appData.dashboard[tf][pair] = {
+                signals,
+                trend: document.getElementById('modalTrend').value,
+                notes: document.getElementById('modalNotes').value,
+                updatedAt: new Date().toISOString()
+            };
+            
+            saveData();
+            renderDashboard();
+            closeSignalModal();
+        }
+        
+        // ==================== JOURNAL FORM ====================
+        function renderTFCards() {
+            const grid = document.getElementById('tfGrid');
+            grid.innerHTML = '';
+            
+            const tfGroups = {
+                'Swing': ['W1', 'D1', 'H4', 'H1'],
+                'Intraday': ['H4', 'H1', 'M15'],
+                'Scalping': ['H1', 'M15', 'M5']
+            };
+            
+            Object.entries(tfGroups).forEach(([group, tfs]) => {
+                const wrapper = document.createElement('div');
+                wrapper.style.gridColumn = '1 / -1';
+                wrapper.innerHTML = `<h4 style="color:var(--pixel); font-family:'Press Start 2P',cursive; font-size:10px; margin:15px 0 10px;">${group} Timeframes</h4>`;
+                grid.appendChild(wrapper);
+                
+                tfs.forEach(tf => {
+                    const card = document.createElement('div');
+                    card.className = 'tf-card';
+                    card.innerHTML = `
+                        <h4>📊 ${tf}</h4>
+                        <div class="indicator-checkboxes">
+                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RE" value="RE"><span class="RE">RE</span></label>
+                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RJ" value="RJ"><span class="RJ">RJ</span></label>
+                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RJB" value="RJB"><span class="RJB">RJB</span></label>
+                            <label class="checkbox-group"><input type="checkbox" name="${tf}_MHV" value="MHV"><span class="MHV">MHV</span></label>
+                            <label class="checkbox-group"><input type="checkbox" name="${tf}_EXT" value="EXT"><span class="EXT">EXT</span></label>
+                        </div>
+                        <div class="form-group">
+                            <label>Trend</label>
+                            <select name="${tf}_trend">
+                                <option value="">-- Select --</option>
+                                <option value="BUY">BUY</option>
+                                <option value="SELL">SELL</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                            <label>Price EMA50</label>
+                            <input type="number" step="0.00001" name="${tf}_ema50" placeholder="0.00000">
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                            <label>Price BB High</label>
+                            <input type="number" step="0.00001" name="${tf}_bbHigh" placeholder="0.00000">
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                            <label>Price BB Low</label>
+                            <input type="number" step="0.00001" name="${tf}_bbLow" placeholder="0.00000">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                            <div class="image-upload">
+                                <label class="image-upload-btn" onclick="triggerImageUpload('${tf}_before')">
+                                    📷 Before ${tf}
+                                </label>
+                                <input type="file" id="${tf}_before" accept="image/*" style="display:none" onchange="handleImageUpload(this, '${tf}_before_preview')">
+                                <div class="image-preview" id="${tf}_before_preview">
+                                    <span class="placeholder">No Image</span>
+                                </div>
+                            </div>
+                            <div class="image-upload">
+                                <label class="image-upload-btn" onclick="triggerImageUpload('${tf}_after')">
+                                    📷 After ${tf}
+                                </label>
+                                <input type="file" id="${tf}_after" accept="image/*" style="display:none" onchange="handleImageUpload(this, '${tf}_after_preview')">
+                                <div class="image-preview" id="${tf}_after_preview">
+                                    <span class="placeholder">No Image</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+        }
+        
+        function triggerImageUpload(inputId) {
+            document.getElementById(inputId).click();
+        }
+        
+        function handleImageUpload(input, previewId) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" onclick="openImageModal('${e.target.result}')">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function openImageModal(src) {
+            document.getElementById('modalImage').src = src;
+            document.getElementById('imageModal').classList.add('active');
+        }
+        
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+        
+        function renderPairSelect() {
+            const select = document.getElementById('pairSelect');
+            select.innerHTML = '<option value="">Select Pair</option>';
+            appData.pairs.forEach(pair => {
+                select.innerHTML += `<option value="${pair}">${pair}</option>`;
+            });
+        }
+        
+        // Calculate RR Ratio
+        function calculateRR() {
+            const entry = parseFloat(document.getElementById('entryPrice').value) || 0;
+            const tp = parseFloat(document.getElementById('takeProfit').value) || 0;
+            const sl = parseFloat(document.getElementById('stopLoss').value) || 0;
+            const direction = document.getElementById('direction').value;
+            
+            if (entry > 0 && tp > 0 && sl > 0 && direction) {
+                let risk, reward;
+                if (direction === 'BUY') {
+                    risk = entry - sl;
+                    reward = tp - entry;
+                } else {
+                    risk = sl - entry;
+                    reward = entry - tp;
+                }
+                
+                if (risk > 0) {
+                    const rr = (reward / risk).toFixed(2);
+                    document.getElementById('rrRatio').value = `1:${rr}`;
+                }
+            }
+        }
+        
+        document.addEventListener('input', function(e) {
+            if (['entryPrice', 'takeProfit', 'stopLoss', 'direction'].includes(e.target.id)) {
+                calculateRR();
+            }
+        });
+        
+        // Form submission
+        document.getElementById('journalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const tfData = {};
+            const images = {};
+            
+            appData.timeframes.forEach(tf => {
+                const signals = [];
+                ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
+                    if (formData.get(`${tf}_${sig}`)) {
+                        signals.push(sig);
+                    }
+                });
+                
+                // Get image data
+                const beforePreview = document.getElementById(`${tf}_before_preview`);
+                const afterPreview = document.getElementById(`${tf}_after_preview`);
+                
+                tfData[tf] = {
+                    signals,
+                    trend: formData.get(`${tf}_trend`),
+                    ema50: formData.get(`${tf}_ema50`),
+                    bbHigh: formData.get(`${tf}_bbHigh`),
+                    bbLow: formData.get(`${tf}_bbLow`)
+                };
+                
+                images[tf] = {
+                    before: beforePreview.querySelector('img')?.src || null,
+                    after: afterPreview.querySelector('img')?.src || null
+                };
+            });
+            
+            const entry = {
+                id: Date.now(),
+                pair: document.getElementById('pairSelect').value,
+                setupType: document.getElementById('setupType').value,
+                direction: document.getElementById('direction').value,
+                entryDate: document.getElementById('entryDate').value,
+                entryPrice: document.getElementById('entryPrice').value,
+                takeProfit: document.getElementById('takeProfit').value,
+                stopLoss: document.getElementById('stopLoss').value,
+                rrRatio: document.getElementById('rrRatio').value,
+                lotSize: document.getElementById('lotSize').value,
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value,
+                tfData,
+                images,
+                createdAt: new Date().toISOString()
+            };
+            
+            appData.journal.unshift(entry);
+            saveData();
+            renderJournalList();
+            updateStats();
+            
+            alert('✅ Journal entry saved successfully!');
+            e.target.reset();
+            
+            // Reset image previews
+            appData.timeframes.forEach(tf => {
+                ['before', 'after'].forEach(type => {
+                    document.getElementById(`${tf}_${type}_preview`).innerHTML = '<span class="placeholder">No Image</span>';
+                });
+            });
+            
+            setDefaultDate();
+        });
+        
+        // ==================== JOURNAL LIST ====================
+        function renderJournalList(filter = 'all') {
+            const list = document.getElementById('journalList');
+            const filtered = filter === 'all' ? appData.journal : appData.journal.filter(j => j.status === filter);
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:var(--text-dim); padding:40px;">No journal entries found.</p>';
+                return;
+            }
+            
+            list.innerHTML = filtered.map(entry => {
+                const statusColor = entry.status === 'OPEN' ? 'var(--info)' : (entry.status === 'TP' ? 'var(--success)' : (entry.status === 'SL' ? 'var(--danger)' : 'var(--warning)'));
+                
+                let tfHTML = '';
+                Object.entries(entry.tfData).forEach(([tf, data]) => {
+                    const signals = (data.signals || []).map(s => `<span class="signal-badge ${s}" style="font-size:10px;">${s}</span>`).join(' ');
+                    tfHTML += `
+                        <div style="background:var(--bg-input); padding:10px; margin:5px 0; border-radius:4px;">
+                            <strong style="color:var(--accent-light);">${tf}</strong>
+                            <div style="margin-top:5px;">${signals || '-'} ${data.trend ? `<span class="${data.trend}" style="font-size:12px;">${data.trend}</span>` : ''}</div>
+                        </div>
+                    `;
+                });
+                
+                const setupIcon = entry.setupType === 'swing' ? '🎯' : (entry.setupType === 'intraday' ? '⚡' : '🔪');
+                const dirIcon = entry.direction === 'BUY' ? '🟢' : '🔴';
+                
+                return `
+                    <div class="journal-card">
+                        <div class="journal-header">
+                            <div>
+                                <div class="journal-title">${setupIcon} ${entry.pair} - ${entry.setupType.toUpperCase()} ${dirIcon}</div>
+                                <div class="journal-meta">
+                                    <span>📅 ${new Date(entry.entryDate).toLocaleString()}</span>
+                                    <span>💰 Entry: ${entry.entryPrice}</span>
+                                    <span style="border:2px solid ${statusColor};">${entry.status}</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:14px; color:var(--text-dim);">R:R</div>
+                                <div style="font-size:20px; color:var(--pixel);">${entry.rrRatio || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="journal-body">
+                            <div class="journal-section">
+                                <h5>🎯 Targets</h5>
+                                <p>TP: <span style="color:var(--success);">${entry.takeProfit}</span></p>
+                                <p>SL: <span style="color:var(--danger);">${entry.stopLoss}</span></p>
+                                <p>Lot: ${entry.lotSize || '-'}</p>
+                            </div>
+                            <div class="journal-section">
+                                <h5>📊 Signals</h5>
+                                ${tfHTML}
+                            </div>
+                            <div class="journal-section">
+                                <h5>📷 Screenshots</h5>
+                                <div class="journal-images">
+                                    ${Object.entries(entry.images).map(([tf, imgs]) => {
+                                        let imgHTML = '';
+                                        if (imgs.before) imgHTML += `<img src="${imgs.before}" alt="${tf} before" onclick="openImageModal('${imgs.before}')">`;
+                                        if (imgs.after) imgHTML += `<img src="${imgs.after}" alt="${tf} after" onclick="openImageModal('${imgs.after}')">`;
+                                        return imgHTML;
+                                    }).join('')}
+                                    ${!Object.values(entry.images).some(img => img.before || img.after) ? '<p style="color:var(--text-dim); font-size:14px;">No images</p>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ${entry.notes ? `<div style="margin-top:15px; padding:10px; background:var(--bg-input); border-radius:4px;"><strong>📝 Notes:</strong> ${entry.notes}</div>` : ''}
+                        <div class="journal-actions">
+                            <button class="btn" onclick="editEntry(${entry.id})">✏️ Edit</button>
+                            <button class="btn" onclick="duplicateEntry(${entry.id})">📋 Duplicate</button>
+                            <button class="btn btn-success" onclick="updateStatus(${entry.id}, 'TP')">✅ Set TP</button>
+                            <button class="btn btn-danger" onclick="updateStatus(${entry.id}, 'SL')">❌ Set SL</button>
+                            <button class="btn btn-danger" onclick="deleteEntry(${entry.id})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterHistory(status) {
+            renderJournalList(status);
+        }
+        
+        function updateStatus(id, status) {
+            const entry = appData.journal.find(j => j.id === id);
+            if (entry) {
+                entry.status = status;
+                saveData();
+                renderJournalList();
+                updateStats();
+            }
+        }
+        
+        function deleteEntry(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                appData.journal = appData.journal.filter(j => j.id !== id);
+                saveData();
+                renderJournalList();
+                updateStats();
+            }
+        }
+        
+        function duplicateEntry(id) {
+            const entry = appData.journal.find(j => j.id === id);
+            if (entry) {
+                const newEntry = { ...entry, id: Date.now(), createdAt: new Date().toISOString() };
+                appData.journal.unshift(newEntry);
+                saveData();
+                renderJournalList();
+                updateStats();
+            }
+        }
+        
+        function editEntry(id) {
+            const entry = appData.journal.find(j => j.id === id);
+            if (entry) {
+                // Switch to journal tab
+                document.querySelector('[data-tab="journal"]').click();
+                
+                // Fill form
+                document.getElementById('pairSelect').value = entry.pair;
+                document.getElementById('setupType').value = entry.setupType;
+                document.getElementById('direction').value = entry.direction;
+                document.getElementById('entryDate').value = entry.entryDate;
+                document.getElementById('entryPrice').value = entry.entryPrice;
+                document.getElementById('takeProfit').value = entry.takeProfit;
+                document.getElementById('stopLoss').value = entry.stopLoss;
+                document.getElementById('lotSize').value = entry.lotSize;
+                document.getElementById('status').value = entry.status;
+                document.getElementById('notes').value = entry.notes || '';
+                
+                // Fill TF data
+                Object.entries(entry.tfData).forEach(([tf, data]) => {
+                    data.signals?.forEach(sig => {
+                        const chk = document.querySelector(`[name="${tf}_${sig}"]`);
+                        if (chk) chk.checked = true;
+                    });
+                    const trendSel = document.querySelector(`[name="${tf}_trend"]`);
+                    if (trendSel) trendSel.value = data.trend || '';
+                    const emaInput = document.querySelector(`[name="${tf}_ema50"]`);
+                    if (emaInput) emaInput.value = data.ema50 || '';
+                    const bbHighInput = document.querySelector(`[name="${tf}_bbHigh"]`);
+                    if (bbHighInput) bbHighInput.value = data.bbHigh || '';
+                    const bbLowInput = document.querySelector(`[name="${tf}_bbLow"]`);
+                    if (bbLowInput) bbLowInput.value = data.bbLow || '';
+                    
+                    // Show images
+                    if (entry.images[tf]?.before) {
+                        document.getElementById(`${tf}_before_preview`).innerHTML = `<img src="${entry.images[tf].before}" alt="before">`;
+                    }
+                    if (entry.images[tf]?.after) {
+                        document.getElementById(`${tf}_after_preview`).innerHTML = `<img src="${entry.images[tf].after}" alt="after">`;
+                    }
+                });
+                
+                // Remove old entry (will be replaced on save)
+                appData.journal = appData.journal.filter(j => j.id !== id);
+                
+                calculateRR();
+                alert('Entry loaded for editing. Make changes and save to update.');
+            }
+        }
+        
+        // ==================== STATISTICS ====================
+        function updateStats() {
+            const trades = appData.journal;
+            const total = trades.length;
+            const tp = trades.filter(t => t.status === 'TP').length;
+            const sl = trades.filter(t => t.status === 'SL').length;
+            const completed = tp + sl;
+            
+            document.getElementById('totalTrades').textContent = total;
+            document.getElementById('winRate').textContent = completed > 0 ? Math.round((tp / completed) * 100) + '%' : '0%';
+            
+            // Calculate pips (approximate)
+            let totalPips = 0;
+            trades.forEach(t => {
+                if (t.status === 'TP' || t.status === 'SL') {
+                    const entry = parseFloat(t.entryPrice) || 0;
+                    const tp = parseFloat(t.takeProfit) || 0;
+                    const sl = parseFloat(t.stopLoss) || 0;
+                    const direction = t.direction;
+                    
+                    let pips = 0;
+                    if (direction === 'BUY') {
+                        if (t.status === 'TP') pips = Math.abs(tp - entry);
+                        else pips = -Math.abs(entry - sl);
+                    } else {
+                        if (t.status === 'TP') pips = Math.abs(entry - tp);
+                        else pips = -Math.abs(sl - entry);
+                    }
+                    
+                    // Convert to pips (multiply by 10000 for most pairs, 100 for JPY pairs)
+                    const multiplier = t.pair.includes('JPY') ? 100 : 10000;
+                    totalPips += pips * multiplier;
+                }
+            });
+            
+            document.getElementById('totalPips').textContent = Math.round(totalPips);
+            
+            // Calculate average RR
+            const rrValues = trades.filter(t => t.rrRatio).map(t => parseFloat(t.rrRatio.replace('1:', '')) || 0);
+            const avgRR = rrValues.length > 0 ? (rrValues.reduce((a, b) => a + b, 0) / rrValues.length).toFixed(2) : 0;
+            document.getElementById('avgRR').textContent = `1:${avgRR}`;
+            
+            // Count by setup type
+            document.getElementById('swingCount').textContent = trades.filter(t => t.setupType === 'swing').length;
+            document.getElementById('intradayCount').textContent = trades.filter(t => t.setupType === 'intraday').length;
+            document.getElementById('scalpingCount').textContent = trades.filter(t => t.setupType === 'scalping').length;
+            
+            // Count by direction
+            document.getElementById('buyCount').textContent = trades.filter(t => t.direction === 'BUY').length;
+            document.getElementById('sellCount').textContent = trades.filter(t => t.direction === 'SELL').length;
+        }
+        
+        // ==================== CONFIG PANEL ====================
+        function openConfig() {
+            document.getElementById('configPanel').classList.add('active');
+            document.getElementById('configOverlay').classList.add('active');
+            renderPairList();
+        }
+        
+        function closeConfig() {
+            document.getElementById('configPanel').classList.remove('active');
+            document.getElementById('configOverlay').classList.remove('active');
+        }
+        
+        function renderPairList() {
+            const list = document.getElementById('pairList');
+            list.innerHTML = appData.pairs.map((pair, index) => `
+                <div class="pair-item">
+                    <input type="text" value="${pair}" id="pair_${index}">
+                    <button onclick="removePair(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+        
+        function addPair() {
+            appData.pairs.push('');
+            renderPairList();
+        }
+        
+        function removePair(index) {
+            appData.pairs.splice(index, 1);
+            renderPairList();
+        }
+        
+        function saveConfig() {
+            // Collect pairs from inputs
+            appData.pairs = [];
+            document.querySelectorAll('[id^="pair_"]').forEach(input => {
+                const value = input.value.trim().toUpperCase();
+                if (value) {
+                    appData.pairs.push(value);
+                }
+            });
+            
+            saveData();
+            renderDashboard();
+            renderPairSelect();
+            closeConfig();
+            alert('Configuration saved!');
+        }
+        
+        function refreshDashboard() {
+            renderDashboard();
+            alert('Dashboard refreshed!');
+        }
+        
+        // ==================== IMPORT/EXPORT ====================
+        function exportData() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `bbma_journal_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function importData(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        appData = { ...appData, ...imported };
+                        saveData();
+                        renderDashboard();
+                        renderPairSelect();
+                        renderJournalList();
+                        updateStats();
+                        alert('✅ Data imported successfully!');
+                    } catch (err) {
+                        alert('❌ Error importing data: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+        
+        function exportAllImages() {
+            if (appData.journal.length === 0) {
+                alert('No journal entries to export images from.');
+                return;
+            }
+            
+            let allImages = [];
+            appData.journal.forEach(entry => {
+                Object.entries(entry.images).forEach(([tf, imgs]) => {
+                    if (imgs.before) {
+                        allImages.push({ pair: entry.pair, tf, type: 'before', data: imgs.before });
+                    }
+                    if (imgs.after) {
+                        allImages.push({ pair: entry.pair, tf, type: 'after', data: imgs.after });
+                    }
+                });
+            });
+            
+            if (allImages.length === 0) {
+                alert('No images found in journal entries.');
+                return;
+            }
+            
+            let html = '<!DOCTYPE html><html><head><title>BBMA Journal Images</title>';
+            html += '<style>body{background:#1a1a2e;color:#eee;font-family:sans-serif;padding:20px;}';
+            html += '.img-container{margin:20px 0;padding:15px;background:#16213e;border-radius:8px;}';
+            html += '.img-title{color:#fbbf24;margin-bottom:10px;font-weight:bold;}';
+            html += 'img{max-width:100%;border:3px solid #0f3460;border-radius:4px;}</style></head><body>';
+            html += '<h1 style="text-align:center;color:#fbbf24;">BBMA Journal Images Export</h1>';
+            
+            allImages.forEach(img => {
+                html += `
+                    <div class="img-container">
+                        <div class="img-title">${img.pair} - ${img.tf} (${img.type})</div>
+                        <img src="${img.data}" alt="${img.pair} ${img.tf} ${img.type}">
+                    </div>
+                `;
+            });
+            
+            html += '</body></html>';
+            
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `bbma_images_${new Date().toISOString().split('T')[0]}.html`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // ==================== TAB NAVIGATION ====================
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSignalModal();
+                closeImageModal();
+                closeConfig();
+            }
+        });
+        
+        // ==================== CLICK OUTSIDE MODAL ====================
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) closeImageModal();
+        });
+        
+        document.getElementById('signalModal').addEventListener('click', function(e) {
+            if (e.target === this) closeSignalModal();
+        });
+        
+        // ==================== INITIALIZE ====================
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
