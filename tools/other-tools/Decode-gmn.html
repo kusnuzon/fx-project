@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Cipher - Offline Tool</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0d1117;
+            color: #58a6ff;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: #161b22;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h2 { border-bottom: 1px solid #30363d; padding-bottom: 10px; color: #c9d1d9; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; font-size: 0.9em; }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #d1d5da;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1;
+            padding: 12px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-enc { background: #238636; color: white; }
+        .btn-enc:hover { background: #2ea043; }
+        .btn-dec { background: #8957e5; color: white; }
+        .btn-dec:hover { background: #a371f7; }
+        .result-area {
+            margin-top: 20px;
+            background: #0d1117;
+            padding: 15px;
+            border: 1px dashed #30363d;
+            word-break: break-all;
+            min-height: 50px;
+        }
+        .copy-btn {
+            background: transparent;
+            color: #58a6ff;
+            border: 1px solid #58a6ff;
+            margin-top: 10px;
+            font-size: 12px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>[ PRIVATE ENCRYPTOR ]</h2>
+    
+    <label>PESAN / HASIL ENKRIPSI:</label>
+    <textarea id="inputText" rows="5" placeholder="Masukkan teks di sini..."></textarea>
+
+    <label>KUNCI RAHASIA (KEY):</label>
+    <input type="password" id="secretKey" placeholder="Gunakan kunci unik...">
+
+    <div class="btn-group">
+        <button class="btn-enc" onclick="process(true)">ENKRIPSI</button>
+        <button class="btn-dec" onclick="process(false)">DEKRIPSI</button>
+    </div>
+
+    <label>HASIL:</label>
+    <div id="output" class="result-area">Menunggu input...</div>
+    <button class="copy-btn" onclick="copyResult()">Salin Hasil</button>
+</div>
+
+<script>
+    // Algoritma Custom: Reverse -> XOR Shift -> Base64
+    function customCipher(text, key, isEncrypt) {
+        if (!key) {
+            alert("Kunci rahasia wajib diisi!");
+            return text;
+        }
+
+        let result = "";
+        
+        if (isEncrypt) {
+            // 1. Reverse String
+            let reversed = text.split("").reverse().join("");
+            
+            // 2. XOR Shift berdasarkan kode ASCII Key
+            for (let i = 0; i < reversed.length; i++) {
+                let charCode = reversed.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                result += String.fromCharCode(charCode);
+            }
+            
+            // 3. Convert to Unicode-safe Base64
+            return btoa(unescape(encodeURIComponent(result)));
+        } else {
+            try {
+                // 1. Decode Base64
+                let decodedB64 = decodeURIComponent(escape(atob(text)));
+                
+                // 2. Reverse XOR Shift
+                let xored = "";
+                for (let i = 0; i < decodedB64.length; i++) {
+                    let charCode = decodedB64.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                    xored += String.fromCharCode(charCode);
+                }
+                
+                // 3. Reverse back to original text
+                return xored.split("").reverse().join("");
+            } catch (e) {
+                return "ERROR: Kunci salah atau format pesan tidak valid!";
+            }
+        }
+    }
+
+    function process(isEncrypt) {
+        const text = document.getElementById("inputText").value;
+        const key = document.getElementById("secretKey").value;
+        const outputDiv = document.getElementById("output");
+        
+        if (!text) return;
+        
+        const result = customCipher(text, key, isEncrypt);
+        outputDiv.innerText = result;
+    }
+
+    function copyResult() {
+        const result = document.getElementById("output").innerText;
+        navigator.clipboard.writeText(result);
+        alert("Tersalin!");
+    }
+</script>
+
+</body>
+</html>
