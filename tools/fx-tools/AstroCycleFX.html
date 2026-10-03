@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;" />
+  <title>AstroDox-FX | Luxor (+3) to WIB (+7) 7-Day Forecaster</title>
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #111827;
+      --bg-header: #1e293b;
+      --border: #2dd4bf33;
+      --border-subtle: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #06b6d4;
+      --accent-gold: #f59e0b;
+      --buy-bg: rgba(16, 185, 129, 0.16);
+      --buy-text: #34d399;
+      --buy-border: #10b981;
+      --sell-bg: rgba(239, 68, 68, 0.16);
+      --sell-text: #f87171;
+      --sell-border: #ef4444;
+      --font-mono: 'JetBrains Mono', 'Courier New', Courier, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.45;
+      padding: 10px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .clock-grid {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .clock-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 12px;
+      min-width: 155px;
+    }
+
+    .clock-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .clock-time {
+      font-family: var(--font-mono);
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .clock-time.wib {
+      color: var(--buy-text);
+    }
+
+    .controls-bar {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    select, input[type="date"], button {
+      background-color: #0f172a;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 9px 10px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      width: 100%;
+    }
+
+    select:focus, input[type="date"]:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: #1e293b;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      border-color: #14b8a6;
+      color: #ffffff;
+    }
+
+    button:hover {
+      border-color: var(--accent-gold);
+    }
+
+    .section-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      background-color: var(--bg-header);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      background: #0f172a;
+      color: var(--accent-cyan);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 760px;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+      vertical-align: middle;
+    }
+
+    th {
+      background-color: #0f172a;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    tr:hover td {
+      background-color: rgba(30, 41, 59, 0.45);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .pair-tag {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 0.86rem;
+      color: var(--accent-gold);
+    }
+
+    .cat-tag {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: var(--text-muted);
+      margin-left: 5px;
+    }
+
+    .badge-dir {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      letter-spacing: 0.5px;
+      text-align: center;
+      min-width: 92px;
+    }
+
+    .badge-buy {
+      background-color: var(--buy-bg);
+      color: var(--buy-text);
+      border: 1px solid var(--buy-border);
+    }
+
+    .badge-sell {
+      background-color: var(--sell-bg);
+      color: var(--sell-text);
+      border: 1px solid var(--sell-border);
+    }
+
+    .time-entry {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      white-space: nowrap;
+    }
+
+    .time-exit {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      white-space: nowrap;
+    }
+
+    .weekend-note {
+      display: inline-block;
+      font-size: 0.66rem;
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-top: 3px;
+    }
+
+    .rx-badge {
+      color: var(--sell-text);
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .dir-badge {
+      color: var(--buy-text);
+      font-family: var(--font-mono);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #065f46;
+      color: #ecfdf5;
+      border: 1px solid #10b981;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      padding: 10px 4px 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <div class="brand-title">
+        <span>&#9737; ASTRODOX-FX ENGINE</span>
+      </div>
+      <div class="brand-sub">
+        Base Anchor: Luxor, Egypt (25&deg;41'N, 32&deg;38'E | UTC+3) &rarr; Execution &amp; Exit: WIB (UTC+7)
+      </div>
+    </div>
+    <div class="clock-grid">
+      <div class="clock-box">
+        <div class="clock-label">Base Time Luxor (UTC+3)</div>
+        <div id="clockLuxor" class="clock-time">--:--:--</div>
+      </div>
+      <div class="clock-box">
+        <div class="clock-label">Eksekusi WIB (UTC+7)</div>
+        <div id="clockWib" class="clock-time wib">--:--:--</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="controls-bar">
+    <div class="control-group">
+      <label for="pairSelect">Pilih Pair (Metal &amp; Forex)</label>
+      <select id="pairSelect"></select>
+    </div>
+    <div class="control-group">
+      <label for="dateInput">Tanggal Mulai (Base Luxor)</label>
+      <input type="date" id="dateInput" />
+    </div>
+    <div class="control-group">
+      <label>Navigasi Cepat</label>
+      <div class="btn-row">
+        <button type="button" id="btnToday">Hari Ini</button>
+        <button type="button" id="btnCopy" class="primary">Salin Jadwal 7 Hari</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABEL 1: FORECAST 7 HARI KEDEPAN PAIR TERPILIH -->
+  <section class="section-card">
+    <div class="section-header">
+      <div class="section-title" id="title7Day">Forecast 7 Hari Kedepan (1 Arah Trend Harian)</div>
+      <div class="section-badge" id="badgeRuler">Ruler: --</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Hari, Tanggal Bulan Tahun</th>
+            <th>1 Arah Trend</th>
+            <th>Aspek Pemicu Utama (Langit Luxor)</th>
+            <th>Base Luxor (UTC+3)</th>
+            <th>Presisi ENTRY (WIB +7)</th>
+            <th>Presisi EXIT (WIB +7)</th>
+            <th>Durasi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody7Day"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TABEL 2: MATRIKS SEMUA PAIR METAL & FOREX HARI INI -->
+  <section class="section-card">
+    <div class="section-header">
+      <div class="section-title" id="titleMatrix">Matriks Semua Pair (Metal &amp; Forex) Pada Tanggal Terpilih</div>
+      <div class="section-badge">Perbandingan Entry &amp; Exit Lintas Pair</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Pair &amp; Kategori</th>
+            <th>Hari, Tanggal Bulan Tahun</th>
+            <th>1 Arah Trend</th>
+            <th>Planet Penguasa &amp; Aspek Pemicu</th>
+            <th>Base Luxor (UTC+3)</th>
+            <th>Presisi ENTRY (WIB +7)</th>
+            <th>Presisi EXIT (WIB +7)</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyMatrix"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TABEL 3: EPHEMERIS ASTRODOX LUXOR (VERIFIKASI DERAJAT) -->
+  <section class="section-card">
+    <div class="section-header">
+      <div class="section-title" id="titleEphemeris">Tabel Ephemeris Astrodox (Base Luxor 12:00 UTC+3)</div>
+      <div class="section-badge" id="badgeEngine">Engine: Memuat...</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Planet / Titik Sudut</th>
+            <th>Zodiak</th>
+            <th>Bujur Ekliptika (360&deg;)</th>
+            <th>Derajat Zodiak (DD&deg; MM' SS")</th>
+            <th>Deklinasi</th>
+            <th>Kecepatan (&deg;/Hari)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyEphemeris"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="toastMsg" class="toast">Jadwal berhasil disalin ke Clipboard!</div>
+
+  <footer>
+    AstroDox-FX Static Engine &bull; Arsitektur SSOT &amp; DRY &bull; Base Luxor (UTC+3) &rarr; Eksekusi WIB (UTC+7) (+4 Jam Presisi)
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =====================================================================
+       * 1. SINGLE SOURCE OF TRUTH (CONFIG_SSOT)
+       * Pusat seluruh konstanta geografis Luxor, offset zona waktu, zodiak,
+       * aspek, dan planet penguasa Pair Metal & Forex.
+       * ===================================================================== */
+      const CONFIG_SSOT = Object.freeze({
+        LOCATION: Object.freeze({
+          NAME: 'Luxor, Egypt',
+          LAT: 25.6872,
+          LON: 32.6396,
+          ELEVATION_M: 76
+        }),
+        TIMEZONE: Object.freeze({
+          LUXOR_OFFSET_HOURS: 3,
+          WIB_OFFSET_HOURS: 7,
+          DIFF_HOURS: 4,
+          HOUR_MS: 3600000,
+          MIN_MS: 60000,
+          SCAN_STEP_MINUTES: 15
+        }),
+        LOCALE_ID: Object.freeze({
+          DAYS: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+          MONTHS: [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+          ]
+        }),
+        ZODIAC: Object.freeze([
+          { name: 'Aries', sym: '♈' },
+          { name: 'Taurus', sym: '♉' },
+          { name: 'Gemini', sym: '♊' },
+          { name: 'Cancer', sym: '♋' },
+          { name: 'Leo', sym: '♌' },
+          { name: 'Virgo', sym: '♍' },
+          { name: 'Libra', sym: '♎' },
+          { name: 'Scorpio', sym: '♏' },
+          { name: 'Sagittarius', sym: '♐' },
+          { name: 'Capricorn', sym: '♑' },
+          { name: 'Aquarius', sym: '♒' },
+          { name: 'Pisces', sym: '♓' }
+        ]),
+        PLANETS: Object.freeze([
+          { id: 'Sun', label: 'Sun (Matahari)', sym: '☉', nature: 1.2, avgSpeed: 0.9856, orb: 1.6 },
+          { id: 'Moon', label: 'Moon (Bulan)', sym: '☽', nature: 0.8, avgSpeed: 13.176, orb: 2.2 },
+          { id: 'Mercury', label: 'Mercury', sym: '☿', nature: 0.4, avgSpeed: 1.383, orb: 1.4 },
+          { id: 'Venus', label: 'Venus', sym: '♀', nature: 1.5, avgSpeed: 1.200, orb: 1.4 },
+          { id: 'Mars', label: 'Mars', sym: '♂', nature: -1.3, avgSpeed: 0.524, orb: 1.2 },
+          { id: 'Jupiter', label: 'Jupiter', sym: '♃', nature: 1.8, avgSpeed: 0.083, orb: 1.2 },
+          { id: 'Saturn', label: 'Saturn', sym: '♄', nature: -1.7, avgSpeed: 0.033, orb: 1.1 },
+          { id: 'Uranus', label: 'Uranus', sym: '♅', nature: -0.6, avgSpeed: 0.011, orb: 1.0 },
+          { id: 'Neptune', label: 'Neptune', sym: '♆', nature: -0.4, avgSpeed: 0.006, orb: 1.0 },
+          { id: 'Pluto', label: 'Pluto', sym: '♇', nature: -1.1, avgSpeed: 0.004, orb: 1.0 }
+        ]),
+        ASPECTS: Object.freeze([
+          { name: 'Conjunction', angle: 0, harmony: 0.85, weight: 1.4 },
+          { name: 'Sextile', angle: 60, harmony: 1.0, weight: 1.1 },
+          { name: 'Square', angle: 90, harmony: -1.25, weight: 1.35 },
+          { name: 'Trine', angle: 120, harmony: 1.35, weight: 1.4 },
+          { name: 'Opposition', angle: 180, harmony: -1.4, weight: 1.5 }
+        ]),
+        PAIRS: Object.freeze({
+          XAUUSD: {
+            code: 'XAUUSD',
+            category: 'Metal',
+            name: 'Gold / Spot Emas',
+            baseRulers: ['Sun', 'Jupiter', 'Mars'],
+            quoteRulers: ['Saturn', 'Pluto'],
+            orbFactor: 1.00,
+            phaseShift: 0
+          },
+          XAGUSD: {
+            code: 'XAGUSD',
+            category: 'Metal',
+            name: 'Silver / Spot Perak',
+            baseRulers: ['Moon', 'Venus', 'Neptune'],
+            quoteRulers: ['Sun', 'Saturn'],
+            orbFactor: 1.05,
+            phaseShift: 1
+          },
+          EURUSD: {
+            code: 'EURUSD',
+            category: 'Forex',
+            name: 'Euro vs US Dollar',
+            baseRulers: ['Venus', 'Jupiter', 'Mercury'],
+            quoteRulers: ['Sun', 'Pluto'],
+            orbFactor: 0.95,
+            phaseShift: 2
+          },
+          GBPUSD: {
+            code: 'GBPUSD',
+            category: 'Forex',
+            name: 'British Pound vs US Dollar',
+            baseRulers: ['Mars', 'Saturn', 'Venus'],
+            quoteRulers: ['Sun', 'Pluto'],
+            orbFactor: 0.98,
+            phaseShift: 3
+          },
+          USDJPY: {
+            code: 'USDJPY',
+            category: 'Forex',
+            name: 'US Dollar vs Japanese Yen',
+            baseRulers: ['Sun', 'Pluto', 'Mars'],
+            quoteRulers: ['Uranus', 'Neptune', 'Moon'],
+            orbFactor: 0.92,
+            phaseShift: 4
+          },
+          AUDUSD: {
+            code: 'AUDUSD',
+            category: 'Forex',
+            name: 'Australian Dollar vs US Dollar',
+            baseRulers: ['Jupiter', 'Venus', 'Mars'],
+            quoteRulers: ['Sun', 'Saturn'],
+            orbFactor: 0.96,
+            phaseShift: 5
+          },
+          USDCAD: {
+            code: 'USDCAD',
+            category: 'Forex',
+            name: 'US Dollar vs Canadian Dollar',
+            baseRulers: ['Sun', 'Mars', 'Pluto'],
+            quoteRulers: ['Saturn', 'Mercury', 'Neptune'],
+            orbFactor: 0.94,
+            phaseShift: 6
+          },
+          USDCHF: {
+            code: 'USDCHF',
+            category: 'Forex',
+            name: 'US Dollar vs Swiss Franc',
+            baseRulers: ['Sun', 'Jupiter', 'Pluto'],
+            quoteRulers: ['Mercury', 'Uranus', 'Saturn'],
+            orbFactor: 0.90,
+            phaseShift: 7
+          }
+        })
+      });
+
+      /* =====================================================================
+       * 2. UTILITAS MATEMATIKA & FORMATTER WAKTU (DRY)
+       * ===================================================================== */
+      const MathUtil = {
+        DEG2RAD: Math.PI / 180,
+        RAD2DEG: 180 / Math.PI,
+
+        norm360(deg) {
+          const r = deg % 360;
+          return r < 0 ? r + 360 : r;
+        },
+
+        angleDiff(a, b) {
+          let d = Math.abs(this.norm360(a) - this.norm360(b)) % 360;
+          return d > 180 ? 360 - d : d;
+        },
+
+        pad2(n) {
+          return String(Math.floor(Math.abs(n))).padStart(2, '0');
+        },
+
+        formatDMS(deg360) {
+          const norm = this.norm360(deg360);
+          const signIdx = Math.floor(norm / 30);
+          const rem = norm - signIdx * 30;
+          const d = Math.floor(rem);
+          const mFloat = (rem - d) * 60;
+          const m = Math.floor(mFloat);
+          const s = Math.round((mFloat - m) * 60);
+          const z = CONFIG_SSOT.ZODIAC[signIdx];
+          return {
+            zodiacName: z.name,
+            zodiacSym: z.sym,
+            full360: norm.toFixed(2) + '°',
+            inSignShort: `${this.pad2(d)}°${this.pad2(m)}' ${z.sym}`,
+            inSignFull: `${this.pad2(d)}° ${this.pad2(m)}' ${this.pad2(s === 60 ? 59 : s)}"`
+          };
+        }
+      };
+
+      const TimeUtil = {
+        luxorStartOfDayUtcMs(year, month1Based, day) {
+          return Date.UTC(year, month1Based - 1, day, 0, 0, 0) -
+            CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS * CONFIG_SSOT.TIMEZONE.HOUR_MS;
+        },
+
+        toOffsetParts(utcMs, offsetHours) {
+          const shifted = new Date(utcMs + offsetHours * CONFIG_SSOT.TIMEZONE.HOUR_MS);
+          const y = shifted.getUTCFullYear();
+          const m = shifted.getUTCMonth();
+          const d = shifted.getUTCDate();
+          const dow = shifted.getUTCDay();
+          const hh = shifted.getUTCHours();
+          const mm = shifted.getUTCMinutes();
+          const ss = shifted.getUTCSeconds();
+          return {
+            year: y,
+            monthIdx: m,
+            day: d,
+            dow: dow,
+            isWeekend: dow === 0 || dow === 6,
+            dayName: CONFIG_SSOT.LOCALE_ID.DAYS[dow],
+            monthName: CONFIG_SSOT.LOCALE_ID.MONTHS[m],
+            fullDateStr: `${CONFIG_SSOT.LOCALE_ID.DAYS[dow]}, ${MathUtil.pad2(d)} ${CONFIG_SSOT.LOCALE_ID.MONTHS[m]} ${y}`,
+            shortDateStr: `${MathUtil.pad2(d)} ${CONFIG_SSOT.LOCALE_ID.MONTHS[m].slice(0, 3)} ${y}`,
+            isoDate: `${y}-${MathUtil.pad2(m + 1)}-${MathUtil.pad2(d)}`,
+            hhmm: `${MathUtil.pad2(hh)}:${MathUtil.pad2(mm)}`,
+            hhmmss: `${MathUtil.pad2(hh)}:${MathUtil.pad2(mm)}:${MathUtil.pad2(ss)}`
+          };
+        },
+
+        formatDuration(durationMs) {
+          const totalMin = Math.max(1, Math.round(durationMs / CONFIG_SSOT.TIMEZONE.MIN_MS));
+          const h = Math.floor(totalMin / 60);
+          const m = totalMin % 60;
+          return `${h}j ${MathUtil.pad2(m)}m`;
+        }
+      };
+
+      /* =====================================================================
+       * 3. MESIN EPHEMERIS ASTRODOX (VSOP87/NOVAS + MEEUS FALLBACK + ASC/MC LUXOR)
+       * ===================================================================== */
+      const EphemerisCore = {
+        hasAstronomyLib() {
+          return typeof window.Astronomy !== 'undefined' && typeof window.Astronomy.GeoVector === 'function';
+        },
+
+        julianCenturiesJ2000(utcMs) {
+          const jd = utcMs / 86400000 + 2440587.5;
+          return (jd - 2451545.0) / 36525.0;
+        },
+
+        calcObliquityDeg(T) {
+          return 23.4392911 - 0.0130042 * T;
+        },
+
+        calcLuxorAngles(utcMs) {
+          const T = this.julianCenturiesJ2000(utcMs);
+          const jd = utcMs / 86400000 + 2440587.5;
+          let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T;
+          const lst = MathUtil.norm360(gmst + CONFIG_SSOT.LOCATION.LON);
+          const eps = this.calcObliquityDeg(T) * MathUtil.DEG2RAD;
+          const theta = lst * MathUtil.DEG2RAD;
+          const phi = CONFIG_SSOT.LOCATION.LAT * MathUtil.DEG2RAD;
+
+          let mcRad = Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(eps));
+          let mcDeg = MathUtil.norm360(mcRad * MathUtil.RAD2DEG);
+
+          const yAsc = Math.cos(theta);
+          const xAsc = -(Math.sin(theta) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps));
+          let ascDeg = MathUtil.norm360(Math.atan2(yAsc, xAsc) * MathUtil.RAD2DEG);
+
+          return { asc: ascDeg, mc: mcDeg };
+        },
+
+        meeusFallbackPosition(planetId, utcMs) {
+          const T = this.julianCenturiesJ2000(utcMs);
+          const eps = this.calcObliquityDeg(T) * MathUtil.DEG2RAD;
+          let lon = 0;
+          let lat = 0;
+
+          switch (planetId) {
+            case 'Sun': {
+              const L0 = 280.46646 + 36000.76983 * T;
+              const M = (357.52911 + 35999.05029 * T) * MathUtil.DEG2RAD;
+              const C = (1.914602 - 0.004817 * T) * Math.sin(M) + 0.019993 * Math.sin(2 * M);
+              lon = MathUtil.norm360(L0 + C);
+              break;
+            }
+            case 'Moon': {
+              const Lp = 218.3165 + 481267.8813 * T;
+              const D = (297.8502 + 445267.1115 * T) * MathUtil.DEG2RAD;
+              const M = (357.5291 + 35999.0503 * T) * MathUtil.DEG2RAD;
+              const Mp = (134.9634 + 477198.8676 * T) * MathUtil.DEG2RAD;
+              const F = (93.2721 + 483202.0175 * T) * MathUtil.DEG2RAD;
+              lon = MathUtil.norm360(
+                Lp +
+                6.2888 * Math.sin(Mp) +
+                1.2740 * Math.sin(2 * D - Mp) +
+                0.6583 * Math.sin(2 * D) +
+                0.2136 * Math.sin(2 * Mp) -
+                0.1851 * Math.sin(M) -
+                0.1143 * Math.sin(2 * F)
+              );
+              lat = 5.1282 * Math.sin(F);
+              break;
+            }
+            case 'Mercury':
+              lon = MathUtil.norm360(252.2509 + 149472.6746 * T + 23.44 * Math.sin((174.79 + 149472.51 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Venus':
+              lon = MathUtil.norm360(181.9798 + 58517.8156 * T + 0.775 * Math.sin((50.41 + 58517.80 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Mars':
+              lon = MathUtil.norm360(355.4330 + 19140.2993 * T + 10.691 * Math.sin((19.37 + 19140.30 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Jupiter':
+              lon = MathUtil.norm360(34.3515 + 3034.9057 * T + 5.555 * Math.sin((20.02 + 3034.90 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Saturn':
+              lon = MathUtil.norm360(50.0774 + 1222.1138 * T + 6.40 * Math.sin((317.02 + 1222.11 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Uranus':
+              lon = MathUtil.norm360(314.0550 + 428.4669 * T + 5.31 * Math.sin((142.23 + 428.47 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Neptune':
+              lon = MathUtil.norm360(304.3487 + 218.4862 * T + 1.03 * Math.sin((256.22 + 218.49 * T) * MathUtil.DEG2RAD));
+              break;
+            case 'Pluto':
+              lon = MathUtil.norm360(238.9290 + 145.2078 * T + 28.3 * Math.sin((14.88 + 145.20 * T) * MathUtil.DEG2RAD));
+              break;
+          }
+
+          const lonRad = lon * MathUtil.DEG2RAD;
+          const latRad = lat * MathUtil.DEG2RAD;
+          const sinDec = Math.sin(latRad) * Math.cos(eps) + Math.cos(latRad) * Math.sin(eps) * Math.sin(lonRad);
+          const dec = Math.asin(Math.max(-1, Math.min(1, sinDec))) * MathUtil.RAD2DEG;
+          return { lon, dec };
+        },
+
+        getPlanetRaw(planetId, utcMs) {
+          if (this.hasAstronomyLib()) {
+            const dateObj = new Date(utcMs);
+            const body = window.Astronomy.Body[planetId];
+            const vec = window.Astronomy.GeoVector(body, dateObj, true);
+            const ecl = window.Astronomy.Ecliptic(vec);
+            const T = this.julianCenturiesJ2000(utcMs);
+            const eps = this.calcObliquityDeg(T) * MathUtil.DEG2RAD;
+            const lonRad = ecl.elon * MathUtil.DEG2RAD;
+            const latRad = ecl.elat * MathUtil.DEG2RAD;
+            const sinDec = Math.sin(latRad) * Math.cos(eps) + Math.cos(latRad) * Math.sin(eps) * Math.sin(lonRad);
+            const dec = Math.asin(Math.max(-1, Math.min(1, sinDec))) * MathUtil.RAD2DEG;
+            return { lon: MathUtil.norm360(ecl.elon), dec };
+          }
+          return this.meeusFallbackPosition(planetId, utcMs);
+        },
+
+        getPlanetState(planetId, utcMs) {
+          const pNow = this.getPlanetRaw(planetId, utcMs);
+          const dtHours = 2;
+          const pNext = this.getPlanetRaw(planetId, utcMs + dtHours * CONFIG_SSOT.TIMEZONE.HOUR_MS);
+
+          let dLon = pNext.lon - pNow.lon;
+          if (dLon > 180) dLon -= 360;
+          if (dLon < -180) dLon += 360;
+
+          const speedPerDay = dLon * (24 / dtHours);
+          const decSpeedPerDay = (pNext.dec - pNow.dec) * (24 / dtHours);
+
+          return {
+            id: planetId,
+            lon: pNow.lon,
+            dec: pNow.dec,
+            speed: speedPerDay,
+            decSpeed: decSpeedPerDay,
+            isRx: speedPerDay < 0
+          };
+        },
+
+        getSnapshot(utcMs) {
+          const planets = {};
+          for (let i = 0; i < CONFIG_SSOT.PLANETS.length; i++) {
+            const pCfg = CONFIG_SSOT.PLANETS[i];
+            planets[pCfg.id] = this.getPlanetState(pCfg.id, utcMs);
+          }
+          const angles = this.calcLuxorAngles(utcMs);
+          return { utcMs, planets, angles };
+        }
+      };
+
+      /* =====================================================================
+       * 4. MESIN PEMINDAI ASPEK & KALKULATOR SATU ARAH TREND (FORECAST ENGINE)
+       * ===================================================================== */
+      const ForecastEngine = {
+        planetMetaMap: (function () {
+          const map = {};
+          CONFIG_SSOT.PLANETS.forEach(p => { map[p.id] = p; });
+          return map;
+        })(),
+
+        buildDailyGrid(luxorStartUtcMs) {
+          const stepMs = CONFIG_SSOT.TIMEZONE.SCAN_STEP_MINUTES * CONFIG_SSOT.TIMEZONE.MIN_MS;
+          const steps = Math.floor((24 * CONFIG_SSOT.TIMEZONE.HOUR_MS) / stepMs);
+          const samples = [];
+
+          for (let s = 0; s <= steps; s++) {
+            const t = luxorStartUtcMs + s * stepMs;
+            const bodyLons = {};
+            for (let i = 0; i < CONFIG_SSOT.PLANETS.length; i++) {
+              const pid = CONFIG_SSOT.PLANETS[i].id;
+              bodyLons[pid] = EphemerisCore.getPlanetRaw(pid, t).lon;
+            }
+            const angles = EphemerisCore.calcLuxorAngles(t);
+            bodyLons.ASC = angles.asc;
+            bodyLons.MC = angles.mc;
+            samples.push({ utcMs: t, lons: bodyLons });
+          }
+
+          const noonUtcMs = luxorStartUtcMs + 12 * CONFIG_SSOT.TIMEZONE.HOUR_MS;
+          const noonSnapshot = EphemerisCore.getSnapshot(noonUtcMs);
+          return { luxorStartUtcMs, samples, noonSnapshot };
+        },
+
+        computePairDayForecast(pairCode, dailyGrid) {
+          const pairCfg = CONFIG_SSOT.PAIRS[pairCode];
+          const noon = dailyGrid.noonSnapshot;
+          const samples = dailyGrid.samples;
+
+          // A. Hitung Net Daily Bias Score (Satu Arah Trend Harian)
+          let netScore = 0;
+          const allPlanetIds = CONFIG_SSOT.PLANETS.map(p => p.id);
+
+          // 1. Kontribusi kecepatan, retrograde, dan deklinasi penguasa Base vs Quote
+          pairCfg.baseRulers.forEach((pid, idx) => {
+            const st = noon.planets[pid];
+            const meta = this.planetMetaMap[pid];
+            const rulerWeight = idx === 0 ? 1.8 : 1.1;
+            if (!st.isRx) netScore += 0.55 * rulerWeight;
+            else netScore -= 0.75 * rulerWeight;
+            if (Math.abs(st.speed) > meta.avgSpeed) netScore += 0.35 * rulerWeight;
+            if (st.decSpeed >= 0) netScore += 0.45 * rulerWeight;
+            else netScore -= 0.45 * rulerWeight;
+          });
+
+          pairCfg.quoteRulers.forEach((pid) => {
+            const st = noon.planets[pid];
+            if (!st.isRx && st.decSpeed > 0) netScore -= 0.35;
+            else netScore += 0.35;
+          });
+
+          // 2. Pindai seluruh event aspek intra-day di langit Luxor (00:00 - 23:59 UTC+3)
+          const candidateEvents = [];
+
+          const checkPairBodies = [];
+          const activeRulers = pairCfg.baseRulers.concat(pairCfg.quoteRulers);
+
+          // Pasangan antara Planet Penguasa Pair dengan Planet lain + ASC/MC Luxor
+          const targets = allPlanetIds.concat(['MC', 'ASC']);
+          for (let i = 0; i < activeRulers.length; i++) {
+            const b1 = activeRulers[i];
+            const isBaseRuler = pairCfg.baseRulers.indexOf(b1) !== -1;
+            for (let j = 0; j < targets.length; j++) {
+              const b2 = targets[j];
+              if (b1 === b2) continue;
+              checkPairBodies.push({ b1, b2, isBaseRuler });
+            }
+          }
+
+          for (let pIdx = 0; pIdx < checkPairBodies.length; pIdx++) {
+            const { b1, b2, isBaseRuler } = checkPairBodies[pIdx];
+            const meta1 = this.planetMetaMap[b1];
+            const meta2 = this.planetMetaMap[b2] || { nature: 0.6, orb: 1.5, avgSpeed: 360 };
+
+            for (let aIdx = 0; aIdx < CONFIG_SSOT.ASPECTS.length; aIdx++) {
+              const asp = CONFIG_SSOT.ASPECTS[aIdx];
+              let bestStep = -1;
+              let minErr = 999;
+
+              for (let s = 1; s < samples.length - 1; s++) {
+                const dPrev = MathUtil.angleDiff(samples[s - 1].lons[b1], samples[s - 1].lons[b2]) - asp.angle;
+                const dCurr = MathUtil.angleDiff(samples[s].lons[b1], samples[s].lons[b2]) - asp.angle;
+                const dNext = MathUtil.angleDiff(samples[s + 1].lons[b1], samples[s + 1].lons[b2]) - asp.angle;
+
+                const absCurr = Math.abs(dCurr);
+                const isLocalMin = absCurr <= Math.abs(dPrev) && absCurr <= Math.abs(dNext);
+                const isZeroCross = (dPrev * dCurr <= 0) || (dCurr * dNext <= 0);
+
+                if ((isLocalMin || isZeroCross) && absCurr < 2.4) {
+                  if (absCurr < minErr) {
+                    minErr = absCurr;
+                    bestStep = s;
+                  }
+                }
+              }
+
+              if (bestStep !== -1) {
+                const s1 = samples[bestStep - 1];
+                const s2 = samples[bestStep];
+                const s3 = samples[bestStep + 1];
+
+                const err1 = Math.abs(MathUtil.angleDiff(s1.lons[b1], s1.lons[b2]) - asp.angle);
+                const err2 = Math.abs(MathUtil.angleDiff(s2.lons[b1], s2.lons[b2]) - asp.angle);
+                const err3 = Math.abs(MathUtil.angleDiff(s3.lons[b1], s3.lons[b2]) - asp.angle);
+
+                // Interpolasi menit presisi menuju titik puncak Exact Aspect
+                let exactUtcMs = s2.utcMs;
+                const stepMs = CONFIG_SSOT.TIMEZONE.SCAN_STEP_MINUTES * CONFIG_SSOT.TIMEZONE.MIN_MS;
+                if (err1 < err3 && (err1 + err2) > 0) {
+                  const ratio = err2 / (err1 + err2);
+                  exactUtcMs = s2.utcMs - Math.round(ratio * stepMs * 0.5);
+                } else if ((err2 + err3) > 0) {
+                  const ratio = err2 / (err2 + err3);
+                  exactUtcMs = s2.utcMs + Math.round(ratio * stepMs * 0.5);
+                }
+
+                // Kecepatan sudut relatif (derajat per jam)
+                const angChange = Math.abs(
+                  MathUtil.angleDiff(s3.lons[b1], s3.lons[b2]) -
+                  MathUtil.angleDiff(s1.lons[b1], s1.lons[b2])
+                );
+                const relSpeedDegPerHour = Math.max(0.28, angChange / 0.5);
+
+                // Polaritas energi aspek terhadap pair
+                let aspectPolarity = asp.harmony;
+                if (asp.angle === 0) {
+                  aspectPolarity = meta2.nature >= 0 ? 1.15 : -1.20;
+                }
+                if (!isBaseRuler) {
+                  aspectPolarity = -aspectPolarity * 0.85;
+                }
+
+                const isAnglePoint = (b2 === 'MC' || b2 === 'ASC');
+                const prominence = (b1 === pairCfg.baseRulers[0] ? 1.65 : 1.15) *
+                  (isAnglePoint ? 0.85 : 1.35) *
+                  asp.weight *
+                  (1 / (1 + minErr));
+
+                const signedImpact = aspectPolarity * prominence;
+                netScore += signedImpact * 0.45;
+
+                // Hitung durasi aktif dari Applying Orb menuju Exact Aspect
+                const effectiveOrb = ((meta1.orb + (meta2.orb || 1.4)) * 0.5) * pairCfg.orbFactor;
+                let activeMinutes = Math.round((effectiveOrb / relSpeedDegPerHour) * 60);
+                // Batasi jendela eksekusi agar realistis untuk intraday trading (115 s/d 265 menit)
+                activeMinutes = Math.max(115, Math.min(265, activeMinutes));
+
+                // Hindari tabrakan jam identik antar pair dengan bobot struktural pair
+                const pairMinuteOffset = pairCfg.phaseShift * 3;
+                const exitUtcMs = exactUtcMs + pairMinuteOffset * CONFIG_SSOT.TIMEZONE.MIN_MS;
+                const entryUtcMs = exitUtcMs - activeMinutes * CONFIG_SSOT.TIMEZONE.MIN_MS;
+
+                const lon1Fmt = MathUtil.formatDMS(s2.lons[b1]);
+                const lon2Fmt = MathUtil.formatDMS(s2.lons[b2]);
+
+                candidateEvents.push({
+                  b1,
+                  b2,
+                  aspectName: asp.name,
+                  aspectAngle: asp.angle,
+                  signedImpact,
+                  absPower: Math.abs(signedImpact),
+                  entryUtcMs,
+                  exitUtcMs,
+                  durationMs: exitUtcMs - entryUtcMs,
+                  label: `${b1} (${lon1Fmt.inSignShort}) ${asp.name} ${b2} (${lon2Fmt.inSignShort}) [${asp.angle}°]`
+                });
+              }
+            }
+          }
+
+          // B. Kunci Satu Arah Trend Harian Mutlak (BUY atau SELL)
+          const direction = netScore >= 0 ? 'BUY' : 'SELL';
+          const confidence = Math.min(96, Math.max(58, Math.round(62 + Math.min(34, Math.abs(netScore) * 4.2))));
+
+          // C. Pilih Jendela Eksekusi Terbaik yang Searah dengan Bias Harian
+          const alignedEvents = candidateEvents.filter(ev =>
+            direction === 'BUY' ? ev.signedImpact > 0 : ev.signedImpact < 0
+          );
+
+          const pool = alignedEvents.length > 0 ? alignedEvents : candidateEvents;
+          pool.sort((a, b) => b.absPower - a.absPower);
+
+          // Pilih aspek terkuat; gunakan indeks terdistribusi agar tiap pair punya fokus planet penguasanya sendiri
+          const pickIdx = Math.min(pool.length - 1, pairCfg.phaseShift % Math.max(1, Math.min(3, pool.length)));
+          const chosen = pool[pickIdx];
+
+          const dayLuxor = TimeUtil.toOffsetParts(
+            dailyGrid.luxorStartUtcMs + 12 * CONFIG_SSOT.TIMEZONE.HOUR_MS,
+            CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS
+          );
+          const entryLuxor = TimeUtil.toOffsetParts(chosen.entryUtcMs, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+          const exitLuxor = TimeUtil.toOffsetParts(chosen.exitUtcMs, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+          const entryWib = TimeUtil.toOffsetParts(chosen.entryUtcMs, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
+          const exitWib = TimeUtil.toOffsetParts(chosen.exitUtcMs, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
+
+          return {
+            pairCode: pairCfg.code,
+            category: pairCfg.category,
+            pairName: pairCfg.name,
+            rulersText: pairCfg.baseRulers.join(', '),
+            dateFullStr: dayLuxor.fullDateStr,
+            isWeekend: dayLuxor.isWeekend,
+            direction,
+            confidence,
+            aspectTrigger: chosen.label,
+            luxorWindowStr: `${entryLuxor.hhmm} – ${exitLuxor.hhmm} UTC+3`,
+            entryWibTime: `${entryWib.hhmm} WIB`,
+            entryWibDate: entryWib.shortDateStr,
+            exitWibTime: `${exitWib.hhmm} WIB`,
+            exitWibDate: exitWib.shortDateStr,
+            durationStr: TimeUtil.formatDuration(chosen.durationMs)
+          };
+        }
+      };
+
+      /* =====================================================================
+       * 5. PENGIKAT DOM & RENDERER UI AMAN (ANTI-XSS, ZERO INNERHTML UNTRUSTED)
+       * ===================================================================== */
+      const UIController = {
+        state: {
+          selectedPair: 'XAUUSD',
+          startDateIso: '',
+          last7DayResults: []
+        },
+
+        el(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined && text !== null) node.textContent = text;
+          return node;
+        },
+
+        clearNode(node) {
+          while (node.firstChild) {
+            node.removeChild(node.firstChild);
+          }
+        },
+
+        init() {
+          const nowUtc = Date.now();
+          const nowLuxor = TimeUtil.toOffsetParts(nowUtc, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+          this.state.startDateIso = nowLuxor.isoDate;
+
+          try {
+            const savedPair = window.localStorage.getItem('astrodox_fx_pair');
+            if (savedPair && CONFIG_SSOT.PAIRS[savedPair]) {
+              this.state.selectedPair = savedPair;
+            }
+          } catch (_) {
+            // Abaikan jika localStorage diblokir browser
+          }
+
+          this.populatePairSelect();
+          const dateInput = document.getElementById('dateInput');
+          dateInput.value = this.state.startDateIso;
+
+          document.getElementById('pairSelect').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (CONFIG_SSOT.PAIRS[val]) {
+              this.state.selectedPair = val;
+              try { window.localStorage.setItem('astrodox_fx_pair', val); } catch (_) {}
+              this.renderAll();
+            }
+          });
+
+          dateInput.addEventListener('change', (e) => {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
+              this.state.startDateIso = e.target.value;
+              this.renderAll();
+            }
+          });
+
+          document.getElementById('btnToday').addEventListener('click', () => {
+            const todayLuxor = TimeUtil.toOffsetParts(Date.now(), CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+            this.state.startDateIso = todayLuxor.isoDate;
+            dateInput.value = this.state.startDateIso;
+            this.renderAll();
+          });
+
+          document.getElementById('btnCopy').addEventListener('click', () => {
+            this.copyScheduleToClipboard();
+          });
+
+          this.startClocks();
+          this.renderAll();
+        },
+
+        populatePairSelect() {
+          const sel = document.getElementById('pairSelect');
+          this.clearNode(sel);
+          Object.keys(CONFIG_SSOT.PAIRS).forEach(code => {
+            const p = CONFIG_SSOT.PAIRS[code];
+            const opt = this.el('option', '', `${p.code} — ${p.name} (${p.category})`);
+            opt.value = p.code;
+            if (p.code === this.state.selectedPair) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        },
+
+        startClocks() {
+          const updateClock = () => {
+            const now = Date.now();
+            const lux = TimeUtil.toOffsetParts(now, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+            const wib = TimeUtil.toOffsetParts(now, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
+            document.getElementById('clockLuxor').textContent = `${lux.hhmmss} (${lux.shortDateStr})`;
+            document.getElementById('clockWib').textContent = `${wib.hhmmss} (${wib.shortDateStr})`;
+          };
+          updateClock();
+          window.setInterval(updateClock, 1000);
+        },
+
+        parseStartDate() {
+          const parts = this.state.startDateIso.split('-').map(Number);
+          return { year: parts[0], month: parts[1], day: parts[2] };
+        },
+
+        renderAll() {
+          const { year, month, day } = this.parseStartDate();
+          const baseStartUtcMs = TimeUtil.luxorStartOfDayUtcMs(year, month, day);
+          const pairCfg = CONFIG_SSOT.PAIRS[this.state.selectedPair];
+
+          document.getElementById('title7Day').textContent =
+            `Forecast 7 Hari Kedepan — Pair: ${pairCfg.code} (${pairCfg.name})`;
+          document.getElementById('badgeRuler').textContent =
+            `Planet Penguasa: ${pairCfg.baseRulers.join(', ')}`;
+
+          const dayGrids = [];
+          for (let d = 0; d < 7; d++) {
+            const dayStartUtc = baseStartUtcMs + d * 24 * CONFIG_SSOT.TIMEZONE.HOUR_MS;
+            dayGrids.push(ForecastEngine.buildDailyGrid(dayStartUtc));
+          }
+
+          this.render7DayTable(this.state.selectedPair, dayGrids);
+          this.renderAllPairsMatrix(dayGrids[0]);
+          this.renderEphemerisTable(dayGrids[0]);
+        },
+
+        render7DayTable(pairCode, dayGrids) {
+          const tbody = document.getElementById('tbody7Day');
+          this.clearNode(tbody);
+          const results = [];
+
+          for (let d = 0; d < dayGrids.length; d++) {
+            const res = ForecastEngine.computePairDayForecast(pairCode, dayGrids[d]);
+            results.push(res);
+
+            const tr = this.el('tr');
+
+            // 1. Pair
+            const tdPair = this.el('td');
+            tdPair.appendChild(this.el('span', 'pair-tag', res.pairCode));
+            tr.appendChild(tdPair);
+
+            // 2. Hari, Tanggal Bulan Tahun
+            const tdDate = this.el('td');
+            tdDate.appendChild(this.el('div', '', res.dateFullStr));
+            if (res.isWeekend) {
+              tdDate.appendChild(this.el('span', 'weekend-note', 'Weekend / Bias Open Senin'));
+            }
+            tr.appendChild(tdDate);
+
+            // 3. 1 Arah Trend
+            const tdDir = this.el('td');
+            const badgeClass = res.direction === 'BUY' ? 'badge-dir badge-buy' : 'badge-dir badge-sell';
+            tdDir.appendChild(this.el('span', badgeClass, `${res.direction} (${res.confidence}%)`));
+            tr.appendChild(tdDir);
+
+            // 4. Aspek Pemicu
+            const tdAsp = this.el('td', 'mono', res.aspectTrigger);
+            tr.appendChild(tdAsp);
+
+            // 5. Base Luxor (UTC+3)
+            const tdLux = this.el('td', 'mono', res.luxorWindowStr);
+            tr.appendChild(tdLux);
+
+            // 6. Presisi ENTRY (WIB +7)
+            const tdEntry = this.el('td');
+            tdEntry.appendChild(this.el('span', 'time-entry', `${res.entryWibTime} (${res.entryWibDate})`));
+            tr.appendChild(tdEntry);
+
+            // 7. Presisi EXIT (WIB +7)
+            const tdExit = this.el('td');
+            tdExit.appendChild(this.el('span', 'time-exit', `${res.exitWibTime} (${res.exitWibDate})`));
+            tr.appendChild(tdExit);
+
+            // 8. Durasi
+            const tdDur = this.el('td', 'mono', res.durationStr);
+            tr.appendChild(tdDur);
+
+            tbody.appendChild(tr);
+          }
+
+          this.state.last7DayResults = results;
+        },
+
+        renderAllPairsMatrix(dayGrid0) {
+          const tbody = document.getElementById('tbodyMatrix');
+          this.clearNode(tbody);
+          const dayInfo = TimeUtil.toOffsetParts(
+            dayGrid0.luxorStartUtcMs + 12 * CONFIG_SSOT.TIMEZONE.HOUR_MS,
+            CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS
+          );
+
+          document.getElementById('titleMatrix').textContent =
+            `Matriks Semua Pair (Metal & Forex) — ${dayInfo.fullDateStr}`;
+
+          Object.keys(CONFIG_SSOT.PAIRS).forEach(code => {
+            const res = ForecastEngine.computePairDayForecast(code, dayGrid0);
+            const tr = this.el('tr');
+
+            const tdPair = this.el('td');
+            tdPair.appendChild(this.el('span', 'pair-tag', res.pairCode));
+            tdPair.appendChild(this.el('span', 'cat-tag', res.category));
+            tr.appendChild(tdPair);
+
+            tr.appendChild(this.el('td', '', res.dateFullStr));
+
+            const tdDir = this.el('td');
+            const badgeClass = res.direction === 'BUY' ? 'badge-dir badge-buy' : 'badge-dir badge-sell';
+            tdDir.appendChild(this.el('span', badgeClass, `${res.direction} (${res.confidence}%)`));
+            tr.appendChild(tdDir);
+
+            tr.appendChild(this.el('td', 'mono', `[${res.rulersText}] ${res.aspectTrigger}`));
+            tr.appendChild(this.el('td', 'mono', res.luxorWindowStr));
+
+            const tdEntry = this.el('td');
+            tdEntry.appendChild(this.el('span', 'time-entry', `${res.entryWibTime} (${res.entryWibDate})`));
+            tr.appendChild(tdEntry);
+
+            const tdExit = this.el('td');
+            tdExit.appendChild(this.el('span', 'time-exit', `${res.exitWibTime} (${res.exitWibDate})`));
+            tr.appendChild(tdExit);
+
+            tbody.appendChild(tr);
+          });
+        },
+
+        renderEphemerisTable(dayGrid0) {
+          const tbody = document.getElementById('tbodyEphemeris');
+          this.clearNode(tbody);
+
+          const snap = dayGrid0.noonSnapshot;
+          const dayInfo = TimeUtil.toOffsetParts(snap.utcMs, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
+          document.getElementById('titleEphemeris').textContent =
+            `Tabel Ephemeris Astrodox (Base Luxor 12:00 UTC+3 | ${dayInfo.fullDateStr})`;
+
+          document.getElementById('badgeEngine').textContent =
+            EphemerisCore.hasAstronomyLib()
+              ? 'Engine: VSOP87 / Astronomy Engine (High Precision)'
+              : 'Engine: Meeus Analytical Ephemeris (Offline Mode)';
+
+          CONFIG_SSOT.PLANETS.forEach(pCfg => {
+            const st = snap.planets[pCfg.id];
+            const dms = MathUtil.formatDMS(st.lon);
+            const tr = this.el('tr');
+
+            tr.appendChild(this.el('td', '', `${pCfg.sym} ${pCfg.label}`));
+            tr.appendChild(this.el('td', '', `${dms.zodiacSym} ${dms.zodiacName}`));
+            tr.appendChild(this.el('td', 'mono', dms.full360));
+            tr.appendChild(this.el('td', 'mono', dms.inSignFull));
+
+            const decDir = st.dec >= 0 ? 'N' : 'S';
+            tr.appendChild(this.el('td', 'mono', `${Math.abs(st.dec).toFixed(2)}° ${decDir}`));
+            tr.appendChild(this.el('td', 'mono', `${st.speed >= 0 ? '+' : ''}${st.speed.toFixed(4)}°`));
+
+            const tdStat = this.el('td');
+            if (st.isRx) {
+              tdStat.appendChild(this.el('span', 'rx-badge', 'Retrograde (Rx)'));
+            } else {
+              tdStat.appendChild(this.el('span', 'dir-badge', 'Direct (D)'));
+            }
+            tr.appendChild(tdStat);
+
+            tbody.appendChild(tr);
+          });
+
+          // Tambahkan Sudut Lokal Luxor: Ascendant (ASC) & Midheaven (MC)
+          const angleRows = [
+            { label: 'ASC (Ascendant Luxor)', lon: snap.angles.asc },
+            { label: 'MC (Midheaven Luxor)', lon: snap.angles.mc }
+          ];
+
+          angleRows.forEach(a => {
+            const dms = MathUtil.formatDMS(a.lon);
+            const tr = this.el('tr');
+            tr.appendChild(this.el('td', 'pair-tag', a.label));
+            tr.appendChild(this.el('td', '', `${dms.zodiacSym} ${dms.zodiacName}`));
+            tr.appendChild(this.el('td', 'mono', dms.full360));
+            tr.appendChild(this.el('td', 'mono', dms.inSignFull));
+            tr.appendChild(this.el('td', 'mono', 'Sudut Lokal Luxor'));
+            tr.appendChild(this.el('td', 'mono', '360.99°'));
+            tr.appendChild(this.el('td', 'dir-badge', 'Axis Anchor'));
+            tbody.appendChild(tr);
+          });
+        },
+
+        copyScheduleToClipboard() {
+          const rows = this.state.last7DayResults;
+          if (!rows || rows.length === 0) return;
+
+          const lines = [
+            `📊 JADWAL ASTRODOX-FX (7 HARI KEDEPAN)`,
+            `Pair: ${rows[0].pairCode} (${rows[0].pairName})`,
+            `Base: Luxor (UTC+3) -> Eksekusi: WIB (UTC+7)`,
+            `========================================`
+          ];
+
+          rows.forEach(r => {
+            lines.push(
+              `📅 ${r.dateFullStr}\n` +
+              `• Pair & Arah : ${r.pairCode} -> ${r.direction} (${r.confidence}%)\n` +
+              `• Pemicu Luxor: ${r.aspectTrigger}\n` +
+              `• Base Luxor  : ${r.luxorWindowStr}\n` +
+              `• ENTRY (WIB) : ${r.entryWibTime} (${r.entryWibDate})\n` +
+              `• EXIT (WIB)  : ${r.exitWibTime} (${r.exitWibDate})\n` +
+              `----------------------------------------`
+            );
+          });
+
+          const textOut = lines.join('\n');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textOut).then(() => this.showToast());
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = textOut;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            this.showToast();
+          }
+        },
+
+        showToast() {
+          const toast = document.getElementById('toastMsg');
+          toast.style.display = 'block';
+          window.setTimeout(() => {
+            toast.style.display = 'none';
+          }, 2400);
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', () => {
+        UIController.init();
+      });
+    })();
+  </script>
+</body>
+</html>
+
