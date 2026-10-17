@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.0';
+  var BUILD = '3.1';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -23,12 +23,14 @@
   };
 
   var STATE = {
-    view: 'scan', mode: 'plan', strategy: 'flip', chain: 'ore', tier: 4,
-    planFilter: 'all', planSort: 'sph',
-    sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
-    selected: null, query: '', left: 60, searching: false, zTier: 3, zProf: 'ore', aSortRefine: 'profit', aSortFlip: 'roi', seFocus: null,
+    view: 'scan', chain: 'ore', tier: 4,
+    qtyRefine: 100, qtyFlip: 100,
+    selected: null, query: '', left: 60, searching: false,
+    zTier: 3, zProf: 'ore',
+    aSortRefine: 'profit', aSortFlip: 'roi', seFocus: null,
     craftProf: 'Smithing', craftTier: 4, craftItem: null, craftEnch: 0,
-    craftCity: '', craftQty: 10, craftSort: 'profit', craftBought: {}, craftPreset: 10, craftDepth: 0
+    craftCity: '', craftQty: 10, craftSort: 'profit', craftBought: {},
+    craftDepth: 0, tdTier: 3
   };
 
   var sessions = [];
@@ -153,10 +155,11 @@
     };
   }
 
-  function spreadOpp(chain, tier, mode) {
-    var src = M.refLive(tier, chain, CFG.city);
+  function spreadOpp(chain, tier, mode, city) {
+    city = city || CFG.city;
+    var src = M.refLive(tier, chain, city);
     var dstTier = mode === 'tier' ? tier + 1 : tier;
-    var dst = M.refLive(dstTier, chain, CFG.city);
+    var dst = M.refLive(dstTier, chain, city);
     if (!src || !dst || !src.entry.sell || !dst.entry.sell) return null;
 
     var fee = 0;
@@ -174,7 +177,9 @@
     var revenue = netSell(dst.entry.sell);
     var profit = revenue - spend;
     return {
-      kind:'spread', id:dst.id, name:M.meta(dst.id).label,
+      kind:'spread', id:dst.id, name:M.meta(dst.id).label, city:city,
+      chain:chain.key, tier:dstTier,
+      how:M.meta(src.id).label + ' → ' + (mode === 'tier' ? 'T' + dstTier : '.1') + ' di ' + city,
       tag:M.meta(src.id).label + ' → ' + (mode === 'tier' ? 'T' + dstTier : '.1'),
       profit:profit, roi:spend > 0 ? (profit / spend) * 100 : 0,
       capital:spend, sph:profit * num(CFG.throughput),
@@ -184,50 +189,6 @@
         ['Modal', money(spend)]
       ]
     };
-  }
-
-  /* ---------- strategi: gather & mancing ----------
-     Modal 0 karena barang didapat sendiri. Jadi yang dibandingkan adalah
-     kota dengan pendapatan jual INSTAN (buy order tertinggi) tertinggi. */
-  function collectOpp(kind) {
-    var out = [];
-    var list = M.tracked();
-    var thru = num(CFG.throughput);
-    for (var i = 0; i < list.length; i++) {
-      var m = list[i];
-      if (kind === 'gather' && m.kind !== 'raw') continue;
-      if (kind === 'fish' && m.kind !== 'fish') continue;
-
-      var rows = M.byCity(m.id);
-      var best = null, bestOrder = null, worst = null;
-      for (var j = 0; j < rows.length; j++) {
-        var e = rows[j];
-        if (e.buy > 0) {
-          var net = netSell(e.buy);
-          if (!best || net > best.net) best = { city:e.city, net:net, buy:e.buy };
-          if (!worst || net < worst.net) worst = { city:e.city, net:net };
-        }
-        if (e.sell > 0) {
-          var net2 = netSell(e.sell);
-          if (!bestOrder || net2 > bestOrder.net) bestOrder = { city:e.city, net:net2, sell:e.sell };
-        }
-      }
-      if (!best) continue;
-
-      var gain = best.net - (worst ? worst.net : 0);
-      out.push({
-        kind:kind, id:m.id, name:m.label,
-        tag:best.city + (m.rare ? ' · langka' : ''),
-        profit:best.net, roi:best.net > 0 ? gain / worst.net * 100 : 0,
-        capital:0, sph:best.net * thru,
-        cells:[
-          ['Jual instan di ' + best.city, money(best.net)],
-          ['Pasang order', bestOrder ? money(bestOrder.net) : '—'],
-          ['Modal', '0 ✦ (sendiri)']
-        ]
-      });
-    }
-    return out;
   }
 
   /* ---------- strategi: perbandingan kota ---------- */
@@ -314,64 +275,6 @@
     });
   }
 
-  /* ---------- kumpulan ---------- */
-  function opportunities() {
-    var out = [], st = STATE.strategy;
-
-    if (st === 'city') {
-      out = cityOpp();
-    } else if (st === 'gather' || st === 'fish') {
-      out = collectOpp(st);
-    } else if (st === 'flip' || st === 'arb') {
-      var list = M.tracked();
-      for (var i = 0; i < list.length; i++) {
-        var m = list[i];
-        var o;
-        if (st === 'flip') {
-          o = flipOpp(m, M.at(m.id, CFG.city));
-        } else {
-          var bag = {};
-          var cs = m.cities || [];
-          for (var c = 0; c < cs.length; c++) {
-            var e = M.at(m.id, cs[c]);
-            if (e) bag[cs[c]] = e;
-          }
-          o = arbOpp(m, bag);
-        }
-        if (o) out.push(o);
-      }
-    } else {
-      var chains = M.CHAINS.filter(function (c) { return STATE.chain === 'all' || c.key === STATE.chain; });
-      for (var k = 0; k < chains.length; k++) {
-        for (var t = M.TIER_MIN + 1; t <= M.TIER_MAX; t++) {
-          var r = null;
-          if (st === 'refine') r = refineOpp(chains[k], t);
-          else {
-            r = spreadOpp(chains[k], t, 'tier') || spreadOpp(chains[k], t, 'ench');
-          }
-          if (r) out.push(r);
-        }
-      }
-    }
-
-    if (st === 'city') {
-      out.sort(function (a, b) {
-        var pa = parseInt(a.tag, 10) || 0, pb = parseInt(b.tag, 10) || 0;
-        if (pb !== pa) return pb - pa;
-        return b.profit - a.profit;
-      });
-    }
-    if (STATE.hideNeg) out = out.filter(function (o) { return o.profit > 0 || o.kind === 'city'; });
-    var key = STATE.sort;
-    out.sort(function (a, b) {
-      if (key === 'profit') return b.profit - a.profit;
-      if (key === 'sph') return b.sph - a.sph;
-      if (key === 'city') return b.profit - a.profit;
-      return b.roi - a.roi;
-    });
-    return out;
-  }
-
   /* ---------- render ---------- */
   function rowHtml(o) {
     var p = o.profit >= 0 ? 'var(--pos)' : 'var(--neg)';
@@ -394,163 +297,8 @@
       '<span class="r-grid">' + cells + '</span></button>';
   }
 
-  /* ---------- rencana: satu daftar aksi konkret ---------- */
-  var TYPE_LABEL = {
-    arb:'Arbitrase antar kota', gather:'Gather', fish:'Mancing',
-    refine:'Refine', spread:'Transmute', flip:'Flip 1 kota', city:'Kota'
-  };
-
-  function riskBadges(kind, thin, value) {
-    var out = [];
-    if (thin) out.push({ cls:'thin', t:'pasar tipis' });
-    if (value >= 5000 && (kind === 'arb' || kind === 'fish')) out.push({ cls:'risk', t:'risiko ambush' });
-    return out;
-  }
-
-  function planOpp() {
-    var out = [];
-    var list = M.tracked();
-    var thru = num(CFG.throughput);
-
-    /* arbitrase + flip */
-    for (var i = 0; i < list.length; i++) {
-      var m = list[i];
-      var rows = M.byCity(m.id);
-      var bag = {};
-      for (var j = 0; j < rows.length; j++) bag[rows[j].city] = rows[j];
-      var cities = Object.keys(bag);
-      var best = arbOpp(m, bag);
-      if (best) {
-        best.how = 'Beli di ' + best.tag.split(' → ')[0] + ', jual di ' + best.tag.split(' → ')[1];
-        best.badges = riskBadges('arb', cities.length <= 2, best.profit);
-        best.head = money(best.sph) + '/jam';
-        best.name = m.label;
-        out.push(best);
-      }
-    }
-
-    /* gather + mancing */
-    ['gather', 'fish'].forEach(function (kind) {
-      collectOpp(kind).forEach(function (o) {
-        var n = (M.byCity(o.id) || []).length;
-        o.how = 'Ambil sendiri, jual di ' + o.tag;
-        o.badges = riskBadges(kind, n <= 2, o.profit);
-        o.head = money(o.sph) + '/jam';
-        out.push(o);
-      });
-    });
-
-    /* refine + transmute */
-    var chains = M.CHAINS.filter(function (c) { return STATE.chain === 'all' || c.key === STATE.chain; });
-    for (var k = 0; k < chains.length; k++) {
-      for (var t = M.TIER_MIN + 1; t <= M.TIER_MAX; t++) {
-        var r = refineOpp(chains[k], t);
-        if (r) {
-          r.how = 'Refine ' + chains[k].label + ' T' + t + ' di ' + CFG.city;
-          r.badges = riskBadges('refine', false, r.profit);
-          r.head = money(r.sph) + '/jam';
-          out.push(r);
-        }
-        var sp = spreadOpp(chains[k], t, 'tier') || spreadOpp(chains[k], t, 'ench');
-        if (sp) {
-          sp.how = 'Transmute ' + sp.tag + ' di ' + CFG.city;
-          sp.badges = riskBadges('spread', false, sp.profit);
-          sp.head = money(sp.sph) + '/jam';
-          out.push(sp);
-        }
-      }
-    }
-
-    if (STATE.planFilter !== 'all') {
-      out = out.filter(function (o) { return o.kind === STATE.planFilter; });
-    }
-    out = out.filter(function (o) { return o.profit > 0; });
-
-    var k2 = STATE.planSort;
-    out.sort(function (a, b) {
-      if (k2 === 'roi') return b.roi - a.roi;
-      if (k2 === 'profit') return b.profit - a.profit;
-      return b.sph - a.sph;
-    });
-    return out;
-  }
-
-  function renderPlan() {
-    var box = $('planList');
-    var data = planOpp();
-    $('planCount').textContent = data.length + ' aksi';
-
-    var hero = $('heroCard');
-    if (!data.length) {
-      hero.innerHTML = '<span class="hero-k">Belum ada aksi profitable</span>' +
-        '<span class="hero-h">—</span>' +
-        '<span class="hero-s">Coba ganti kota, region, atau matikan filter jenis aksi. ' +
-        'Feed mungkin masih menyinkron.</span>';
-      box.innerHTML = '<div class="state">Belum ada aksi yang lolos filter.</div>';
-      return;
-    }
-
-    var t0 = data[0];
-    hero.innerHTML =
-      '<span class="hero-k">Lakukan pertama · ' + esc(TYPE_LABEL[t0.kind] || t0.kind) + '</span>' +
-      '<span class="hero-h">' + esc(t0.name) + '</span>' +
-      '<span class="hero-s">' + esc(t0.how) + '</span>' +
-      '<span class="hero-money">' + money(t0.sph) + ' / jam</span>' +
-      '<span class="hero-meta">' +
-        pct(t0.roi) + (t0.capital > 0 ? ' ROI' : ' beda kota') + ' · modal ' + money(t0.capital) +
-        ' · untung ' + signed(t0.profit) + '/unit</span>' +
-      '<span class="hero-go">Ketuk aksi di bawah untuk hitung detailnya.</span>';
-
-    box.innerHTML = data.slice(0, LIMIT).map(rowHtml).join('') +
-      (data.length > LIMIT
-        ? '<p class="hint" style="text-align:center;padding:8px 0">' +
-          silver(data.length - LIMIT) + ' aksi lain disembunyikan.</p>' : '');
-  }
-
-  function renderScan() {
-    var box = $('scanList'), st = M.status();
-    $('exploreBox').style.display = STATE.mode === 'explore' ? 'block' : 'none';
-    $('planBox').style.display = STATE.mode === 'plan' ? 'block' : 'none';
-    if (STATE.mode === 'plan') { renderPlan(); }
-    var data = opportunities();
-
-    var chainBased = (STATE.strategy === 'refine' || STATE.strategy === 'spread');
-    $('chainChips').style.display = chainBased ? 'flex' : 'none';
-    $('arbNote').style.display = (STATE.strategy === 'arb') ? 'block' : 'none';
-    $('cityNote').style.display = (STATE.strategy === 'city') ? 'block' : 'none';
-    $('selfNote').style.display = (STATE.strategy === 'gather' || STATE.strategy === 'fish') ? 'block' : 'none';
-    $('scanCount').textContent = data.length + ' peluang';
-
-    var best = data[0];
-    $('stRoi').textContent = best ? pct(best.roi) : '—';
-    $('stRoiS').textContent = best ? best.name : 'tunggu feed';
-    $('stProfit').textContent = best ? signed(best.profit) : '—';
-    $('stProfitS').textContent = best ? best.tag : 'tunggu feed';
-    $('stSph').textContent = best ? money(best.sph) : '—';
-    $('stSphS').textContent = silver(CFG.throughput) + ' unit/jam';
-    $('stItems').textContent = silver(st.rows);
-    $('stItemsS').textContent = M.servingLabel() + ' · ' + CFG.city;
-
-    if (!data.length) {
-      box.innerHTML = '<div class="state">Belum ada peluang untuk ' + esc(CFG.city) + ' di ' +
-        esc(M.regionLabel()) + '. ' +
-        (STATE.hideNeg ? 'Matikan “hide rugi”, ganti kota, atau ganti region.' :
-         'Feed mungkin belum punya harga item ini di kota ini.') + '</div>';
-    } else {
-      var show = data.slice(0, LIMIT);
-      box.innerHTML = show.map(rowHtml).join('') +
-        (data.length > LIMIT ? '<p class="hint" style="text-align:center;padding:8px 0">' +
-          silver(data.length - LIMIT) + ' peluang lain disembunyikan.</p>' : '');
-    }
-
-    var pick = $('scanPick');
-    if (pick) {
-      pick.style.display = STATE.selected ? 'grid' : 'none';
-      $('scanPickName').textContent = STATE.selected || '—';
-    }
-  }
-
-  /* ---------- modal 0: apa yang dilakukan saat modal 0 ----------
+  
+/* ---------- modal 0: apa yang dilakukan saat modal 0 ----------
      Semua baris di sini modalnya 0: barang datang dari node atau sungai
      sendiri, jadi yang dibandingkan adalah kota dengan jual INSTAN
      (buy order tertinggi) paling tinggi. Bonus refine = refined instan
@@ -921,7 +669,18 @@
       : '<div class="state">Belum ada harga T' + t + ' di region ini. Ganti region atau tier.</div>';
 
     $('zSteps').innerHTML = zeroSteps(you, globalBest, cae);
+
+    $('znLadder').innerHTML = tierLadderHtml(ladderCuan(), 'Belum ada gather yang untung.');
   }
+
+  function riskBadges(kind, thin, value) {
+    var out = [];
+    if (thin) out.push({ cls:'thin', t:'pasar tipis' });
+    if (value >= 5000 && (kind === 'arb' || kind === 'fish')) out.push({ cls:'risk', t:'risiko ambush' });
+    return out;
+  }
+
+
 /* ---------- auto: perbandingan otomatis ----------
      Semua dihitung dari harga live yang sudah ada di memori, jadi tidak menambah
      request sama sekali. Tujuannya: user sekali lihat langsung tahu harus
@@ -1156,6 +915,18 @@
     $('rfAutoList').innerHTML = data.slice(0, LIMIT).map(function (o) {
       return autoRowHtml(o, 'refine');
     }).join('') + autoHiddenNote(data.length);
+
+    /* ladder: refine + transmute dalam satu daftar, semua tier */
+    var spread = autoSpread().slice(0, 1).map(function (o) {
+      return {
+        tier:M.meta(o.id).tier, city:o.city || CFG.city, name:o.name, how:o.how,
+        profit:o.profit, roi:o.roi, capital:o.capital, go:'refine',
+        goLabel:'Refine', chain:o.chain, id:o.id
+      };
+    });
+    $('rfLadder').innerHTML = tierLadderHtml(
+      ladderRefine().concat(spread).sort(function (x, y) { return x.tier - y.tier; }),
+      'Belum ada refine yang untung.');
   }
 
   function renderFlipAuto() {
@@ -1196,6 +967,8 @@
     $('flAutoList').innerHTML = data.slice(0, LIMIT).map(function (o) {
       return autoRowHtml(o, 'flip');
     }).join('') + autoHiddenNote(data.length);
+
+    $('flLadder').innerHTML = tierLadderHtml(ladderFlip(), 'Belum ada flip yang untung.');
   }
 
   function renderSearchAuto(hits) {
@@ -1776,6 +1549,7 @@
     renderCraftDetail();
     renderCraftCities();
     renderCraftShop();
+    $('cfLadder').innerHTML = tierLadderHtml(ladderCraft(qty), 'Belum ada crafting yang untung.');
   }
 
   /* perbandingan kota untuk item yang sedang dipilih */
@@ -1950,6 +1724,223 @@
         (ev.rev > 0 ? money(ev.rev) + ' /unit, terima ' + money(ev.rev * qty) : 'belum ada harga jual') +
         (ev.rev > 0 ? ', bersih ' + signed(d.missing ? 0 : ev.total) : '') + '</li>';
   }
+/* ---------- ladder tier: paling untung di T1-T8 ----------
+     Satu komponen untuk semua tab. Tujuannya: user di tier rendah tetap
+     melihat opsi yang benar-benar bisa dikerjakannya, bukan cuma T7-T8.
+     Setiap baris bisa diketuk untuk membuka tab kegiatannya. */
+  function tierLadderHtml(rows, emptyTxt) {
+    if (!rows.length) {
+      return '<div class="state">' + esc(emptyTxt || 'Belum ada data di feed.') + '</div>';
+    }
+    return rows.map(function (r) {
+      var right = r.perNode
+        ? money(r.profit * NODE_YIELD) + ' /node'
+        : money(r.profit) + ' /unit';
+      var attr = ' data-go="' + esc(r.go) + '" data-tier="' + esc(r.tier) + '"' +
+        (r.id ? ' data-id="' + esc(r.id) + '"' : '') +
+        (r.chain ? ' data-chain="' + esc(r.chain) + '"' : '') +
+        (r.ench != null ? ' data-ench="' + esc(r.ench) + '"' : '') +
+        (r.city ? ' data-city="' + esc(r.city) + '"' : '');
+      return '<button type="button" class="row"' + attr + '>' +
+        '<span class="r-main"><span class="r-tag">T' + r.tier + '</span>' +
+        '<span class="r-name">' + esc(r.name) + (r.ench ? ' .' + r.ench : '') + '</span>' +
+        '<span class="r-how">' + esc(r.how) + '</span></span>' +
+        '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
+          right + '</span><span class="r-roi">' +
+          (r.roi != null ? pct(r.roi) + ' ROI' : 'modal ' + money(r.capital || 0)) +
+          '</span></span>' +
+        '<span class="r-grid">' +
+          '<span class="r-cell"><span class="r-cell-k">Kota</span><span class="r-cell-v">' +
+            esc(r.city) + '</span></span>' +
+          '<span class="r-cell"><span class="r-cell-k">Modal</span><span class="r-cell-v">' +
+            esc(r.capital > 0 ? money(r.capital) : '0 ✦') + '</span></span>' +
+          '<span class="r-cell"><span class="r-cell-k">Buka</span><span class="r-cell-v">' +
+            esc(r.goLabel) + '</span></span>' +
+        '</span></button>';
+    }).join('');
+  }
+
+  /* modal 0: gather + mancing, terbaik tiap tier */
+  function ladderCuan() {
+    var out = [], i, k, t, best;
+    for (i = 0; i < ZERO_TIERS.length; i++) {
+      t = ZERO_TIERS[i];
+      best = null;
+      for (k = 0; k < M.CHAINS.length; k++) {
+        var z = zeroChain(M.CHAINS[k], t);
+        if (z && z.profit > 0 && (!best || z.profit > best.profit)) best = z;
+      }
+      var f = zeroFish(t);
+      if (f && f.profit > 0 && (!best || f.profit > best.profit)) best = f;
+      if (!best) continue;
+      out.push({
+        tier:t, city:best.tag, name:best.name, how:best.how, profit:best.profit,
+        perNode:best.mode !== 'fish', capital:0, go:'zero', goLabel:'Cuan',
+        id:best.id, chain:best.chain
+      });
+    }
+    return out;
+  }
+
+  /* crafting: terbaik tiap tier */
+  function ladderCraft(qty) {
+    var out = [], i;
+    for (i = 0; i < CRAFT_TIERS.length; i++) {
+      var t = CRAFT_TIERS[i];
+      var data = craftList('all', t, qty);
+      if (!data.length) continue;
+      var b = data[0];
+      out.push({
+        tier:t, city:b.city, name:b.name, ench:b.v.ench, how:b.how, profit:b.profit,
+        roi:b.roi, capital:b.capital, go:'craft', goLabel:'Craft', id:b.id
+      });
+    }
+    return out;
+  }
+
+  /* refine: terbaik tiap tier (bahan dibeli di kota yang sama) */
+  function ladderRefine() {
+    var data = autoRefine(), by = {};
+    data.forEach(function (o) {
+      if (!by[o.tier] || o.profit > by[o.tier].profit) by[o.tier] = o;
+    });
+    return Object.keys(by).map(function (t) {
+      var o = by[t];
+      return {
+        tier:o.tier, city:o.city, name:o.name, how:o.how, profit:o.profit,
+        roi:o.roi, capital:o.capital, go:'refine', goLabel:'Refine',
+        chain:o.chain, id:o.id
+      };
+    }).sort(function (a, b) { return a.tier - b.tier; });
+  }
+
+  /* transmute: tier -> tier dan enchant, biaya fee dari tabel */
+  function autoSpread() {
+    var out = [], cs = cityList(), t, i, mode;
+    for (t = M.TIER_MIN + 1; t <= M.TIER_MAX; t++) {
+      for (i = 0; i < M.CHAINS.length; i++) {
+        for (mode = 0; mode < 2; mode++) {
+          var best = null;
+          for (var c = 0; c < cs.length; c++) {
+            var o = spreadOpp(M.CHAINS[i], t, mode === 0 ? 'tier' : 'ench', cs[c]);
+            if (o && o.profit > 0 && (!best || o.profit > best.profit)) best = o;
+          }
+          if (best) out.push(best);
+        }
+      }
+    }
+    out.sort(function (a, b) { return b.profit - a.profit; });
+    return out;
+  }
+
+  function ladderSpread() {
+    var data = autoSpread(), by = {};
+    data.forEach(function (o) {
+      var tier = M.meta(o.id).tier;
+      if (!by[tier] || o.profit > by[tier].profit) by[tier] = o;
+    });
+    return Object.keys(by).map(function (t) {
+      var o = by[t];
+      return {
+        tier:num(t), city:o.city || CFG.city, name:o.name, how:o.how,
+        profit:o.profit, roi:o.roi, capital:o.capital, go:'refine', goLabel:'Refine',
+        chain:o.chain, id:o.id
+      };
+    }).sort(function (a, b) { return a.tier - b.tier; });
+  }
+
+  /* flip antar kota: terbaik tiap tier */
+  function ladderFlip() {
+    var data = autoFlip(), by = {};
+    data.forEach(function (o) {
+      var tier = M.meta(o.id).tier || 0;
+      if (!by[tier] || o.profit > by[tier].profit) by[tier] = o;
+    });
+    return Object.keys(by).map(function (t) {
+      var o = by[t];
+      return {
+        tier:num(t), city:o.tag, name:o.name, how:o.how, profit:o.profit,
+        roi:o.roi, capital:o.capital, go:'flip', goLabel:'Flip', id:o.id
+      };
+    }).sort(function (a, b) { return a.tier - b.tier; });
+  }
+
+  /* ---------- hari ini: satu jawaban untuk tier yang dipilih ---------- */
+  function renderToday() {
+    var tier = STATE.tdTier;
+    var qty = Math.max(1, STATE.craftQty);
+    var st = M.status();
+
+    $('tdTier').querySelectorAll('.chip').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(num(x.dataset.tt) === tier));
+    });
+
+    var cuan = ladderCuan(), craft = ladderCraft(qty);
+    var refine = ladderRefine(), flip = ladderFlip(), spread = ladderSpread();
+
+    function at(list) {
+      for (var i = 0; i < list.length; i++) if (list[i].tier === tier) return list[i];
+      return null;
+    }
+    var opts = [at(cuan), at(craft), at(refine), at(flip), at(spread)].filter(Boolean);
+    /* bandingkan per unit yang sama: gather dibalik jadi per node */
+    opts.sort(function (a, b) {
+      var x = a.perNode ? a.profit * NODE_YIELD : a.profit;
+      var y = b.perNode ? b.profit * NODE_YIELD : b.profit;
+      return y - x;
+    });
+    var top = opts[0] || null;
+
+    $('tdStats').innerHTML =
+      statBox('Paling untung T' + tier, top ? money(top.perNode ? top.profit * NODE_YIELD : top.profit) : '—',
+        top ? top.name : 'belum ada data', 'pos') +
+      statBox('Kota', top ? top.city : '—', top ? top.goLabel : '—') +
+      statBox('Modal', top ? (top.capital > 0 ? money(top.capital) : '0 ✦') : '—',
+        top ? (top.capital > 0 ? 'per unit' : 'barang dari node') : '—') +
+      statBox('Data feed', silver(st.rows), M.servingLabel());
+
+    var hero = $('tdHero');
+    if (!top) {
+      hero.innerHTML =
+        '<span class="hero-k">Belum ada peluang di T' + tier + '</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Feed belum punya harga untuk tier ini di ' + esc(M.regionLabel()) +
+        '. Coba tier lain atau ganti region di atas.</span>';
+    } else {
+      hero.innerHTML =
+        '<span class="hero-k">Lakukan dulu · ' + esc(top.goLabel) + ' · T' + tier + '</span>' +
+        '<span class="hero-h">' + esc(top.name) + (top.ench ? ' .' + top.ench : '') + '</span>' +
+        '<span class="hero-s">' + esc(top.how) + '</span>' +
+        '<span class="hero-money">' +
+          money(top.perNode ? top.profit * NODE_YIELD : top.profit) +
+          (top.perNode ? ' / node' : ' / unit') + '</span>' +
+        '<span class="hero-meta">' + (top.roi != null ? pct(top.roi) + ' ROI · ' : '') +
+          'modal ' + (top.capital > 0 ? money(top.capital) : '0 ✦') +
+          ' · ketuk baris di bawah untuk membuka ' + esc(top.goLabel) + '</span>' +
+        '<span class="hero-go">Kalau ini belum cocok dengan alatmu, pilih tier lain di atas.</span>';
+    }
+
+    $('tdCuan').innerHTML = tierLadderHtml(cuan, 'Belum ada gather yang untung.');
+    $('tdCraft').innerHTML = tierLadderHtml(craft, 'Belum ada crafting yang untung.');
+    $('tdRefine').innerHTML = tierLadderHtml(refine, 'Belum ada refine yang untung.');
+    $('tdSpread').innerHTML = tierLadderHtml(spread, 'Belum ada transmute yang untung.');
+    $('tdFlip').innerHTML = tierLadderHtml(flip, 'Belum ada flip antar kota yang untung.');
+
+    /* kota: bukan tier, jadi format barisnya sendiri */
+    var cities = cityOpp().slice().sort(function (a, b) { return b.profit - a.profit; })
+      .slice(0, LIMIT);
+    $('tdCity').innerHTML = cities.length ? cities.map(function (c) {
+      return '<div class="row"><span class="r-main">' +
+        '<span class="r-tag">' + esc(c.name) + '</span>' +
+        '<span class="r-how">' + esc(c.tag) + '</span></span>' +
+        '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
+          money(c.profit) + '</span><span class="r-roi">gather terbaik di kota</span></span>' +
+        '<span class="r-grid">' + c.cells.map(function (x) {
+          return '<span class="r-cell"><span class="r-cell-k">' + esc(x[0]) +
+            '</span><span class="r-cell-v">' + esc(x[1]) + '</span></span>';
+        }).join('') + '</span></div>';
+    }).join('') : '<div class="state">Belum ada data kota.</div>';
+  }
   /* ---------- shell ---------- */
   var VIEWS = ['scan', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
 
@@ -1968,7 +1959,7 @@
   }
 
   function renderAll() {
-    if (STATE.view === 'scan') renderScan();
+    if (STATE.view === 'scan') renderToday();
     else if (STATE.view === 'zero') renderZero();
     else if (STATE.view === 'craft') renderCraft();
     else if (STATE.view === 'refine') renderRefine();
@@ -2098,34 +2089,58 @@
       b.addEventListener('click', function () { setView(b.dataset.v); });
     });
 
-    $('scanMode').addEventListener('click', function (e) {
-      var b = e.target.closest('button');
-      if (!b) return;
-      STATE.mode = b.dataset.m;
-      this.querySelectorAll('button').forEach(function (x) {
-        x.setAttribute('aria-selected', String(x === b));
-      });
-      renderScan();
-    });
-
-    $('planChips').addEventListener('click', function (e) {
+    /* chip tier di Hari Ini */
+    $('tdTier').addEventListener('click', function (e) {
       var c = e.target.closest('.chip');
       if (!c) return;
-      STATE.planFilter = c.dataset.p;
-      this.querySelectorAll('.chip').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x === c));
-      });
-      renderPlan();
+      STATE.tdTier = num(c.dataset.tt);
+      renderToday();
     });
 
-    $('planSort').addEventListener('click', function (e) {
-      var c = e.target.closest('.chip');
-      if (!c) return;
-      STATE.planSort = c.dataset.ps;
-      this.querySelectorAll('.chip').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x === c));
+    /* ketuk baris ladder -> buka tab kegiatannya dengan tier yang sama */
+    ['tdCuan', 'tdCraft', 'tdRefine', 'tdSpread', 'tdFlip'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) {
+        var b = e.target.closest('button.row');
+        if (!b) return;
+        var go = b.dataset.go, tier = num(b.dataset.tier), view = go;
+        if (go === 'zero') {
+          STATE.zTier = tier;
+          $('zTier').querySelectorAll('.chip').forEach(function (x) {
+            x.setAttribute('aria-pressed', String(num(x.dataset.zt) === tier));
+          });
+        } else if (go === 'craft') {
+          STATE.craftTier = tier;
+          if (b.dataset.id) STATE.craftItem = b.dataset.id;
+          if (b.dataset.ench != null) STATE.craftEnch = num(b.dataset.ench);
+          $('cfTier').querySelectorAll('.chip').forEach(function (x) {
+            x.setAttribute('aria-pressed', String(num(x.dataset.ct) === tier));
+          });
+        } else if (go === 'refine') {
+          if (b.dataset.chain) {
+            STATE.chain = b.dataset.chain;
+            $('rfChain').value = STATE.chain;
+          }
+          if (tier) {
+            STATE.tier = tier;
+            $('rfTier').value = String(tier);
+          }
+          if (b.dataset.city && M.ROYALS.indexOf(b.dataset.city) > -1) {
+            CFG.city = b.dataset.city;
+            saveCfg();
+            fillCfgInputs();
+          }
+        } else if (go === 'flip') {
+          STATE.selected = b.dataset.id || null;
+          if (b.dataset.city && M.ROYALS.indexOf(b.dataset.city) > -1) {
+            CFG.city = b.dataset.city;
+            saveCfg();
+            fillCfgInputs();
+          }
+        } else {
+          return;
+        }
+        setView(view);
       });
-      renderPlan();
     });
 
     $('zProf').addEventListener('click', function (e) {
@@ -2174,95 +2189,6 @@
         CFG.city = b.dataset.city;
         saveCfg();
         fillCfgInputs();
-      }
-      setView('refine');
-    });
-
-    $('scanSeg').addEventListener('click', function (e) {
-      var b = e.target.closest('button');
-      if (!b) return;
-      STATE.strategy = b.dataset.s;
-      this.querySelectorAll('button').forEach(function (x) {
-        x.setAttribute('aria-selected', String(x === b));
-      });
-      renderScan();
-    });
-
-    $('chainChips').addEventListener('click', function (e) {
-      var c = e.target.closest('.chip');
-      if (!c) return;
-      STATE.chain = c.dataset.c;
-      $('rfChain').value = (STATE.chain === 'all') ? $('rfChain').value : STATE.chain;
-      this.querySelectorAll('.chip').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x === c));
-      });
-      renderScan();
-    });
-
-    $('sortChips').addEventListener('click', function (e) {
-      var c = e.target.closest('.chip');
-      if (!c || !c.dataset.s) return;
-      STATE.sort = c.dataset.s;
-      this.querySelectorAll('.chip[data-s]').forEach(function (x) {
-        x.setAttribute('aria-pressed', String(x === c));
-      });
-      renderScan();
-    });
-
-    $('hideNeg').addEventListener('click', function () {
-      STATE.hideNeg = !STATE.hideNeg;
-      this.setAttribute('aria-pressed', String(STATE.hideNeg));
-      renderScan();
-    });
-
-    $('scanList').addEventListener('click', function (e) {
-      var row = e.target.closest('.row');
-      if (!row) return;
-      STATE.selected = STATE.selected === row.dataset.id ? null : row.dataset.id;
-      renderScan();
-    });
-
-    /* klik aksi di Rencana → buka kalkulator yang tepat, sudah terisi */
-    $('planList').addEventListener('click', function (e) {
-      var row = e.target.closest('.row');
-      if (!row) return;
-      STATE.selected = row.dataset.id;
-      var kind = row.dataset.kind;
-      var ent = M.at(STATE.selected, CFG.city);
-
-      if (kind === 'refine' || kind === 'spread') {
-        var mm = M.meta(STATE.selected);
-        if (mm.chain) { STATE.chain = mm.chain; $('rfChain').value = mm.chain; }
-        if (mm.tier > M.TIER_MIN && mm.tier <= M.TIER_MAX) {
-          STATE.tier = mm.tier; $('rfTier').value = String(mm.tier);
-        }
-        setView('refine');
-        return;
-      }
-      if (ent) {
-        $('flBuy').value = Math.round(ent.sell || 0);
-        $('flSell').value = Math.round(ent.buy || 0);
-      }
-      setView('flip');
-    });
-
-    $('scanToFlip').addEventListener('click', function () {
-      var e = M.at(STATE.selected, CFG.city);
-      if (!e || !e.sell) { alert('Item ini belum punya harga di ' + CFG.city + '.'); return; }
-      $('flBuy').value = Math.round(e.sell);
-      $('flSell').value = Math.round(e.buy);
-      setView('flip');
-    });
-
-    $('scanToRefine').addEventListener('click', function () {
-      var m = STATE.selected ? M.meta(STATE.selected) : null;
-      if (m && m.chain) {
-        STATE.chain = m.chain;
-        $('rfChain').value = m.chain;
-        if (m.tier > M.TIER_MIN && m.tier <= M.TIER_MAX) {
-          STATE.tier = m.tier;
-          $('rfTier').value = String(m.tier);
-        }
       }
       setView('refine');
     });
