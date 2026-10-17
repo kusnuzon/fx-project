@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.5';
+  var BUILD = '3.6';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -300,8 +300,8 @@
   }
 
   
-/* ---------- modal 0: apa yang dilakukan saat modal 0 ----------
-     Semua baris di sini modalnya 0: barang datang dari node atau sungai
+/* ---------- from zero: apa yang dilakukan mulai dari nol ----------
+     Semua baris>from zero: barang datang dari node atau sungai
      sendiri, jadi yang dibandingkan adalah kota dengan jual INSTAN
      (buy order tertinggi) paling tinggi. Refine bonus = refined instan
      - mentah instan di kota yang sama. Kalau minus, refining hanya
@@ -318,7 +318,7 @@
 
   /* best city by a price field, already net of tax/setup.
      Kota PK sengaja dilewati: transport bolak-balik ke sana tidak
-     masuk akal buat pemain modal 0 dan buy order di sana bukan
+     masuk akal buat pemain dari nol dan buy order di sana bukan
      tempat yang aman. */
   function pkSkip() {
     return CFG.allowPK ? {} : { 'Brecilien':1, 'Black Market':1 };
@@ -419,7 +419,7 @@
       profit:best.v, roi:0, capital:0, sph:best.v * num(CFG.throughput),
       head:money(best.v) + ' /unit',
       roiTxt:'≈ ' + money(best.v * 1.4) + ' /trip',
-      badges:[{ cls:'deep', t:'not zero capital · needs food' }],
+      badges:[{ cls:'deep', t:'not from zero · needs food' }],
       cells:[
         ['Air tawar', side[0] ? money(side[0].v) : '—'],
         ['Air laut', side[1] ? money(side[1].v) : '—'],
@@ -545,14 +545,14 @@
   function zeroSteps(you, globalBest, cae) {
     var steps = [
       ['Ambil quest kota + system quest',
-        'silver dan item gratis — sumber terbaik saat modal 0'],
+        'silver dan item gratis — sumber terbaik saat mulai dari nol'],
       ['Ambil mount gratis Crypt of the Immortals',
         'transport ke ' + cae + ' gratis, jadi refine + jual di sana tanpa ongkos']
     ];
 
     if (you && you.profit > 0 && you.mode === 'fish') {
       steps.push(['Siapkan makanan + umpan',
-        'craft bait from fiber; fishing is not zero capital karena makanannya dimethyl — ' +
+        'craft bait from fiber; fishing is not from zero karena makanannya dimethyl — ' +
         money(you.profit) + '/ikan instan di ' + you.tag]);
       steps.push(['Fish ' + you.doWhat + ', sell in ' + you.tag,
         money(you.profit) + '/ikan ≈ ' + money(you.profit * 1.4) + ' per trip']);
@@ -584,8 +584,8 @@
       'premium refine T1–T2 sering minus, di T3 ke atas barulah konsisten']);
     steps.push(['Jangan',
       'flip tanpa modal, farming T4 di Caerleon sebelum gear 4.1, refine T1–T2']);
-    return steps.map(function (s, i) {
-      return '<li><b>' + (i + 1) + '</b> <b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
+    return steps.map(function (s) {
+      return '<li><b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
     }).join('');
   }
 
@@ -647,7 +647,7 @@
             ? 'Fish ' + you.refLabel + ', sell in ' + you.tag
             : 'Sell ' + you.rawLabel + ' in ' + you.tag);
       hero.innerHTML =
-        '<span class="hero-k">Recommendation · ' + esc(you.prof) + ' T' + t + ' · modal 0</span>' +
+        '<span class="hero-k">Recommendation · ' + esc(you.prof) + ' T' + t + ' · from zero</span>' +
         '<span class="hero-h">' + esc(what) + '</span>' +
         '<span class="hero-s">' + esc(you.how) + '</span>' +
         '<span class="hero-money">' +
@@ -655,7 +655,7 @@
           (you.mode === 'fish' ? ' per trip' : ' per node') + '</span>' +
         '<span class="hero-meta">' + money(you.profit) + '/unit' +
           (you.mode === 'refine' ? ' · refine ' + signed(you.prem) + ' vs mentah' : '') +
-          (you.mode === 'fish' ? ' · bukan modal 0, butuh makanan' : ' · modal 0 ✦') +
+          (you.mode === 'fish' ? ' · bukan from zero, butuh makanan' : ' · from zero ✦') +
           '</span>' +
         '<span class="hero-go">Ketuk baris material di bawah untuk buka kalkulator refine di kota ini.</span>';
     }
@@ -1719,13 +1719,13 @@
       '</dl>';
 
     $('cfPlanSteps').innerHTML =
-      '<li><b>1</b> Buy <b>' + silver(d.rows.length) + ' bahan</b> di ' + esc(city) +
+      '<li>Buy <b>' + silver(d.rows.length) + ' bahan</b> di ' + esc(city) +
         ' — total <b>' + money(d.cost) + '</b>' +
         (d.missing ? ' (' + d.missing + ' bahan belum ada harga)' : '') + '</li>' +
-      '<li><b>2</b> Craft <b>' + silver(qty) + '×</b> ' + esc(it.name) +
+      '<li>Craft <b>' + silver(qty) + '×</b> ' + esc(it.name) +
         (v.ench ? ' .' + v.ench : '') + ' — fokus ' + silver(Math.round(v.focus * qty)) +
         ', waktu ' + (v.time * qty / 60).toFixed(1) + ' menit</li>' +
-      '<li><b>3</b> Sell in <b>' + esc(city) + '</b> — ' +
+      '<li>Sell in <b>' + esc(city) + '</b> — ' +
         (ev.rev > 0 ? money(ev.rev) + ' /unit, terima ' + money(ev.rev * qty) : 'belum ada harga jual') +
         (ev.rev > 0 ? ', bersih ' + signed(d.missing ? 0 : ev.total) : '') + '</li>';
   }
@@ -1765,7 +1765,7 @@
     }).join('');
   }
 
-  /* zero capital: gather + fishing, best per tier */
+  /* from zero: gather + fishing, best per tier */
   function ladderCuan() {
     var out = [], i, k, t, best;
     for (i = 0; i < ZERO_TIERS.length; i++) {

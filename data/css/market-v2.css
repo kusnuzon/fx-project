@@ -743,13 +743,36 @@ select option { color: var(--fg); background: var(--surface-2); }
 
 .steps {
   margin: 0 0 var(--sp-4);
-  padding-left: 1.4rem;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: step;
   font-size: var(--fs-13);
   line-height: 1.6;
   color: var(--muted);
 }
-
-.steps li { margin-bottom: 4px; }
+.steps li {
+  position: relative;
+  margin-bottom: 6px;
+  padding-left: 1.7rem;
+}
+.steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  font-family: var(--f-mono);
+  font-size: var(--fs-11);
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(43, 224, 138, 0.1);
+  border: 1px solid rgba(43, 224, 138, 0.28);
+  border-radius: 6px;
+}
 .steps b { color: var(--accent); font-family: var(--f-mono); }
 
 .r-how {
