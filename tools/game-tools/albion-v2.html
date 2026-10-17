@@ -9,7 +9,41 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.8">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.9">
+  <script>
+    /* tangkap error secepat mungkin, sebelum script aplikasi dimuat */
+    window.__diag = window.__diag || { err:[], warn:[], log:[] };
+    (function () {
+      var D = window.__diag;
+      function push(kind, msg, stack) {
+        D[kind].push({
+          t:new Date().toLocaleTimeString("id-ID"),
+          msg:String(msg).slice(0, 400),
+          stack:String(stack || "").split("\n").slice(0, 4).join("\n")
+        });
+        if (D[kind].length > 40) D[kind].shift();
+      }
+      window.addEventListener("error", function (e) {
+        push("err", e.message || "error", e.error && e.error.stack);
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        push("err", "unhandled promise: " + (e.reason && e.reason.message || e.reason),
+          e.reason && e.reason.stack);
+      });
+      ["error", "warn"].forEach(function (k) {
+        var orig = console[k];
+        console[k] = function () {
+          var a = Array.prototype.slice.call(arguments);
+          var msg = a.map(function (x) {
+            try { return x && x.stack ? x.message : (typeof x === "object" ? JSON.stringify(x) : String(x)); }
+            catch (x) { return String(x); }
+          }).join(" ");
+          push(k === "error" ? "err" : "warn", msg);
+          try { orig.apply(console, a); } catch (x) {}
+        };
+      });
+    }());
+  </script>
 </head>
 <body>
   <div class="app">
@@ -28,6 +62,7 @@
         <span class="dot" id="feedDot" aria-hidden="true"></span>
         <span class="pill" id="feedPill">SYNC</span>
         <button type="button" class="btn ghost" id="feedRefresh" style="min-height:40px;padding:6px 10px">↻</button>
+        <button type="button" class="btn ghost" id="errBadge" aria-label="Diagnostics" style="display:none;min-height:40px;padding:4px 10px;color:var(--neg);border-color:rgba(255,92,110,0.45)">!</button>
         <button type="button" class="btn ghost" id="setOpen" aria-label="Setting" style="min-height:40px;padding:6px 10px">
           <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
             <path d="M3 6h4.5M11.5 6H17M3 14h2.5M9.5 14H17"/>
@@ -824,6 +859,22 @@
           </label>
         </div>
 
+        <div class="sec" id="diagSec"><span class="sec-h">Diagnostics</span><span class="sec-s">cek tampilan + log error</span></div>
+        <p class="hint">
+          Tombol di bawah mengecek semua tab: apakah ada teks rusak (NaN/undefined), baris tabel
+          yang tidak lengkap, elemen yang meluber keluar layar, dan berapa lama tiap tab selesai
+          dirender. Semua error dan warning yang muncul sejak halaman dibuka ikut terkumpul.
+          Kalau ada yang aneh, tekan <b>Copy log</b> lalu paste ke saya — sudah berisi versi,
+          ukuran layar, dan nama elemen yang bermasalah.
+        </p>
+        <div class="btn-row" style="margin-top:8px">
+          <button type="button" class="btn primary" id="diagRun">Run full check</button>
+          <button type="button" class="btn" id="diagCopy">Copy log</button>
+          <button type="button" class="btn" id="diagClear">Clear log</button>
+        </div>
+        <p class="hint" id="diagStat" style="margin-top:8px"></p>
+        <pre class="diag-log" id="diagLog"></pre>
+
         <div class="btn-row" style="margin-top:16px">
           <button type="button" class="btn" id="setReset">Reset ke default</button>
           <button type="button" class="btn primary" id="setDone">Selesai</button>
@@ -835,12 +886,12 @@
 
 
     <footer class="ftr">
-      Silver Ops v3.8 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v3.9 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-crafting.js?v=3.8"></script>
-  <script src="../../data/js/albion-market.js?v=3.8"></script>
-  <script src="../../data/js/albion-v2.js?v=3.8"></script>
+  <script src="../../data/js/albion-crafting.js?v=3.9"></script>
+  <script src="../../data/js/albion-market.js?v=3.9"></script>
+  <script src="../../data/js/albion-v2.js?v=3.9"></script>
 </body>
 </html>

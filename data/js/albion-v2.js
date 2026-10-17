@@ -7,7 +7,8 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.8';
+  var diagLast = '-';
+  var BUILD = '3.9';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -2395,6 +2396,260 @@
     if (!M.hasAny()) { apply(); return; }
     M.fetchIds(ids).then(apply, apply);
   }
+/* ============================================================
+   DIAGNOSTICS — cek tampilan + kumpulkan log error
+   ------------------------------------------------------------
+   Dipakai kalau ada yang terasa salah di halaman: satu tombol
+   menjalankan cek semua tab, hasilnya teks polos yang tinggal
+   di-copy paste ke saya.
+   ============================================================ */
+  var D = window.__diag || { err:[], warn:[], log:[] };
+
+  function dPush(kind, args, stack) {
+    var txt = Array.prototype.map.call(args, function (a) {
+      if (a && a.stack) return String(a.message || a);
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    D[kind].push({
+      t:new Date().toLocaleTimeString('id-ID'),
+      msg:txt.slice(0, 400),
+      stack:String(stack || '').split('\n').slice(0, 4).join('\n')
+    });
+    if (D[kind].length > 40) D[kind].shift();
+    diagBadge();
+  }
+
+  function diagBadge() {
+    var b = $('errBadge');
+    if (!b) return;
+    var n = D.err.length + D.warn.length;
+    b.style.display = n ? '' : 'none';
+    b.textContent = n ? '! ' + n : '!';
+    b.title = n + ' error/warning tercatat - buka Setting untuk lihat log';
+  }
+
+  /* padding tanpa padEnd, biar aman di WebView lama */
+  function dPad(str, n) {
+    str = String(str);
+    while (str.length < n) str += ' ';
+    return str;
+  }
+
+  /* ---- nama ringkas sebuah elemen ---- */
+  function dTag(el) {
+    if (!el) return '?';
+    var t = (el.tagName || '?').toLowerCase();
+    if (el.id) t += '#' + el.id;
+    else if (el.className && typeof el.className === 'string') {
+      t += '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.');
+    }
+    return t;
+  }
+
+  /* ---- cek satu tab: render, scan teks rusak, cek overflow ---- */
+  function diagTab(v) {
+    var out = { view:v, err:[], bad:[], over:[], ms:0, rows:0, rowBad:0 };
+    var node = $('view-' + v);
+    var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    try {
+      setView(v);
+    } catch (e) {
+      out.err.push('render gagal: ' + (e && e.message ? e.message : e));
+      return out;
+    }
+    var t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+    out.ms = Math.round(t1 - t0);
+
+    if (!node) { out.bad.push('kontainer #view-' + v + ' tidak ada'); return out; }
+    var html = node.innerHTML || '';
+    ['NaN', 'undefined', 'Infinity', '[object Object]'].forEach(function (bad) {
+      var n = html.split(bad).length - 1;
+      if (n) out.bad.push('teks "' + bad + '" muncul ' + n + 'x');
+    });
+
+    /* baris tabel harus punya 3 kolom utama, kalau tidak layout berantakan */
+    var rows = node.querySelectorAll('.row');
+    out.rows = rows.length;
+    for (var i = 0; i < rows.length && out.rowBad < 4; i++) {
+      var r = rows[i];
+      if (!r.querySelector('.r-main') || !r.querySelector('.r-right')) {
+        out.rowBad++;
+        out.bad.push('baris tanpa kolom lengkap: ' + dTag(r) +
+          (r.querySelector('.row') ? ' (ada .row di dalam .row)' : ''));
+      }
+    }
+
+    /* elemen yang meluber ke luar layar */
+    var all = node.querySelectorAll('*'), W = window.innerWidth;
+    for (var j = 0; j < all.length && out.over.length < 4; j++) {
+      var box = all[j].getBoundingClientRect();
+      if (box.width > 0 && (box.right > W + 4 || box.left < -4)) {
+        out.over.push(dTag(all[j]) + ' (' + Math.round(box.left) + '..' + Math.round(box.right) + ')');
+      }
+    }
+    return out;
+  }
+
+  /* ---- cek struktur halaman ---- */
+  function diagDom() {
+    var lines = [];
+    var all = document.querySelectorAll('[id]'), seen = {}, dup = [];
+    for (var i = 0; i < all.length; i++) {
+      var id = all[i].id;
+      if (seen[id]) dup.push(id);
+      seen[id] = 1;
+    }
+    lines.push('id di halaman: ' + all.length + ' | duplikat: ' + (dup.length ? dup.join(', ') : 'tidak ada'));
+
+    /* setiap view harus punya section */
+    var need = VIEWS.map(function (v) { return 'view-' + v; });
+    var miss = need.filter(function (id) { return !document.getElementById(id); });
+    lines.push('section hilang: ' + (miss.length ? miss.join(', ') : 'tidak ada'));
+
+    /* nav harus sinkron dengan VIEWS */
+    var nav = document.querySelectorAll('.nav button');
+    lines.push('tombol nav: ' + nav.length + ' | tab terdaftar: ' + VIEWS.length +
+      (nav.length === VIEWS.length ? ' (cocok)' : ' (TIDAK COCOK)'));
+
+    /* stylesheet benar-benar termuat? */
+    var sheets = document.styleSheets, rules = 0, readable = false;
+    for (var s2 = 0; s2 < sheets.length; s2++) {
+      try {
+        rules += sheets[s2].cssRules ? sheets[s2].cssRules.length : 0;
+        readable = true;
+      } catch (e) {}
+    }
+    lines.push('stylesheet: ' + sheets.length + ' file, ' + rules + ' aturan, ' +
+      (readable ? 'bisa dibaca' : 'TIDAK bisa dibaca (kemungkinan CSS belum termuat)'));
+
+    /* kelas yang dipakai di markup tapi tidak ada di CSS */
+    var defined = {};
+    for (var s3 = 0; s3 < sheets.length; s3++) {
+      try {
+        var list = sheets[s3].cssRules || [];
+        for (var r3 = 0; r3 < list.length; r3++) {
+          var sel = list[r3].selectorText || '';
+          var mm = sel.match(/\.[A-Za-z0-9_-]+/g) || [];
+          for (var k3 = 0; k3 < mm.length; k3++) defined[mm[k3].slice(1)] = 1;
+        }
+      } catch (e) {}
+    }
+    var used = {}, htmlAll = document.documentElement.innerHTML;
+    var m = htmlAll.match(/class="([a-z0-9 -]+)"/g) || [];
+    m.forEach(function (c) {
+      c.replace(/^class="|"$/g, '').split(/\s+/).forEach(function (k) { used[k] = 1; });
+    });
+    var noCss = Object.keys(used).filter(function (k) {
+      return k && !defined[k] && k !== 'on' && k !== 'sel';
+    });
+    lines.push('kelas tanpa styling: ' + (noCss.length ? noCss.slice(0, 8).join(', ') : 'tidak ada'));
+    lines.push('font dimuat: ' + (document.fonts ? document.fonts.status : 'tidak diketahui'));
+    return lines;
+  }
+
+  /* ---- laporan lengkap (teks polos) ---- */
+  function diagReport() {
+    var L = [];
+    L.push('===== SILVER OPS DIAGNOSTICS =====');
+    L.push('build   : ' + BUILD);
+    L.push('waktu   : ' + new Date().toString());
+    L.push('halaman : ' + window.location.pathname.split('/').pop());
+    L.push('LAYOUT  : ' + window.innerWidth + 'x' + window.innerHeight +
+      ' | dpr ' + (window.devicePixelRatio || 1));
+    L.push('browser : ' + navigator.userAgent);
+    L.push('region  : pilih ' + CFG.region + ' | melayani ' + M.servingLabel());
+    var st = M.status();
+    L.push('feed    : ' + st.state + ' | baris ' + st.rows +
+      ' | host ' + (st.host || '-') + ' | sisa ' + STATE.left + 's');
+    if (st.error) L.push('feed err: ' + st.error);
+    L.push('halaman : scroll ' + document.documentElement.scrollWidth +
+      ' / lebar layar ' + window.innerWidth +
+      (document.documentElement.scrollWidth > window.innerWidth + 2 ? '  <-- ADA OVERFLOW' : ''));
+
+    L.push('');
+    L.push('--- ERROR (' + D.err.length + ') ---');
+    if (!D.err.length) L.push('(tidak ada)');
+    D.err.forEach(function (e) {
+      L.push('[' + e.t + '] ' + e.msg);
+      if (e.stack) L.push('    ' + e.stack.replace(/\n\s*/g, ' | '));
+    });
+
+    L.push('');
+    L.push('--- WARNING (' + D.warn.length + ') ---');
+    if (!D.warn.length) L.push('(tidak ada)');
+    D.warn.forEach(function (e) { L.push('[' + e.t + '] ' + e.msg); });
+
+    L.push('');
+    L.push('--- CEK PER TAB ---');
+    var prev = STATE.view;
+    VIEWS.forEach(function (v) {
+      var r;
+      try { r = diagTab(v); } catch (e) {
+        L.push(dPad(v, 8) + ' GAGAL: ' + e.message);
+        return;
+      }
+      var tag = r.err.length ? 'RENDER ERROR' : (r.bad.length ? 'ADA MASALAH' : 'OK');
+      L.push(dPad(v, 8) + ' ' + tag + ' | ' + r.ms + 'ms | ' + r.rows + ' baris |' +
+        ' overflow ' + (r.over.length || 0) + ' | teks rusak ' + (r.bad.length || 0));
+      r.err.forEach(function (x) { L.push('         ! ' + x); });
+      r.bad.forEach(function (x) { L.push('         ! ' + x); });
+      r.over.forEach(function (x) { L.push('         ! meluber: ' + x); });
+    });
+    try { setView(prev); } catch (e) {}
+
+    L.push('');
+    L.push('--- STRUKTUR HALAMAN ---');
+    diagDom().forEach(function (x) { L.push(x); });
+
+    L.push('');
+    L.push('--- PENGATURAN ---');
+    L.push('premium ' + CFG.premium + ' | BM ' + CFG.blackMarket +
+      ' | setup ' + CFG.setupFee + '% | yield ' + CFG.yieldBonus +
+      ' | focus ' + CFG.focus + ' | throughput ' + CFG.throughput +
+      ' | transport ' + CFG.transport + ' | kota ' + CFG.city);
+    L.push('=== AKHIR ===');
+    return L.join('\n');
+  }
+
+  function renderDiag() {
+    var box = $('diagLog');
+    if (!box) return;
+    var n = D.err.length + D.warn.length;
+    $('diagStat').textContent = n
+      ? n + ' masalah tercatat (diagnostics sudah terakhir jalan: ' + (diagLast || '-') + ')'
+      : 'Tidak ada error tercatat. Tekan "Run full check" untuk cek semua tab.';
+    box.textContent = diagReport();
+  }
+
+  function diagCopy() {
+    var txt = diagReport();
+    var done = function () {
+      var b = $('diagCopy');
+      if (!b) return;
+      var old = b.textContent;
+      b.textContent = 'Tersalin';
+      setTimeout(function () { b.textContent = old; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); });
+    } else {
+      fallbackCopy(txt, done);
+    }
+  }
+
+  function fallbackCopy(txt, done) {
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
   /* ---------- shell ---------- */
   var VIEWS = ['scan', 'run', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
 
@@ -2699,6 +2954,30 @@
       RUN.gear = {};
       runSave();
       renderRun();
+    });
+
+    /* ---------- diagnostics ---------- */
+    $('diagRun').addEventListener('click', function () {
+      var b = this;
+      b.textContent = 'Memeriksa...';
+      setTimeout(function () {
+        diagLast = new Date().toLocaleTimeString('id-ID');
+        renderDiag();
+        diagBadge();
+        b.textContent = 'Run full check';
+      }, 30);
+    });
+    $('diagCopy').addEventListener('click', diagCopy);
+    $('diagClear').addEventListener('click', function () {
+      D.err = []; D.warn = []; D.log = [];
+      diagLast = '-';
+      renderDiag();
+      diagBadge();
+    });
+    $('errBadge').addEventListener('click', function () {
+      openSheet();
+      var sec = $('diagSec');
+      if (sec) sec.scrollIntoView({ block:'start' });
     });
 
     $('tdTier').addEventListener('click', function (e) {
