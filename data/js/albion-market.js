@@ -39,34 +39,29 @@
     { key:'stone', raw:'ROCK',      ref:'STONEBLOCK', label:'Stone → Block' }
   ];
 
-  var FISH_COMMON = ['FISH_FRESHWATER_ALL_COMMON', 'FISH_SALTWATER_ALL_COMMON'];
-  var FISH_RARE_BIOME = ['FOREST_RARE', 'MOUNTAIN_RARE', 'HIGHLANDS_RARE',
-                         'SWAMP_RARE', 'STEPPE_RARE'];
-  var FISH_RARE_TIERS = [3, 5, 7];
+  /* semua kategori ikan yang bisa dimancing, lengkap dengan daftar tier */
+  var FISH_GROUPS = [
+    { code:'FISH_FRESHWATER_ALL_COMMON',    tiers:[1,2,3,4,5,6,7,8], label:'Ikan air tawar umum' },
+    { code:'FISH_SALTWATER_ALL_COMMON',     tiers:[1,2,3,4,5,6,7,8], label:'Ikan air laut umum' },
+    { code:'FISH_FRESHWATER_FOREST_RARE',   tiers:[3,5,7], label:'Eel hutan (langka)' },
+    { code:'FISH_FRESHWATER_MOUNTAIN_RARE', tiers:[3,5,7], label:'Coldeye gunung (langka)' },
+    { code:'FISH_FRESHWATER_HIGHLANDS_RARE',tiers:[3,5,7], label:'Lurcher highland (langka)' },
+    { code:'FISH_FRESHWATER_SWAMP_RARE',    tiers:[3,5,7], label:'Ikan rawa (langka)' },
+    { code:'FISH_FRESHWATER_STEPPE_RARE',   tiers:[3,5,7], label:'Ikan steppe (langka)' },
+    { code:'FISH_SALTWATER_ALL_RARE',       tiers:[3,5,7], label:'Ikan laut langka' },
+    { code:'FISH_FRESHWATER_AVALON_RARE',   tiers:[3,5,7], label:'Ikan Avalon (langka)' },
+    { code:'FISH_FRESHWATER_DRAGON_AREA_RARE', tiers:[3,5,7], label:'Ikan area naga (langka)' },
+    { code:'FISH_SALTWATER_ALL_BOSS_SHARK', tiers:[8], label:'Ikan boss hiu' }
+  ];
 
   var FISH_NAMES = {
       "T1_FISH_FRESHWATER_ALL_COMMON": "Common Rudd",
       "T2_FISH_FRESHWATER_ALL_COMMON": "Striped Carp",
       "T3_FISH_FRESHWATER_ALL_COMMON": "Albion Perch",
-      "T3_FISH_FRESHWATER_FOREST_RARE": "Greenriver Eel",
-      "T3_FISH_FRESHWATER_HIGHLANDS_RARE": "Stonestream Lurcher",
-      "T3_FISH_FRESHWATER_MOUNTAIN_RARE": "Upland Coldeye",
-      "T3_FISH_FRESHWATER_STEPPE_RARE": "Lowriver Crab",
-      "T3_FISH_FRESHWATER_SWAMP_RARE": "Greenmoor Clam",
       "T4_FISH_FRESHWATER_ALL_COMMON": "Bluescale Pike",
       "T5_FISH_FRESHWATER_ALL_COMMON": "Spotted Trout",
-      "T5_FISH_FRESHWATER_FOREST_RARE": "Redspring Eel",
-      "T5_FISH_FRESHWATER_HIGHLANDS_RARE": "Rushwater Lurcher",
-      "T5_FISH_FRESHWATER_MOUNTAIN_RARE": "Mountain Blindeye",
-      "T5_FISH_FRESHWATER_STEPPE_RARE": "Drybrook Crab",
-      "T5_FISH_FRESHWATER_SWAMP_RARE": "Murkwater Clam",
       "T6_FISH_FRESHWATER_ALL_COMMON": "Brightscale Zander",
       "T7_FISH_FRESHWATER_ALL_COMMON": "Danglemouth Catfish",
-      "T7_FISH_FRESHWATER_FOREST_RARE": "Deadwater Eel",
-      "T7_FISH_FRESHWATER_HIGHLANDS_RARE": "Thunderfall Lurcher",
-      "T7_FISH_FRESHWATER_MOUNTAIN_RARE": "Frostpeak Deadeye",
-      "T7_FISH_FRESHWATER_STEPPE_RARE": "Dusthole Crab",
-      "T7_FISH_FRESHWATER_SWAMP_RARE": "Blackbog Clam",
       "T8_FISH_FRESHWATER_ALL_COMMON": "River Sturgeon",
       "T1_FISH_SALTWATER_ALL_COMMON": "Common Herring",
       "T2_FISH_SALTWATER_ALL_COMMON": "Striped Mackerel",
@@ -75,7 +70,32 @@
       "T5_FISH_SALTWATER_ALL_COMMON": "Spotted Wolffish",
       "T6_FISH_SALTWATER_ALL_COMMON": "Strongfin Salmon",
       "T7_FISH_SALTWATER_ALL_COMMON": "Bluefin Tuna",
-      "T8_FISH_SALTWATER_ALL_COMMON": "Steelscale Swordfish"
+      "T8_FISH_SALTWATER_ALL_COMMON": "Steelscale Swordfish",
+      "T3_FISH_FRESHWATER_FOREST_RARE": "Greenriver Eel",
+      "T5_FISH_FRESHWATER_FOREST_RARE": "Redspring Eel",
+      "T7_FISH_FRESHWATER_FOREST_RARE": "Deadwater Eel",
+      "T3_FISH_FRESHWATER_MOUNTAIN_RARE": "Upland Coldeye",
+      "T5_FISH_FRESHWATER_MOUNTAIN_RARE": "Mountain Blindeye",
+      "T7_FISH_FRESHWATER_MOUNTAIN_RARE": "Frostpeak Deadeye",
+      "T3_FISH_FRESHWATER_HIGHLANDS_RARE": "Stonestream Lurcher",
+      "T5_FISH_FRESHWATER_HIGHLANDS_RARE": "Rushwater Lurcher",
+      "T7_FISH_FRESHWATER_HIGHLANDS_RARE": "Thunderfall Lurcher",
+      "T3_FISH_FRESHWATER_STEPPE_RARE": "Lowriver Crab",
+      "T5_FISH_FRESHWATER_STEPPE_RARE": "Drybrook Crab",
+      "T7_FISH_FRESHWATER_STEPPE_RARE": "Dusthole Crab",
+      "T3_FISH_FRESHWATER_SWAMP_RARE": "Greenmoor Clam",
+      "T5_FISH_FRESHWATER_SWAMP_RARE": "Murkwater Clam",
+      "T7_FISH_FRESHWATER_SWAMP_RARE": "Blackbog Clam",
+      "T3_FISH_SALTWATER_ALL_RARE": "Shallowshore Squid",
+      "T5_FISH_SALTWATER_ALL_RARE": "Midwater Octopus",
+      "T7_FISH_SALTWATER_ALL_RARE": "Deepwater Kraken",
+      "T3_FISH_FRESHWATER_AVALON_RARE": "Whitefog Snapper",
+      "T5_FISH_FRESHWATER_AVALON_RARE": "Clearhaze Snapper",
+      "T7_FISH_FRESHWATER_AVALON_RARE": "Puremist Snapper",
+      "T3_FISH_FRESHWATER_DRAGON_AREA_RARE": "Carefree Leyfin",
+      "T5_FISH_FRESHWATER_DRAGON_AREA_RARE": "Brightsoul Leyfin",
+      "T7_FISH_FRESHWATER_DRAGON_AREA_RARE": "Dragonbound Leyfin",
+      "T8_FISH_SALTWATER_ALL_BOSS_SHARK": "Shark"
   };
 
   var CACHE_KEY = 'albion_market_v3';
@@ -112,18 +132,21 @@
         ids.push(refId(t, CHAINS[c]));
       }
     }
-    for (i = 0; i < FISH_COMMON.length; i++) {
-      for (t = 1; t <= TIER_MAX; t++) ids.push('T' + t + '_' + FISH_COMMON[i]);
-    }
-    for (i = 0; i < FISH_RARE_BIOME.length; i++) {
-      for (t = 0; t < FISH_RARE_TIERS.length; t++) {
-        ids.push('T' + FISH_RARE_TIERS[t] + '_FISH_FRESHWATER_' + FISH_RARE_BIOME[i]);
-      }
+    for (i = 0; i < FISH_GROUPS.length; i++) {
+      var g = FISH_GROUPS[i];
+      for (var k = 0; k < g.tiers.length; k++) ids.push('T' + g.tiers[k] + '_' + g.code);
     }
     return ids.filter(function (v, i2, a) { return a.indexOf(v) === i2; });
   }
 
   function isFish(id) { return /_FISH_/.test(id || ''); }
+
+  function fishGroup(kindTxt) {
+    for (var i = 0; i < FISH_GROUPS.length; i++) {
+      if (FISH_GROUPS[i].code === 'FISH_' + kindTxt) return FISH_GROUPS[i];
+    }
+    return null;
+  }
 
   function splitIds(ids) {
     var out = [];
@@ -330,11 +353,13 @@
       var f = /^T(\d)_FISH_(.+)$/.exec(id);
       var tier = f ? parseInt(f[1], 10) : 0;
       var kindTxt = f ? f[2] : '';
-      var rare = /RARE/.test(kindTxt);
+      var grp = fishGroup(kindTxt);
+      var rare = grp ? /RARE|BOSS/.test(kindTxt) : false;
       return {
         id:id, tier:tier, code:'FISH', kind:'fish', chain:'',
         label:(FISH_NAMES[id] || id) + (tier ? ' T' + tier : ''),
-        water:/SALTWATER/.test(kindTxt) ? 'Salt' : 'Fresh',
+        group:grp ? grp.label : 'Ikan',
+        water:/SALTWATER/.test(kindTxt) ? 'Air laut' : 'Air tawar',
         rare:rare
       };
     }
@@ -423,6 +448,7 @@
     EXTRA_CITIES: EXTRA_CITIES,
     CHAINS: CHAINS,
     FISH_NAMES: FISH_NAMES,
+    FISH_GROUPS: FISH_GROUPS,
     isFish: isFish,
     isGather: isGather,
     TIER_MIN: TIER_MIN,

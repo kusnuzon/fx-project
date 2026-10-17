@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.2">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.3">
 </head>
 <body>
   <div class="app">
@@ -83,6 +83,51 @@
         <div class="stat"><span class="stat-k">Item dipantau</span><span class="stat-v" id="stItems">—</span><span class="stat-s" id="stItemsS">feed</span></div>
       </div>
 
+      <div class="seg" id="scanMode" role="tablist" aria-label="Mode" style="margin-bottom:12px">
+        <button type="button" data-m="plan" role="tab" aria-selected="true">Rencana</button>
+        <button type="button" data-m="explore" role="tab" aria-selected="false">Jelajahi</button>
+      </div>
+
+      <div id="planBox">
+        <div class="hero" id="heroCard"></div>
+
+        <ol class="steps">
+          <li><b>1</b> Lihat rekomendasi teratas di kartu hijau.</li>
+          <li><b>2</b> Ketuk salah satu aksi di bawah untuk buka kalkulator yang sudah terisi.</li>
+          <li><b>3</b> Cek <b>modal</b> dan <b>risiko</b> sebelum eksekusi, lalu catat hasilnya di tab Sesi.</li>
+        </ol>
+
+        <div class="tools" id="planChips" role="group" aria-label="Jenis aksi">
+          <button type="button" class="chip on" data-p="all">Semua</button>
+          <button type="button" class="chip" data-p="arb">Arbitrase</button>
+          <button type="button" class="chip" data-p="gather">Gather</button>
+          <button type="button" class="chip" data-p="fish">Mancing</button>
+          <button type="button" class="chip" data-p="refine">Refine</button>
+          <button type="button" class="chip" data-p="spread">Transmute</button>
+        </div>
+
+        <div class="tools" id="planSort" role="group" aria-label="Urutkan aksi">
+          <button type="button" class="chip on" data-ps="sph">Urut: silver/jam</button>
+          <button type="button" class="chip" data-ps="roi">ROI</button>
+          <button type="button" class="chip" data-ps="profit">Profit/unit</button>
+        </div>
+
+        <div class="sec">
+          <span class="sec-h">Semua aksi</span>
+          <span class="sec-s" id="planCount">—</span>
+        </div>
+
+        <div class="list" id="planList"></div>
+
+        <p class="note">
+          Angka memakai model premium + setup fee 2,5% dan throughput di panel parameter.
+          Badge <span class="badge thin">pasar tipis</span> artinya item cuma ada di 1–2 kota —
+          harga bisa hilang sebelum order masuk. Badge
+          <span class="badge risk">risiko ambush</span> untuk nilai besar antar kota.
+        </p>
+      </div>
+
+      <div id="exploreBox" style="display:none">
       <div class="seg" id="scanSeg" role="tablist" aria-label="Strategi">
         <button type="button" data-s="flip" role="tab" aria-selected="true">Flip</button>
         <button type="button" data-s="refine" role="tab" aria-selected="false">Refine</button>
@@ -145,6 +190,7 @@
         <span class="hint" style="grid-column:1/-1">terpilih: <b id="scanPickName">—</b></span>
         <button type="button" class="btn primary" id="scanToFlip">Isi ke Flip</button>
         <button type="button" class="btn" id="scanToRefine">Isi ke Refine</button>
+      </div>
       </div>
 
       <p class="note">
@@ -362,11 +408,11 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.2 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2.3 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.2"></script>
-  <script src="../../data/js/albion-v2.js?v=2.2"></script>
+  <script src="../../data/js/albion-market.js?v=2.3"></script>
+  <script src="../../data/js/albion-v2.js?v=2.3"></script>
 </body>
 </html>

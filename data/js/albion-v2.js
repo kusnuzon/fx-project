@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.2';
+  var BUILD = '2.3';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -23,7 +23,8 @@
   };
 
   var STATE = {
-    view: 'scan', strategy: 'flip', chain: 'ore', tier: 4,
+    view: 'scan', mode: 'plan', strategy: 'flip', chain: 'ore', tier: 4,
+    planFilter: 'all', planSort: 'sph',
     sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
     selected: null, query: '', left: 60, searching: false
   };
@@ -372,24 +373,143 @@
   /* ---------- render ---------- */
   function rowHtml(o) {
     var p = o.profit >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var right2 = o.capital === 0
-      ? money(o.sph) + '/jam'
-      : pct(o.roi) + ' ROI · ' + money(o.sph) + '/jam';
+    var roiTxt = o.roiTxt || (o.capital > 0 ? pct(o.roi) + ' ROI' : pct(o.roi) + ' beda kota');
+    var badges = (o.badges || []).map(function (b) {
+      return '<span class="badge ' + b.cls + '">' + esc(b.t) + '</span> ';
+    }).join('');
     var cells = o.cells.map(function (c) {
       return '<span class="r-cell"><span class="r-cell-k">' + esc(c[0]) +
         '</span><span class="r-cell-v">' + esc(c[1]) + '</span></span>';
     }).join('');
     return '<button type="button" class="row' + (STATE.selected === o.id ? ' sel' : '') +
-      '" data-id="' + esc(o.id) + '">' +
+      '" data-id="' + esc(o.id) + '" data-kind="' + esc(o.kind) + '">' +
       '<span class="r-main"><span class="r-tag">' + esc(o.tag) + '</span>' +
-        '<span class="r-name">' + esc(o.name) + '</span></span>' +
-      '<span class="r-right"><span class="r-profit" style="color:' + p + '">' + signed(o.profit) +
-        '</span><span class="r-roi">' + right2 + '</span></span>' +
+        '<span class="r-name">' + esc(o.name) + '</span>' +
+        (o.how ? '<span class="r-how">' + esc(o.how) + '</span>' : '') + badges + '</span>' +
+      '<span class="r-right"><span class="r-profit" style="color:' + p + '">' +
+        (o.head || signed(o.profit)) +
+        '</span><span class="r-roi">' + roiTxt + ' · ' + money(o.sph) + '/jam</span></span>' +
       '<span class="r-grid">' + cells + '</span></button>';
+  }
+
+  /* ---------- rencana: satu daftar aksi konkret ---------- */
+  var TYPE_LABEL = {
+    arb:'Arbitrase antar kota', gather:'Gather', fish:'Mancing',
+    refine:'Refine', spread:'Transmute', flip:'Flip 1 kota', city:'Kota'
+  };
+
+  function riskBadges(kind, thin, value) {
+    var out = [];
+    if (thin) out.push({ cls:'thin', t:'pasar tipis' });
+    if (value >= 5000 && (kind === 'arb' || kind === 'fish')) out.push({ cls:'risk', t:'risiko ambush' });
+    return out;
+  }
+
+  function planOpp() {
+    var out = [];
+    var list = M.tracked();
+    var thru = num(CFG.throughput);
+
+    /* arbitrase + flip */
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      var rows = M.byCity(m.id);
+      var bag = {};
+      for (var j = 0; j < rows.length; j++) bag[rows[j].city] = rows[j];
+      var cities = Object.keys(bag);
+      var best = arbOpp(m, bag);
+      if (best) {
+        best.how = 'Beli di ' + best.tag.split(' → ')[0] + ', jual di ' + best.tag.split(' → ')[1];
+        best.badges = riskBadges('arb', cities.length <= 2, best.profit);
+        best.head = money(best.sph) + '/jam';
+        best.name = m.label;
+        out.push(best);
+      }
+    }
+
+    /* gather + mancing */
+    ['gather', 'fish'].forEach(function (kind) {
+      collectOpp(kind).forEach(function (o) {
+        var n = (M.byCity(o.id) || []).length;
+        o.how = 'Ambil sendiri, jual di ' + o.tag;
+        o.badges = riskBadges(kind, n <= 2, o.profit);
+        o.head = money(o.sph) + '/jam';
+        out.push(o);
+      });
+    });
+
+    /* refine + transmute */
+    var chains = M.CHAINS.filter(function (c) { return STATE.chain === 'all' || c.key === STATE.chain; });
+    for (var k = 0; k < chains.length; k++) {
+      for (var t = M.TIER_MIN + 1; t <= M.TIER_MAX; t++) {
+        var r = refineOpp(chains[k], t);
+        if (r) {
+          r.how = 'Refine ' + chains[k].label + ' T' + t + ' di ' + CFG.city;
+          r.badges = riskBadges('refine', false, r.profit);
+          r.head = money(r.sph) + '/jam';
+          out.push(r);
+        }
+        var sp = spreadOpp(chains[k], t, 'tier') || spreadOpp(chains[k], t, 'ench');
+        if (sp) {
+          sp.how = 'Transmute ' + sp.tag + ' di ' + CFG.city;
+          sp.badges = riskBadges('spread', false, sp.profit);
+          sp.head = money(sp.sph) + '/jam';
+          out.push(sp);
+        }
+      }
+    }
+
+    if (STATE.planFilter !== 'all') {
+      out = out.filter(function (o) { return o.kind === STATE.planFilter; });
+    }
+    out = out.filter(function (o) { return o.profit > 0; });
+
+    var k2 = STATE.planSort;
+    out.sort(function (a, b) {
+      if (k2 === 'roi') return b.roi - a.roi;
+      if (k2 === 'profit') return b.profit - a.profit;
+      return b.sph - a.sph;
+    });
+    return out;
+  }
+
+  function renderPlan() {
+    var box = $('planList');
+    var data = planOpp();
+    $('planCount').textContent = data.length + ' aksi';
+
+    var hero = $('heroCard');
+    if (!data.length) {
+      hero.innerHTML = '<span class="hero-k">Belum ada aksi profitable</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Coba ganti kota, region, atau matikan filter jenis aksi. ' +
+        'Feed mungkin masih menyinkron.</span>';
+      box.innerHTML = '<div class="state">Belum ada aksi yang lolos filter.</div>';
+      return;
+    }
+
+    var t0 = data[0];
+    hero.innerHTML =
+      '<span class="hero-k">Lakukan pertama · ' + esc(TYPE_LABEL[t0.kind] || t0.kind) + '</span>' +
+      '<span class="hero-h">' + esc(t0.name) + '</span>' +
+      '<span class="hero-s">' + esc(t0.how) + '</span>' +
+      '<span class="hero-money">' + money(t0.sph) + ' / jam</span>' +
+      '<span class="hero-meta">' +
+        pct(t0.roi) + (t0.capital > 0 ? ' ROI' : ' beda kota') + ' · modal ' + money(t0.capital) +
+        ' · untung ' + signed(t0.profit) + '/unit</span>' +
+      '<span class="hero-go">Ketuk aksi di bawah untuk hitung detailnya.</span>';
+
+    box.innerHTML = data.slice(0, LIMIT).map(rowHtml).join('') +
+      (data.length > LIMIT
+        ? '<p class="hint" style="text-align:center;padding:8px 0">' +
+          silver(data.length - LIMIT) + ' aksi lain disembunyikan.</p>' : '');
   }
 
   function renderScan() {
     var box = $('scanList'), st = M.status();
+    $('exploreBox').style.display = STATE.mode === 'explore' ? 'block' : 'none';
+    $('planBox').style.display = STATE.mode === 'plan' ? 'block' : 'none';
+    if (STATE.mode === 'plan') { renderPlan(); }
     var data = opportunities();
 
     var chainBased = (STATE.strategy === 'refine' || STATE.strategy === 'spread');
@@ -721,6 +841,36 @@
       b.addEventListener('click', function () { setView(b.dataset.v); });
     });
 
+    $('scanMode').addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      STATE.mode = b.dataset.m;
+      this.querySelectorAll('button').forEach(function (x) {
+        x.setAttribute('aria-selected', String(x === b));
+      });
+      renderScan();
+    });
+
+    $('planChips').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.planFilter = c.dataset.p;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderPlan();
+    });
+
+    $('planSort').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.planSort = c.dataset.ps;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderPlan();
+    });
+
     $('scanSeg').addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
@@ -763,6 +913,30 @@
       if (!row) return;
       STATE.selected = STATE.selected === row.dataset.id ? null : row.dataset.id;
       renderScan();
+    });
+
+    /* klik aksi di Rencana → buka kalkulator yang tepat, sudah terisi */
+    $('planList').addEventListener('click', function (e) {
+      var row = e.target.closest('.row');
+      if (!row) return;
+      STATE.selected = row.dataset.id;
+      var kind = row.dataset.kind;
+      var ent = M.at(STATE.selected, CFG.city);
+
+      if (kind === 'refine' || kind === 'spread') {
+        var mm = M.meta(STATE.selected);
+        if (mm.chain) { STATE.chain = mm.chain; $('rfChain').value = mm.chain; }
+        if (mm.tier > M.TIER_MIN && mm.tier <= M.TIER_MAX) {
+          STATE.tier = mm.tier; $('rfTier').value = String(mm.tier);
+        }
+        setView('refine');
+        return;
+      }
+      if (ent) {
+        $('flBuy').value = Math.round(ent.sell || 0);
+        $('flSell').value = Math.round(ent.buy || 0);
+      }
+      setView('flip');
     });
 
     $('scanToFlip').addEventListener('click', function () {
