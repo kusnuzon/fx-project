@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.2';
+  var BUILD = '3.3';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -97,14 +97,14 @@
       profit:profit, roi:capital > 0 ? (profit / capital) * 100 : 0,
       capital:capital, sph:profit * num(CFG.throughput),
       cells:[
-        ['Beli', money(costBuy(e.sell))],
-        ['Jual', money(netSell(e.buy))],
-        ['Modal', money(capital)]
+        ['Buy', money(costBuy(e.sell))],
+        ['Sell', money(netSell(e.buy))],
+        ['Capital', money(capital)]
       ]
     };
   }
 
-  /* arbitrage: beli di kota termurah, jual di kota termahal */
+  /* arbitrage: beli di kota termurah, sell in kota termahal */
   function arbOpp(m, bag) {
     var cities = Object.keys(bag).filter(function (c) {
       return bag[c].sell > 0 || bag[c].buy > 0;
@@ -124,8 +124,8 @@
             profit:profit, roi:spend > 0 ? (profit / spend) * 100 : 0,
             capital:spend, sph:profit * num(CFG.throughput),
             cells:[
-              ['Beli di ' + cities[i], money(from.sell)],
-              ['Jual di ' + cities[j], money(to.buy)],
+              ['Buy in ' + cities[i], money(from.sell)],
+              ['Sell in ' + cities[j], money(to.buy)],
               ['Transport', money(num(CFG.transport))]
             ]
           };
@@ -148,9 +148,9 @@
       profit:profit, roi:rc.total > 0 ? (profit / rc.total) * 100 : 0,
       capital:rc.total, sph:profit * num(CFG.throughput),
       cells:[
-        ['Bahan', money(rc.total)],
-        ['Jual/unit', money(revenue)],
-        ['Modal', money(rc.total)]
+        ['Materials', money(rc.total)],
+        ['Sell/unit', money(revenue)],
+        ['Capital', money(rc.total)]
       ]
     };
   }
@@ -184,9 +184,9 @@
       profit:profit, roi:spend > 0 ? (profit / spend) * 100 : 0,
       capital:spend, sph:profit * num(CFG.throughput),
       cells:[
-        ['Beli + fee', money(spend)],
-        ['Jual', money(revenue)],
-        ['Modal', money(spend)]
+        ['Buy + fee', money(spend)],
+        ['Sell', money(revenue)],
+        ['Capital', money(spend)]
       ]
     };
   }
@@ -267,9 +267,9 @@
         tag:b.destBest + ' puncak harga · ' + b.buyBest + ' beli termurah',
         profit:b.destTop, roi:0, capital:0, sph:b.destTop * thru,
         cells:[
-          ['Gather terbaik', b.gather > 0 ? money(b.gather) : '—'],
-          ['Ikan terbaik', b.fish > 0 ? money(b.fish) : '—'],
-          ['Flip 1 kota', b.flipWin + ' untung / ' + b.flipLose + ' rugi']
+          ['Gather best', b.gather > 0 ? money(b.gather) : '—'],
+          ['Fish best', b.fish > 0 ? money(b.fish) : '—'],
+          ['Flip 1 cities', b.flipWin + ' untung / ' + b.flipLose + ' rugi']
         ]
       };
     });
@@ -278,7 +278,7 @@
   /* ---------- render ---------- */
   function rowHtml(o) {
     var p = o.profit >= 0 ? 'var(--pos)' : 'var(--neg)';
-    var roiTxt = o.roiTxt || (o.capital > 0 ? pct(o.roi) + ' ROI' : pct(o.roi) + ' beda kota');
+    var roiTxt = o.roiTxt || (o.capital > 0 ? pct(o.roi) + ' ROI' : pct(o.roi) + ' beda cities');
     var badges = (o.badges || []).map(function (b) {
       return '<span class="badge ' + b.cls + '">' + esc(b.t) + '</span> ';
     }).join('');
@@ -301,7 +301,7 @@
 /* ---------- modal 0: apa yang dilakukan saat modal 0 ----------
      Semua baris di sini modalnya 0: barang datang dari node atau sungai
      sendiri, jadi yang dibandingkan adalah kota dengan jual INSTAN
-     (buy order tertinggi) paling tinggi. Bonus refine = refined instan
+     (buy order tertinggi) paling tinggi. Refine bonus = refined instan
      - mentah instan di kota yang sama. Kalau minus, refining hanya
      membuang waktu. */
   var ZERO_PROF = {
@@ -336,7 +336,7 @@
     var refI = bestCity(M.byCity(refId), 'buy');
     if (!rawI && !refI) return null;
 
-    /* Bonus refine per kota. Raw jadi opportunity cost: pakai buy order kalau
+    /* Refine bonus per kota. Raw jadi opportunity cost: pakai buy order kalau
        ada, kalau tidak pakai sell order supaya premium tidak terlihat murah
        palsu di kota yang buy order bahan mentahnya kosong. */
     var prem = null;
@@ -359,24 +359,24 @@
     if (doRefine) {
       city = prem.city;
       net = netSell(M.at(refId, city).buy);
-      how = prof.doWhat + ' T' + t + ' → refine di ' + city + ', jual instan di sana';
-      badges = [{ cls:'thin', t:'refine untung' }];
+      how = prof.doWhat + ' T' + t + ' → refine di ' + city + ', instant sell di sana';
+      badges = [{ cls:'thin', t:'refine pays' }];
     } else if (rawI) {
       city = rawI.city;
       net = rawI.v;
-      how = prof.doWhat + ' T' + t + ' → jual MENTAH instan di ' + city + ', jangan refine';
-      badges = [{ cls:'risk', t:'jangan refine' }];
+      how = prof.doWhat + ' T' + t + ' → jual MENTAH instan di ' + city + ', skip refine';
+      badges = [{ cls:'risk', t:'skip refine' }];
     } else {
       city = refI.city;
       net = 0;
       how = prof.doWhat + ' T' + t + ' → belum ada buy order di region ini, refined harus dipasang order dulu';
-      badges = [{ cls:'deep', t:'tidak ada buyer' }];
+      badges = [{ cls:'deep', t:'no buyer' }];
     }
 
     cells = [
       ['Raw ' + (rawI ? rawI.city : '—'), money(rawI ? rawI.v : 0)],
       ['Refined ' + (refI ? refI.city : '—'), refI ? money(refI.v) : '—'],
-      ['Bonus refine', prem ? signed(prem.v) : '—']
+      ['Refine bonus', prem ? signed(prem.v) : '—']
     ];
 
     return {
@@ -406,19 +406,19 @@
     if (!best) return null;
     return {
       id:best.id, kind:'zero-fish', chain:'', tier:t,
-      tag:best.city, name:M.meta(best.id).label + ' · Mancing',
-      how:'Pancing T' + t + ' di ' + best.city + ' → jual instan di sana (butuh makanan)',
-      prof:'Mancing', doWhat:'Pancing T' + t,
+      tag:best.city, name:M.meta(best.id).label + ' · Fishing',
+      how:'Fish T' + t + ' di ' + best.city + ' → instant sell di sana (butuh makanan)',
+      prof:'Fishing', doWhat:'Fish T' + t,
       rawLabel:'Ikan ' + M.meta(best.id).label, refLabel:M.meta(best.id).label,
       mode:'fish', prem:0,
       profit:best.v, roi:0, capital:0, sph:best.v * num(CFG.throughput),
       head:money(best.v) + ' /unit',
       roiTxt:'≈ ' + money(best.v * 1.4) + ' /trip',
-      badges:[{ cls:'deep', t:'bukan 0 silver · butuh makanan' }],
+      badges:[{ cls:'deep', t:'not zero capital · needs food' }],
       cells:[
         ['Air tawar', side[0] ? money(side[0].v) : '—'],
         ['Air laut', side[1] ? money(side[1].v) : '—'],
-        ['Modal', 'makanan + umpan']
+        ['Capital', 'food + bait']
       ]
     };
   }
@@ -498,7 +498,7 @@
     if (globalBest && (!you || globalBest.id !== you.id)) {
       out.push(altRow(
         globalBest.chain, globalBest.tier, globalBest.tag, globalBest.name,
-        'Paling untung hari ini · ' + globalBest.how, 'pilih ' + globalBest.prof, globalBest));
+        'Best profit today · ' + globalBest.how, 'pilih ' + globalBest.prof, globalBest));
     }
 
     /* kalau tier sekarang sepi: arahkan ke tier pertama yang ada buyer.
@@ -510,7 +510,7 @@
         out.push(altRow(
           prof, first.tier, first.row.tag, first.row.name,
           'Tier pertama untuk ' + first.row.prof + ' yang ada buyer-nya · ' + first.row.how,
-          'pakai ini', first.row));
+          'use this', first.row));
       }
       return out;
     }
@@ -521,7 +521,7 @@
       if (r && r.profit > you.profit) {
         out.push(altRow(
           prof, up, r.tag, r.name,
-          'Satu tingkat lebih tinggi · ' + r.how, 'naik ke sini', r));
+          'Satu tingkat lebih tinggi · ' + r.how, 'upgrade here', r));
         break;
       }
     }
@@ -547,21 +547,21 @@
 
     if (you && you.profit > 0 && you.mode === 'fish') {
       steps.push(['Siapkan makanan + umpan',
-        'craft umpan dari fiber; mancing bukan modal 0 karena makanannya dimethyl — ' +
+        'craft bait from fiber; fishing is not zero capital karena makanannya dimethyl — ' +
         money(you.profit) + '/ikan instan di ' + you.tag]);
-      steps.push(['Pancing ' + you.doWhat + ', jual di ' + you.tag,
+      steps.push(['Fish ' + you.doWhat + ', sell in ' + you.tag,
         money(you.profit) + '/ikan ≈ ' + money(you.profit * 1.4) + ' per trip']);
     } else if (you && you.profit > 0 && you.mode === 'refine') {
       steps.push([you.doWhat + ' T' + you.tier + ', jangan beli bahannya',
         'bahan mentah gratis dari node']);
       steps.push(['Refine ' + you.refLabel + ' di ' + you.tag,
         'premium ' + signed(you.prem) + '/unit dibanding jual mentah; refine T3+ memakai focus']);
-      steps.push(['Jual refined ke buy order di ' + you.tag,
+      steps.push(['Sell refined to buy orders in ' + you.tag,
         money(you.profit) + '/unit instan ≈ ' + money(you.profit * NODE_YIELD) + ' per node']);
     } else if (you && you.profit > 0) {
       steps.push([you.doWhat + ' T' + you.tier + ', jangan beli bahannya',
         'bahan mentah gratis dari node']);
-      steps.push(['Jual MENTAH ke buy order di ' + you.tag,
+      steps.push(['Sell RAW to buy orders in ' + you.tag,
         money(you.profit) + '/unit instan ≈ ' + money(you.profit * NODE_YIELD) + ' per node']);
       steps.push(['Jangan refine di tier ini',
         'refined di ' + you.tag + ' lebih murah daripada bahan mentahnya']);
@@ -603,17 +603,17 @@
     var cae = 'Caerleon';
 
     $('zeroStats').innerHTML =
-      statBox('Kota untukmu', you ? you.tag : '—',
+      statBox('Your city', you ? you.tag : '—',
         you ? you.prof + ' · T' + t : 'tunggu feed', 'pos') +
       statBox('Per node',
         you ? money(you.mode === 'fish' ? you.profit * 1.4 : you.profit * NODE_YIELD) : '—',
         you ? (you.mode === 'fish' ? 'per trip' : silver(NODE_YIELD) + ' unit/node') : 'tunggu feed') +
-      statBox('Bonus refine',
+      statBox('Refine bonus',
         you && you.mode === 'refine' ? signed(you.prem)
           : (you && you.mode === 'fish' ? 'butuh makan' : (you ? 'jangan' : '—')),
         you && you.mode === 'refine' ? 'vs jual mentah' : 'di tier ini',
         you && you.mode === 'refine' ? 'pos' : (you && you.mode === 'raw' ? 'neg' : '')) +
-      statBox('Tier siap pakai', first ? 'T' + first.tier : '—',
+      statBox('First live tier', first ? 'T' + first.tier : '—',
         first ? (first.tier === t ? 'sudah di tier ini' : 'pertama yang ada buyer')
               : 'belum ada di feed');
 
@@ -621,13 +621,13 @@
     var hero = $('zeroHero');
     if (!you) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada data</span>' +
+        '<span class="hero-k">No data yet</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Feed belum punya harga T' + t + ' untuk profesi ini di ' +
         esc(M.regionLabel()) + '. Ganti region di atas atau pilih tier lain.</span>';
     } else if (you.profit <= 0) {
       hero.innerHTML =
-        '<span class="hero-k">Belum bisa dijual · ' + esc(you.prof) + ' T' + t + '</span>' +
+        '<span class="hero-k">No buy orders · ' + esc(you.prof) + ' T' + t + '</span>' +
         '<span class="hero-h">Tidak ada buy order</span>' +
         '<span class="hero-s">' + esc(you.how) +
         (first
@@ -639,10 +639,10 @@
       var what = you.mode === 'refine'
         ? 'Refine ' + you.refLabel + ' di ' + you.tag
         : (you.mode === 'fish'
-            ? 'Pancing ' + you.refLabel + ', jual di ' + you.tag
-            : 'Jual ' + you.rawLabel + ' di ' + you.tag);
+            ? 'Fish ' + you.refLabel + ', sell in ' + you.tag
+            : 'Sell ' + you.rawLabel + ' in ' + you.tag);
       hero.innerHTML =
-        '<span class="hero-k">Rekomendasi · ' + esc(you.prof) + ' T' + t + ' · modal 0</span>' +
+        '<span class="hero-k">Recommendation · ' + esc(you.prof) + ' T' + t + ' · modal 0</span>' +
         '<span class="hero-h">' + esc(what) + '</span>' +
         '<span class="hero-s">' + esc(you.how) + '</span>' +
         '<span class="hero-money">' +
@@ -675,8 +675,8 @@
 
   function riskBadges(kind, thin, value) {
     var out = [];
-    if (thin) out.push({ cls:'thin', t:'pasar tipis' });
-    if (value >= 5000 && (kind === 'arb' || kind === 'fish')) out.push({ cls:'risk', t:'risiko ambush' });
+    if (thin) out.push({ cls:'thin', t:'thin market' });
+    if (value >= 5000 && (kind === 'arb' || kind === 'fish')) out.push({ cls:'risk', t:'ambush risk' });
     return out;
   }
 
@@ -715,9 +715,9 @@
       roi:total > 0 ? (revenue - total) / total * 100 : 0,
       capital:total, sph:(revenue - total) * num(CFG.throughput),
       cells:[
-        ['Bahan/unit', money(total)],
-        ['Jual/unit', money(revenue)],
-        ['Modal', money(total)]
+        ['Materials/unit', money(total)],
+        ['Sell/unit', money(revenue)],
+        ['Capital', money(total)]
       ]
     };
   }
@@ -731,8 +731,8 @@
           if (o && o.profit > 0) {
             o.head = money(o.profit) + ' /unit';
             o.roiTxt = pct(o.roi) + ' ROI · modal ' + money(o.capital);
-            o.how = 'Beli bahan di ' + o.city + ', refine, jual refined di ' + o.city;
-            o.badges = o.inst ? [] : [{ cls:'thin', t:'tanpa buy order' }];
+            o.how = 'Buy materials in ' + o.city + ', refine, sell refined in ' + o.city;
+            o.badges = o.inst ? [] : [{ cls:'thin', t:'no buy orders' }];
             out.push(o);
           }
         }
@@ -758,8 +758,8 @@
       var a = arbOpp(m, bag);
       if (a && a.profit > 0) {
         a.city = a.tag.split(' → ')[1];
-        a.how = 'Beli di ' + a.tag.split(' → ')[0] +
-          ', jual ke buy order di ' + a.city;
+        a.how = 'Buy in ' + a.tag.split(' → ')[0] +
+          ', sell to buy orders in ' + a.city;
         a.badges = riskBadges('arb', thin, a.profit);
         a.buyPx = Math.round(M.at(m.id, a.tag.split(' → ')[0]).sell || 0);
         a.sellPx = Math.round(M.at(m.id, a.city).buy || 0);
@@ -769,7 +769,7 @@
       }
       var f = flipOpp(m, M.at(m.id, CFG.city));
       if (f && f.profit > 0) {
-        f.how = 'Beli dan jual di ' + CFG.city + ', tanpa transport';
+        f.how = 'Buy and sell in ' + CFG.city + ',, no transport';
         f.badges = riskBadges('flip', false, f.profit);
         var fe = M.at(m.id, CFG.city);
         f.buyPx = Math.round(fe ? fe.sell : 0);
@@ -786,7 +786,7 @@
     return out;
   }
 
-  /* analisis satu item untuk tab Search: jual instan, arbitrage, refine */
+  /* analisis satu item untuk tab Search: instant sell, arbitrage, refine */
   function autoItem(m) {
     var rows = M.byCity(m.id).filter(function (e) { return !ZERO_SKIP[e.city]; });
     if (!rows.length) return null;
@@ -814,7 +814,7 @@
     if (a.arb && (!a.inst || a.arb.profit > a.inst.v)) {
       var p = a.arb.tag.split(' → ');
       return {
-        head:'Beli di ' + p[0] + ', jual instan di ' + p[1],
+        head:'Buy in ' + p[0] + ', instant sell di ' + p[1],
         money:a.arb.profit, city:a.arb.city,
         meta:pct(a.arb.roi) + ' ROI · modal ' + money(a.arb.capital),
         buy:Math.round(M.at(m.id, p[0]).sell || 0),
@@ -823,7 +823,7 @@
     }
     if (a.inst) {
       return {
-        head:'Jual instan di ' + a.inst.city,
+        head:'Sell instantly in ' + a.inst.city,
         money:a.inst.v, city:a.inst.city,
         meta:'tanpa transport · ' + (a.ord
           ? 'pasang order di ' + a.ord.city + ' = ' + money(a.ord.v)
@@ -833,7 +833,7 @@
       };
     }
     return {
-      head:'Belum ada buy order di region ini',
+      head:'No buy orders in this region',
       money:0, city:'—',
       meta:a.ord ? 'sell order termurah ' + a.ord.city + ' ' + money(a.ord.v) : 'tidak ada harga sama sekali',
       buy:a.ord ? Math.round(a.ord.px) : 0, sell:0
@@ -882,18 +882,18 @@
     });
     $('rfAutoCount').textContent = data.length + ' kombinasi untung';
     $('rfStats').innerHTML =
-      statBox('Paling untung', best ? money(best.profit) : '—',
+      statBox('Best profit', best ? money(best.profit) : '—',
         best ? best.name : 'tunggu feed', 'pos') +
-      statBox('Kota', best ? best.city : '—', best ? best.tag : '—') +
-      statBox('Modal terkecil', cheap ? money(cheap.capital) : '—',
+      statBox('City', best ? best.city : '—', best ? best.tag : '—') +
+      statBox('Lowest capital', cheap ? money(cheap.capital) : '—',
         cheap ? cheap.name : '—') +
-      statBox('Kombinasi', silver(data.length),
-        'T' + M.TIER_MIN + '–T' + M.TIER_MAX + ' × ' + cityList().length + ' kota');
+      statBox('Combinations', silver(data.length),
+        'T' + M.TIER_MIN + '–T' + M.TIER_MAX + ' × ' + cityList().length + ' cities');
 
     var hero = $('rfAutoHero');
     if (!best) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada kombinasi refine untung</span>' +
+        '<span class="hero-k">Belum ada kombinasi refine pays</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Feed belum punya harga bahan + refined yang lengkap. ' +
         'Tunggu sinkron atau ganti region.</span>';
@@ -901,9 +901,9 @@
       return;
     }
     hero.innerHTML =
-      '<span class="hero-k">Lakukan dulu · refine otomatis</span>' +
+      '<span class="hero-k">Do this first · auto refine</span>' +
       '<span class="hero-h">' + esc(best.name) + ' di ' + esc(best.city) + '</span>' +
-      '<span class="hero-s">Beli bahan di ' + esc(best.city) + ', refine, jual refined. ' +
+      '<span class="hero-s">Buy materials in ' + esc(best.city) + ', refine, jual refined. ' +
       (best.inst
         ? 'Kalau bahannya kamu gather sendiri, premium di kota itu ' + signed(best.prem) + '/unit.'
         : 'Refined di kota itu belum ada buy order — harus dipasang sell order dan menunggu buyer.') +
@@ -938,18 +938,18 @@
     });
     $('flAutoCount').textContent = data.length + ' peluang untung';
     $('flStats').innerHTML =
-      statBox('Paling untung', best ? money(best.profit) : '—',
+      statBox('Best profit', best ? money(best.profit) : '—',
         best ? best.name : 'tunggu feed', 'pos') +
-      statBox('Rute', best ? best.tag : '—',
+      statBox('Route', best ? best.tag : '—',
         best ? 'kota acuan ' + CFG.city + ' · transport ' + money(CFG.transport) : '—') +
-      statBox('Modal terkecil', cheap ? money(cheap.capital) : '—',
+      statBox('Lowest capital', cheap ? money(cheap.capital) : '—',
         cheap ? cheap.name : '—') +
-      statBox('Peluang', silver(data.length), M.tracked().length + ' item dipantau');
+      statBox('Opportunities', silver(data.length), M.tracked().length + ' item dipantau');
 
     var hero = $('flAutoHero');
     if (!best) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada flip untung</span>' +
+        '<span class="hero-k">No profitable flip yet</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Tidak ada sebaran harga yang beats tax + setup di ' +
         esc(M.regionLabel()) + '. Tunggu feed atau ganti region.</span>';
@@ -957,7 +957,7 @@
       return;
     }
     hero.innerHTML =
-      '<span class="hero-k">Lakukan dulu · flip otomatis</span>' +
+      '<span class="hero-k">Do this first · auto flip</span>' +
       '<span class="hero-h">' + esc(best.name) + '</span>' +
       '<span class="hero-s">' + esc(best.how) + '</span>' +
       '<span class="hero-money">' + money(best.profit) + ' / unit</span>' +
@@ -996,12 +996,12 @@
       extra.push('Refine ' + M.meta(M.refId(m.tier, m.chain)).label + ' di ' + a.ref.city +
         ' = ' + signed(a.ref.prem) + '/unit dari bahan sendiri');
     } else if (m.kind === 'raw') {
-      extra.push('Di tier ini refined lebih murah dari bahan mentahnya — jangan refine');
+      extra.push('Di tier ini refined lebih murah dari bahan mentahnya — skip refine');
     }
-    if (a.thin) extra.push('pasar tipis: item cuma ada di 1–2 kota, harga bisa hilang');
+    if (a.thin) extra.push('thin market: item cuma ada di 1–2 kota, harga bisa hilang');
 
     box.innerHTML =
-      '<span class="hero-k">Otomatis · ' + esc(m.label) + '</span>' +
+      '<span class="hero-k">Auto · ' + esc(m.label) + '</span>' +
       '<span class="hero-h">' + esc(v.head) + '</span>' +
       '<span class="hero-s">' + esc(v.meta) + '</span>' +
       '<span class="hero-money">' + money(v.money) + ' / unit</span>' +
@@ -1035,20 +1035,20 @@
       '<span class="read big ' + (profit >= 0 ? 'ok' : 'no') + '">' +
         (profit >= 0 ? '▲ Untung ' : '▼ Rugi ') + signed(profit) + ' / unit</span>' +
       '<dl class="kv">' +
-      '<dt>Kota</dt><dd>' + esc(CFG.city) + '</dd>' +
-      '<dt>Harga jual refined (live)</dt><dd>' + (outSell ? money(outSell) : '—') + '</dd>' +
-      '<dt>Setelah tax + setup</dt><dd>' + money(revenue) + '</dd>' +
-      '<dt>Biaya bahan / unit</dt><dd>' + money(rc.total) + '</dd>' +
-      '<dt>Modal ' + silver(qty) + ' unit</dt><dd>' + money(rc.total * qty) + '</dd>' +
-      '<dt>Profit total</dt><dd class="' + (total >= 0 ? 'ok' : 'no') + '">' + signed(total) + '</dd>' +
+      '<dt>City</dt><dd>' + esc(CFG.city) + '</dd>' +
+      '<dt>Refined sell (live)</dt><dd>' + (outSell ? money(outSell) : '—') + '</dd>' +
+      '<dt>After tax + setup</dt><dd>' + money(revenue) + '</dd>' +
+      '<dt>Material cost / unit</dt><dd>' + money(rc.total) + '</dd>' +
+      '<dt>Capital (' + silver(qty) + ' units)</dt><dd>' + money(rc.total * qty) + '</dd>' +
+      '<dt>Total profit</dt><dd class="' + (total >= 0 ? 'ok' : 'no') + '">' + signed(total) + '</dd>' +
       '<dt>ROI</dt><dd class="' + (roi >= 0 ? 'ok' : 'no') + '">' + pct(roi) + '</dd>' +
-      '<dt>Break-even harga jual</dt><dd class="wa">' + money(be) + '</dd>' +
-      '<dt>Perkiraan / jam</dt><dd>' + money(profit * num(CFG.throughput)) + '</dd>' +
+      '<dt>Break-even sell</dt><dd class="wa">' + money(be) + '</dd>' +
+      '<dt>Est. / hour</dt><dd>' + money(profit * num(CFG.throughput)) + '</dd>' +
       '</dl>' +
       (rc.missing ? '<p class="note" style="color:var(--warn)">' + rc.missing +
         ' tier bahan tidak punya harga di ' + esc(CFG.city) +
         ' — hasil ini belum valid, ganti kota atau tunggu feed.</p>' : '') +
-      '<details class="hint" style="margin-top:8px"><summary>Rincian rantai bahan</summary>' +
+      '<details class="hint" style="margin-top:8px"><summary>Material chain details</summary>' +
       '<dl class="kv" style="margin-top:6px">' + rowsHtml +
       '<dt>Total</dt><dd>' + money(rc.total) + '</dd></dl></details>' +
       '<p class="hint">RRR ' + pct(rrr() * 100) + ' · yield ' + silver(CFG.yieldBonus) +
@@ -1076,13 +1076,13 @@
       '<span class="read big ' + (profit >= 0 ? 'ok' : 'no') + '">' +
         (profit >= 0 ? '▲ Untung ' : '▼ Rugi ') + signed(profit) + ' / unit</span>' +
       '<dl class="kv">' +
-      '<dt>Harga beli / unit</dt><dd>' + money(costB) + '</dd>' +
-      '<dt>Harga jual / unit</dt><dd>' + money(netS) + '</dd>' +
-      '<dt>Break-even harga jual</dt><dd class="wa">' + money(be) + '</dd>' +
-      '<dt>Modal ' + silver(qty) + ' unit</dt><dd>' + money(capital) + '</dd>' +
-      '<dt>Profit total</dt><dd class="' + (total >= 0 ? 'ok' : 'no') + '">' + signed(total) + '</dd>' +
+      '<dt>Buy price / unit</dt><dd>' + money(costB) + '</dd>' +
+      '<dt>Sell price / unit</dt><dd>' + money(netS) + '</dd>' +
+      '<dt>Break-even sell</dt><dd class="wa">' + money(be) + '</dd>' +
+      '<dt>Capital (' + silver(qty) + ' units)</dt><dd>' + money(capital) + '</dd>' +
+      '<dt>Total profit</dt><dd class="' + (total >= 0 ? 'ok' : 'no') + '">' + signed(total) + '</dd>' +
       '<dt>ROI</dt><dd class="' + (roi >= 0 ? 'ok' : 'no') + '">' + pct(roi) + '</dd>' +
-      '<dt>Perkiraan / jam</dt><dd>' + money(profit * num(CFG.throughput)) + '</dd>' +
+      '<dt>Est. / hour</dt><dd>' + money(profit * num(CFG.throughput)) + '</dd>' +
       '</dl><p class="hint">Faktor jual ×' + (Math.round(sellFactor() * 1000) / 1000) +
       ' · faktor beli ×' + (Math.round(buyFactor() * 1000) / 1000) + '.</p>';
   }
@@ -1123,8 +1123,8 @@
           (v.money > 0 ? signed(v.money) : '—') +
         '</span><span class="r-roi">per unit</span></span>' +
         '<span class="r-grid">' +
-        '<span class="r-cell"><span class="r-cell-k">Beli</span><span class="r-cell-v">' + (v.buy ? money(v.buy) : '—') + '</span></span>' +
-        '<span class="r-cell"><span class="r-cell-k">Jual</span><span class="r-cell-v">' + (v.sell ? money(v.sell) : '—') + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Buy</span><span class="r-cell-v">' + (v.buy ? money(v.buy) : '—') + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Sell</span><span class="r-cell-v">' + (v.sell ? money(v.sell) : '—') + '</span></span>' +
         '<span class="r-cell"><span class="r-cell-k">Id</span><span class="r-cell-v">' + esc(m.id) + '</span></span>' +
         '</span></button>';
     }).join('');
@@ -1169,29 +1169,29 @@
     var gap = rate > 0 && topRate > 0 ? (rate / topRate) * 100 : 0;
 
     $('snStats').innerHTML =
-      statBox('Kecepatan kamu', rate > 0 ? money(rate) : '—',
+      statBox('Your rate', rate > 0 ? money(rate) : '—',
         rate > 0 ? silver(sessions.length) + ' sesi · ' + (min / 60).toFixed(1) + ' jam'
                  : 'belum ada catatan', rate > 0 ? 'pos' : '') +
-      statBox('Peluang terbaik', topRate > 0 ? money(topRate) : '—',
+      statBox('Best opportunity', topRate > 0 ? money(topRate) : '—',
         top ? top.name + ' · ' + top.tag : 'tunggu feed') +
-      statBox('Selisih', rate > 0 && topRate > 0 ? pct(gap) : '—',
+      statBox('Gap', rate > 0 && topRate > 0 ? pct(gap) : '—',
         rate > 0 && topRate > 0
           ? (gap >= 100 ? 'kamu sudah lebih cepat' : 'peluang ' + pct(100 - gap) + ' lebih tinggi')
           : 'isi catatan dulu',
         rate > 0 && topRate > 0 ? (gap >= 100 ? 'pos' : 'neg') : '') +
-      statBox('Terbaik kamu', best ? money(rateOf(best)) : '—',
+      statBox('Your best', best ? money(rateOf(best)) : '—',
         best ? esc(best.act) : '—');
 
     /* hero: kesimpulan otomatis, tidak perlu user paham rumus */
     var hero = $('snHero');
     if (!top) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada peluang yang bisa dihitung</span>' +
+        '<span class="hero-k">No opportunity yet</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Tunggu feed harga selesai sync, atau ganti region di atas.</span>';
     } else if (!rate) {
       hero.innerHTML =
-        '<span class="hero-k">Mulai dari yang ini</span>' +
+        '<span class="hero-k">Start here</span>' +
         '<span class="hero-h">' + esc(top.name) + '</span>' +
         '<span class="hero-s">' + esc(top.how || top.tag) + '</span>' +
         '<span class="hero-money">' + money(topRate) + ' / jam</span>' +
@@ -1211,7 +1211,7 @@
         '<span class="hero-go">Pertahankan aktivitas ini.</span>';
     } else {
       hero.innerHTML =
-        '<span class="hero-k">Catatan kamu · belumARNING secepat peluang</span>' +
+        '<span class="hero-k">Note kamu · belum secepat peluang</span>' +
         '<span class="hero-h">' + esc(top.name) + '</span>' +
         '<span class="hero-s">' + esc(top.how || top.tag) +
         ' — peluang ini ' + pct(100 - gap) + ' lebih tinggi dari kecepatan catatamu (' +
@@ -1253,7 +1253,7 @@
             '<path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>';
         }).join('')
       : '<div class="state">Belum ada catatan. Isi aktivitas + silver bersih + durasi, lalu tekan ' +
-        '<b>Tambah catatan</b> — setelah itu bagian ini otomatis membandingkan kecepatanmu dengan ' +
+        '<b>Add note</b> — setelah itu bagian ini otomatis membandingkan kecepatanmu dengan ' +
         'peluang terbaik dan memberi tahu kalau ada yang lebih cepat.</div>';
   }
 /* ---------- crafting: resep + harga live ----------
@@ -1300,7 +1300,7 @@
     return vals[Math.floor(vals.length / 2)];
   }
 
-  /* berapa kota yang punya harga untuk hasil craft; 1-2 kota = pasar tipis */
+  /* berapa kota yang punya harga untuk hasil craft; 1-2 kota = thin market */
   function craftDepth(item, v) {
     var id = craftPriceId(item, v), n = 0, i;
     for (i = 0; i < C.cities.length; i++) {
@@ -1364,7 +1364,7 @@
       sph:best.total * num(CFG.throughput),
       head:money(best.profit) + ' /unit',
       roiTxt:pct(best.roi) + ' ROI · modal ' + money(best.capital),
-      how:'Bahan di ' + best.city + ' → craft di ' + best.city + ', jual di ' + best.city +
+      how:'Materials in ' + best.city + ' → craft in ' + best.city + ', sell in ' + best.city +
          ' · focus ' + silver(bv.focus) + (bv.silver ? ' + silver ' + money(bv.silver) : ''),
       thin:craftDepth(item, bv) <= 2
     };
@@ -1427,26 +1427,26 @@
       '<dl class="kv">' +
       '<dt>Item</dt><dd>' + esc(it.name) + (v.ench ? ' .' + v.ench : '') + '</dd>' +
       '<dt>Id</dt><dd>' + esc(pid) + '</dd>' +
-      '<dt>Profesi</dt><dd>' + esc(it.prof) + ' · T' + it.tier + '</dd>' +
-      '<dt>Kota</dt><dd>' + esc(city) + '</dd>' +
-      '<dt>Harga jual (live)</dt><dd>' +
+      '<dt>Profession</dt><dd>' + esc(it.prof) + ' · T' + it.tier + '</dd>' +
+      '<dt>City</dt><dd>' + esc(city) + '</dd>' +
+      '<dt>Sell price (live)</dt><dd>' +
         (ev.sell > 0 ? money(ev.sell) : '—') +
         (ev.instant ? ' <span class="badge thin">instan</span>' : '') + '</dd>' +
-      '<dt>Harga jual via order</dt><dd>' + (ev.buy > 0 ? money(ev.buy) : '—') + '</dd>' +
-      '<dt>Biaya bahan / unit</dt><dd>' + money(d.cost) + '</dd>' +
-      '<dt>Jumlah craft</dt><dd>' + silver(STATE.craftQty) + '</dd>' +
-      '<dt>Modal total</dt><dd>' + money(d.cost * STATE.craftQty) + '</dd>' +
-      '<dt>Untung / unit</dt><dd class="' + (ev.profit >= 0 ? 'ok' : 'no') + '">' + signed(ev.profit) + '</dd>' +
-      '<dt>Untung total</dt><dd class="' + (ev.total >= 0 ? 'ok' : 'no') + '">' + signed(ev.total) + '</dd>' +
+      '<dt>Sell via order</dt><dd>' + (ev.buy > 0 ? money(ev.buy) : '—') + '</dd>' +
+      '<dt>Material cost / unit</dt><dd>' + money(d.cost) + '</dd>' +
+      '<dt>Craft count</dt><dd>' + silver(STATE.craftQty) + '</dd>' +
+      '<dt>Total capital</dt><dd>' + money(d.cost * STATE.craftQty) + '</dd>' +
+      '<dt>Profit / unit</dt><dd class="' + (ev.profit >= 0 ? 'ok' : 'no') + '">' + signed(ev.profit) + '</dd>' +
+      '<dt>Total profit</dt><dd class="' + (ev.total >= 0 ? 'ok' : 'no') + '">' + signed(ev.total) + '</dd>' +
       '<dt>ROI</dt><dd class="' + (ev.roi >= 0 ? 'ok' : 'no') + '">' + pct(ev.roi) + '</dd>' +
       '<dt>Focus per craft</dt><dd class="wa">' + silver(v.focus) + '</dd>' +
       (v.silver ? '<dt>Silver per craft</dt><dd>' + money(v.silver) + '</dd>' : '') +
-      '<dt>Waktu craft</dt><dd>' + v.time.toFixed(2) + ' detik</dd>' +
+      '<dt>Craft time</dt><dd>' + v.time.toFixed(2) + ' detik</dd>' +
       '</dl>' +
       (d.missing ? '<p class="note" style="color:var(--warn)">' + d.missing +
         ' bahan tidak punya harga di ' + esc(city) +
         ' — feed AODP crowd-sourced, tunggu sinkron atau ganti region.</p>' : '') +
-      '<details class="hint" style="margin-top:8px"><summary>Bahan yang dibutuhkan (' +
+      '<details class="hint" style="margin-top:8px"><summary>Ingredients needed (' +
         d.rows.length + ')</summary><dl class="kv" style="margin-top:6px">' +
       d.rows.map(function (r) {
         return '<dt>' + esc(r.name) + ' ×' + silver(r.need) +
@@ -1454,7 +1454,7 @@
           (r.missing ? ' class="no"' : '') + '>' + money(r.cost) +
           (r.cost > 0 ? ' · ' + Math.round(r.share) + '%' : '') + '</dd>';
       }).join('') +
-      '<dt>Total bahan</dt><dd>' + money(d.cost) + '</dd></dl>' +
+      '<dt>Materials total</dt><dd>' + money(d.cost) + '</dd></dl>' +
       '<p class="hint">Biaya bahan sudah dikali RRR ' + pct(rrr() * 100) +
       ' (yield ' + silver(CFG.yieldBonus) +
       (CFG.focus ? ' +59 focus' : '') + ') — sebagian bahan kembali sebagai material tier bawah.</p></details>';
@@ -1494,25 +1494,25 @@
     if (tiers.length && tiers.indexOf(tier) < 0) STATE.craftTier = tiers[0];
 
     $('cfStats').innerHTML =
-      statBox('Paling untung', best ? money(best.profit) : '—',
+      statBox('Best profit', best ? money(best.profit) : '—',
         best ? best.name : 'belum ada harga', 'pos') +
-      statBox('Kota', best ? best.city : '—', best ? best.prof + ' T' + best.tier : '—') +
+      statBox('City', best ? best.city : '—', best ? best.prof + ' T' + best.tier : '—') +
       statBox('ROI', best ? pct(best.roi) : '—',
         best ? 'modal ' + money(best.capital) : '—') +
-      statBox('Item terhitung', silver(data.length),
+      statBox('Items priced', silver(data.length),
         (prof === 'all' ? 'semua profesi' : prof) +
         (tier === 'all' ? ' · semua tier' : ' · T' + tier));
 
     var hero = $('cfHero');
     if (!best) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada yang bisa dihitung</span>' +
+        '<span class="hero-k">Nothing priced yet</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Resep crafting tersedia, tapi harga bahan atau harga jualnya belum ada di ' +
         esc(M.regionLabel()) + '. Ganti region atau tunggu feed.</span>';
     } else {
       hero.innerHTML =
-        '<span class="hero-k">Craft dulu · ' + esc(best.prof) + ' T' + best.tier + '</span>' +
+        '<span class="hero-k">Do this first · ' + esc(best.prof) + ' T' + best.tier + '</span>' +
         '<span class="hero-h">' + esc(best.name) + (best.v.ench ? ' .' + best.v.ench : '') +
         ' di ' + esc(best.city) + '</span>' +
         '<span class="hero-s">' + esc(best.how) + '</span>' +
@@ -1531,13 +1531,13 @@
             '<span class="r-main"><span class="r-tag">' + esc(o.city) + '</span>' +
             '<span class="r-name">' + esc(o.name) + (o.v.ench ? ' .' + o.v.ench : '') + '</span>' +
             '<span class="r-how">' + esc(o.prof) + ' T' + o.tier + ' · modal ' + money(o.capital) + '</span>' +
-            (o.thin ? '<span class="badge thin">harga tipis</span>' : '') +
+            (o.thin ? '<span class="badge thin">thin price</span>' : '') +
             '</span><span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
             esc(o.head) + '</span><span class="r-roi">' + esc(o.roiTxt) + '</span></span>' +
             '<span class="r-grid">' +
-            '<span class="r-cell"><span class="r-cell-k">Bahan</span><span class="r-cell-v">' +
+            '<span class="r-cell"><span class="r-cell-k">Materials</span><span class="r-cell-v">' +
               money(o.ev.cost) + '</span></span>' +
-            '<span class="r-cell"><span class="r-cell-k">Jual</span><span class="r-cell-v">' +
+            '<span class="r-cell"><span class="r-cell-k">Sell</span><span class="r-cell-v">' +
               money(o.ev.rev) + '</span></span>' +
             '<span class="r-cell"><span class="r-cell-k">Untung ' + silver(qty) + 'x</span>' +
               '<span class="r-cell-v" style="color:var(--pos)">' + signed(o.ev.total) + '</span></span>' +
@@ -1573,7 +1573,7 @@
       });
     }
     rows.sort(function (a, b) { return b.profit - a.profit; });
-    $('cfCityCount').textContent = rows.length ? rows.length + ' kota terhitung' : 'tidak ada kota';
+    $('cfCityCount').textContent = rows.length ? rows.length + ' kota terhitung' : 'tidak ada cities';
     box.innerHTML = rows.length
       ? rows.map(function (r) {
           return '<button type="button" class="row' +
@@ -1581,17 +1581,17 @@
             '" data-craft-city="' + esc(r.city) + '">' +
             '<span class="r-main"><span class="r-tag">' + esc(r.city) + '</span>' +
             '<span class="r-name">' + esc(it.name) + (v.ench ? ' .' + v.ench : '') + '</span>' +
-            (r.instant ? '<span class="badge thin">jual instan</span>' : '') +
-            (STATE.craftDepth <= 2 ? '<span class="badge risk">hanya ' + STATE.craftDepth + ' kota</span>' : '') +
+            (r.instant ? '<span class="badge thin">instant sell</span>' : '') +
+            (STATE.craftDepth <= 2 ? '<span class="badge risk">only ' + STATE.craftDepth + ' kota</span>' : '') +
             '</span>' +
             '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
             signed(r.profit) + '</span><span class="r-roi">' + pct(r.roi) + ' ROI</span></span>' +
             '<span class="r-grid">' +
-            '<span class="r-cell"><span class="r-cell-k">Bahan</span><span class="r-cell-v">' +
+            '<span class="r-cell"><span class="r-cell-k">Materials</span><span class="r-cell-v">' +
               money(r.cost) + '</span></span>' +
-            '<span class="r-cell"><span class="r-cell-k">Jual</span><span class="r-cell-v">' +
+            '<span class="r-cell"><span class="r-cell-k">Sell</span><span class="r-cell-v">' +
               money(r.rev) + '</span></span>' +
-            '<span class="r-cell"><span class="r-cell-k">Untung total</span>' +
+            '<span class="r-cell"><span class="r-cell-k">Total profit</span>' +
               '<span class="r-cell-v" style="color:var(--pos)">' + signed(r.total) + '</span></span>' +
             '</span></button>';
         }).join('')
@@ -1657,8 +1657,8 @@
           (r.missing ? 'var(--warn)' : 'var(--pos)') + '">' + qtyTxt + '</span>' +
         '<span class="r-roi">' + (r.missing ? '—' : money(r.cost)) + '</span></span>' +
         '<span class="r-grid">' +
-        '<span class="r-cell"><span class="r-cell-k">Harga</span><span class="r-cell-v">' + priceTxt + '</span></span>' +
-        '<span class="r-cell"><span class="r-cell-k">Sisa</span><span class="r-cell-v">' +
+        '<span class="r-cell"><span class="r-cell-k">Price</span><span class="r-cell-v">' + priceTxt + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Left</span><span class="r-cell-v">' +
           silver(Math.ceil(r.left)) + '</span></span>' +
         '<span class="r-cell"><span class="r-cell-k">Total</span><span class="r-cell-v">' +
           (r.missing ? '—' : money(r.cost)) + '</span></span>' +
@@ -1704,23 +1704,23 @@
         : '▼ Rugi ' + signed(ev.total)) + '</div>' +
       '<dl class="kv">' +
       '<dt>Total bahan (' + silver(qty) + ' craft)</dt><dd>' + money(d.cost) + '</dd>' +
-      '<dt>Harga jual hasil</dt><dd>' + (ev.rev > 0 ? money(ev.rev) + ' /unit' : '—') + '</dd>' +
-      '<dt>Pendapatan total</dt><dd>' + (ev.rev > 0 ? money(ev.rev * qty) : '—') + '</dd>' +
-      '<dt>Untung bersih</dt><dd class="' + (ev.total >= 0 ? 'ok' : 'no') + '">' +
+      '<dt>Output sell</dt><dd>' + (ev.rev > 0 ? money(ev.rev) + ' /unit' : '—') + '</dd>' +
+      '<dt>Total revenue</dt><dd>' + (ev.rev > 0 ? money(ev.rev * qty) : '—') + '</dd>' +
+      '<dt>Net profit</dt><dd class="' + (ev.total >= 0 ? 'ok' : 'no') + '">' +
         signed(d.missing ? 0 : ev.total) + '</dd>' +
       '<dt>ROI</dt><dd class="' + (ev.roi >= 100 ? 'ok' : 'wa') + '">' + pct(ev.roi) + '</dd>' +
-      '<dt>Fokus total</dt><dd class="wa">' + silver(Math.round(v.focus * qty)) + '</dd>' +
-      '<dt>Waktu craft total</dt><dd>' + (v.time * qty / 60).toFixed(1) + ' menit</dd>' +
+      '<dt>Total focus</dt><dd class="wa">' + silver(Math.round(v.focus * qty)) + '</dd>' +
+      '<dt>Total craft time</dt><dd>' + (v.time * qty / 60).toFixed(1) + ' menit</dd>' +
       '</dl>';
 
     $('cfPlanSteps').innerHTML =
-      '<li><b>1</b> Beli <b>' + silver(d.rows.length) + ' bahan</b> di ' + esc(city) +
+      '<li><b>1</b> Buy <b>' + silver(d.rows.length) + ' bahan</b> di ' + esc(city) +
         ' — total <b>' + money(d.cost) + '</b>' +
         (d.missing ? ' (' + d.missing + ' bahan belum ada harga)' : '') + '</li>' +
       '<li><b>2</b> Craft <b>' + silver(qty) + '×</b> ' + esc(it.name) +
         (v.ench ? ' .' + v.ench : '') + ' — fokus ' + silver(Math.round(v.focus * qty)) +
         ', waktu ' + (v.time * qty / 60).toFixed(1) + ' menit</li>' +
-      '<li><b>3</b> Jual di <b>' + esc(city) + '</b> — ' +
+      '<li><b>3</b> Sell in <b>' + esc(city) + '</b> — ' +
         (ev.rev > 0 ? money(ev.rev) + ' /unit, terima ' + money(ev.rev * qty) : 'belum ada harga jual') +
         (ev.rev > 0 ? ', bersih ' + signed(d.missing ? 0 : ev.total) : '') + '</li>';
   }
@@ -1750,17 +1750,17 @@
           (r.roi != null ? pct(r.roi) + ' ROI' : 'modal ' + money(r.capital || 0)) +
           '</span></span>' +
         '<span class="r-grid">' +
-          '<span class="r-cell"><span class="r-cell-k">Kota</span><span class="r-cell-v">' +
+          '<span class="r-cell"><span class="r-cell-k">City</span><span class="r-cell-v">' +
             esc(r.city) + '</span></span>' +
-          '<span class="r-cell"><span class="r-cell-k">Modal</span><span class="r-cell-v">' +
+          '<span class="r-cell"><span class="r-cell-k">Capital</span><span class="r-cell-v">' +
             esc(r.capital > 0 ? money(r.capital) : '0 ✦') + '</span></span>' +
-          '<span class="r-cell"><span class="r-cell-k">Buka</span><span class="r-cell-v">' +
+          '<span class="r-cell"><span class="r-cell-k">Open</span><span class="r-cell-v">' +
             esc(r.goLabel) + '</span></span>' +
         '</span></button>';
     }).join('');
   }
 
-  /* modal 0: gather + mancing, terbaik tiap tier */
+  /* zero capital: gather + fishing, best per tier */
   function ladderCuan() {
     var out = [], i, k, t, best;
     for (i = 0; i < ZERO_TIERS.length; i++) {
@@ -1892,23 +1892,23 @@
     var top = opts[0] || null;
 
     $('tdStats').innerHTML =
-      statBox('Paling untung T' + tier, top ? money(top.perNode ? top.profit * NODE_YIELD : top.profit) : '—',
+      statBox('Best at T' + tier, top ? money(top.perNode ? top.profit * NODE_YIELD : top.profit) : '—',
         top ? top.name : 'belum ada data', 'pos') +
-      statBox('Kota', top ? top.city : '—', top ? top.goLabel : '—') +
-      statBox('Modal', top ? (top.capital > 0 ? money(top.capital) : '0 ✦') : '—',
+      statBox('City', top ? top.city : '—', top ? top.goLabel : '—') +
+      statBox('Capital', top ? (top.capital > 0 ? money(top.capital) : '0 ✦') : '—',
         top ? (top.capital > 0 ? 'per unit' : 'barang dari node') : '—') +
       statBox('Data feed', silver(st.rows), M.servingLabel());
 
     var hero = $('tdHero');
     if (!top) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada peluang di T' + tier + '</span>' +
+        '<span class="hero-k">No opportunity at T' + tier + '</span>' +
         '<span class="hero-h">—</span>' +
         '<span class="hero-s">Feed belum punya harga untuk tier ini di ' + esc(M.regionLabel()) +
         '. Coba tier lain atau ganti region di atas.</span>';
     } else {
       hero.innerHTML =
-        '<span class="hero-k">Lakukan dulu · ' + esc(top.goLabel) + ' · T' + tier + '</span>' +
+        '<span class="hero-k">Do this first · ' + esc(top.goLabel) + ' · T' + tier + '</span>' +
         '<span class="hero-h">' + esc(top.name) + (top.ench ? ' .' + top.ench : '') + '</span>' +
         '<span class="hero-s">' + esc(top.how) + '</span>' +
         '<span class="hero-money">' +

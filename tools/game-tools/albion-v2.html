@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.2">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.3">
 </head>
 <body>
   <div class="app">
@@ -90,7 +90,7 @@
     <section class="view on" id="view-scan" role="tabpanel" aria-label="Hari ini">
       <p class="note" style="margin-top:0">
         <b>Today</b> menjawab satu pertanyaan: sekarang harus ngapain. Pilih tier yang kamu punya,
-        lalu hero di bawah memberi jawaban terbaik untuk tier itu. Empat daftar di bawahnya adalah
+        lalu hero di bawah memberi jawaban terbaik untuk tier itu. Empat daftar di bawah ini adalah
         <b>ladder T1–T8</b> — tiap baris adalah pilihan paling untung di tier tersebut, jadi kalau
         kamu masih di tier rendah kamu tetap melihat yang benar-benar bisa dikerjakan. Ketuk baris
         mana pun untuk langsung membuka tab kegiatannya dengan tier yang benar.
@@ -112,8 +112,8 @@
       <div class="hero" id="tdHero"></div>
 
       <div class="sec">
-        <span class="sec-h">Gather &amp; mancing</span>
-        <span class="sec-s">modal 0 · ladder T1–T8</span>
+        <span class="sec-h">Gathering</span>
+        <span class="sec-s">zero capital · ladder T1–T8</span>
       </div>
       <div class="list" id="tdCuan"></div>
 
@@ -125,32 +125,32 @@
 
       <div class="sec">
         <span class="sec-h">Refine</span>
-        <span class="sec-s">logam, kain, kulit, kayu, batu</span>
+        <span class="sec-s">metal, cloth, leather, wood, stone</span>
       </div>
       <div class="list" id="tdRefine"></div>
 
       <div class="sec">
         <span class="sec-h">Transmute</span>
-        <span class="sec-s">tier ke tier atau enchant</span>
+        <span class="sec-s">tier to tier, or enchant</span>
       </div>
       <div class="list" id="tdSpread"></div>
 
       <div class="sec">
-        <span class="sec-h">Flip antar kota</span>
-        <span class="sec-s">beli murah, jual mahal</span>
+        <span class="sec-h">Cross-city flip</span>
+        <span class="sec-s">buy low, sell high</span>
       </div>
       <div class="list" id="tdFlip"></div>
 
       <div class="sec">
-        <span class="sec-h">Kota paling ramai</span>
-        <span class="sec-s">pendapatan gather per kota</span>
+        <span class="sec-h">Busiest cities</span>
+        <span class="sec-s">gather income per city</span>
       </div>
       <div class="list" id="tdCity"></div>
 
       <p class="note">
         Semua angka memakai harga live dari Albion Online Data Project, sudah dipotong tax + setup fee
-        sesuai parameter di bawah. Baris gather dan mancing tidak butuh silver — barangnya dari node
-        atau sungai, jadi perbandingannya memakai <b>jual instan</b> (buy order tertinggi).
+        sesuai parameter di bawah. Baris Gather dan Fishing tidak butuh silver — barangnya dari node
+        atau sungai, jadi perbandingannya memakai <b>instant sell</b> (buy order tertinggi).
       </p>
     </section>
 
@@ -159,7 +159,7 @@
       <div class="stats" id="zeroStats"></div>
 
       <div class="sec">
-        <span class="sec-h">Gather · profesi &amp; tier kamu</span>
+        <span class="sec-h">Gather · profession &amp; tier kamu</span>
         <span class="sec-s" id="zYouSub">—</span>
       </div>
 
@@ -169,7 +169,7 @@
         <button type="button" class="chip" data-zp="fiber" aria-pressed="false">Gather</button>
         <button type="button" class="chip" data-zp="hide" aria-pressed="false">Skinning</button>
         <button type="button" class="chip" data-zp="stone" aria-pressed="false">Stonecutting</button>
-        <button type="button" class="chip" data-zp="fish" aria-pressed="false">Mancing</button>
+        <button type="button" class="chip" data-zp="fish" aria-pressed="false">Fishing</button>
       </div>
 
       <div class="tools" id="zTier" role="group" aria-label="Tier alat/node">
@@ -185,28 +185,28 @@
       <div class="hero" id="zeroHero"></div>
       <details class="form" style="margin:0 0 4px">
         <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
-          Ladder tier 1–8 · paling untung per tier
+          Ladder tier 1–8 · most profitable per tier
         </summary>
         <div class="list" id="znLadder" style="margin-top:10px"></div>
       </details>
 
 
       <div class="sec">
-        <span class="sec-h">Alternatif lain</span>
+        <span class="sec-h">Alternatives</span>
         <span class="sec-s" id="zAltCount">—</span>
       </div>
       <div class="list" id="zAltList"></div>
 
       <div class="sec">
-        <span class="sec-h">Semua profesi</span>
+        <span class="sec-h">All professions</span>
         <span class="sec-s" id="zCount">—</span>
       </div>
 
       <p class="note" id="zNote">
         Pilih profesi dan tier sesuai alat yang kamu pakai — rekomendasi di atas ikut berubah.
-        Semua baris di sini modalnya <b>0</b>: barangnya dari node atau sungai sendiri, jadi yang
-        dibandingkan adalah kota dengan <b>jual instan</b> (buy order tertinggi) paling tinggi.
-        <b>Bonus refine</b> = refined instan vs mentah instan di kota yang sama; kalau minus,
+        Semua baris di sini zero capital: barangnya dari node atau sungai sendiri, jadi yang
+        dibandingkan adalah kota dengan <b>instant sell</b> (buy order tertinggi) paling tinggi.
+        <b>Refine bonus</b> = refined instan vs mentah instan di kota yang sama; kalau minus,
         refining cuma buang waktu — jual mentah. Tier 1 tidak dipantau (watchlist mulai T2).
         Kota PK (<b>Brecilien</b>, <b>Black Market</b>) sengaja tidak dipakai sebagai rekomendasi:
         transport bolak-balik dan risikonya tidak sepadan untuk pemain modal 0.
@@ -214,7 +214,7 @@
 
       <div class="list" id="zList"></div>
 
-      <div class="sec"><span class="sec-h">Urutan hari ini</span><span class="sec-s">modal 0</span></div>
+      <div class="sec"><span class="sec-h">Action plan</span><span class="sec-s">modal 0</span></div>
       <ol class="steps" id="zSteps"></ol>
 
       <p class="note">
@@ -231,7 +231,7 @@
       <div class="hero" id="cfHero"></div>
       <details class="form" style="margin:0 0 4px">
         <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
-          Ladder tier 1–8 · crafting paling untung per tier
+          Ladder tier 1–8 · crafting most profitable per tier
         </summary>
         <div class="list" id="cfLadder" style="margin-top:10px"></div>
       </details>
@@ -245,7 +245,7 @@
         <button type="button" class="chip" data-cp="Mason" aria-pressed="false">Mason</button>
         <button type="button" class="chip" data-cp="Alchemist" aria-pressed="false">Alchemist</button>
         <button type="button" class="chip" data-cp="Cooking" aria-pressed="false">Cooking</button>
-        <button type="button" class="chip" data-cp="all" aria-pressed="false">Semua</button>
+        <button type="button" class="chip" data-cp="all" aria-pressed="false">All</button>
       </div>
 
       <div class="tools" id="cfTier" role="group" aria-label="Tier crafting">
@@ -260,20 +260,20 @@
       </div>
 
       <div class="tools" id="cfSort" role="group" aria-label="Urutkan crafting">
-        <button type="button" class="chip" data-cs="profit" aria-pressed="true">Urut: untung/unit</button>
-        <button type="button" class="chip" data-cs="roi" aria-pressed="false">Urut: ROI</button>
-        <button type="button" class="chip" data-cs="total" aria-pressed="false">Urut: untung total</button>
+        <button type="button" class="chip" data-cs="profit" aria-pressed="true">Sort: profit/unit</button>
+        <button type="button" class="chip" data-cs="roi" aria-pressed="false">Sort: ROI</button>
+        <button type="button" class="chip" data-cs="total" aria-pressed="false">Sort: total profit</button>
       </div>
 
       <div class="sec">
-        <span class="sec-h">Crafting paling untung</span>
+        <span class="sec-h">Most profitable crafts</span>
         <span class="sec-s" id="cfCount">—</span>
       </div>
 
       <div class="list" id="cfList"></div>
 
       <div class="sec">
-        <span class="sec-h">Mau craft berapa?</span>
+        <span class="sec-h">Craft count</span>
         <span class="sec-s">ubah jumlah, semua angka ikut berubah</span>
       </div>
 
@@ -287,26 +287,26 @@
 
       <div class="form">
         <div>
-          <label class="lbl" for="cfQty">Jumlah craft</label>
+          <label class="lbl" for="cfQty">Craft count</label>
           <input type="number" id="cfQty" value="10" min="1" step="1" inputmode="numeric">
         </div>
       </div>
 
       <div class="sec">
-        <span class="sec-h">Rencana crafting</span>
-        <span class="sec-s" id="cfDetName">ketuk item di atas</span>
+        <span class="sec-h">Crafting plan</span>
+        <span class="sec-s" id="cfDetName">tap an item above</span>
       </div>
 
       <ol class="steps" id="cfPlanSteps"></ol>
 
       <div class="sec">
-        <span class="sec-h">Daftar belanja bahan</span>
+        <span class="sec-h">Shopping list</span>
         <span class="sec-s" id="cfShopHead">—</span>
       </div>
 
       <div class="btn-row" style="margin-bottom:8px">
-        <button type="button" class="btn primary" id="cfCopy">Copy daftar</button>
-        <button type="button" class="btn" id="cfShopReset">Reset centang</button>
+        <button type="button" class="btn primary" id="cfCopy">Copy list</button>
+        <button type="button" class="btn" id="cfShopReset">Reset checks</button>
       </div>
 
       <div class="list" id="cfShop"></div>
@@ -321,12 +321,12 @@
         tapi ongkos transport bolak-balik juga tetap uang.
       </p>
 
-      <div class="sec"><span class="sec-h">Rincian angka</span><span class="sec-s">biaya bahan, focus, harga jual</span></div>
+      <div class="sec"><span class="sec-h">Cost breakdown</span><span class="sec-s">material cost, focus, sell price</span></div>
 
       <div class="read" id="cfDetail"></div>
 
       <div class="sec">
-        <span class="sec-h">Perbandingan kota</span>
+        <span class="sec-h">City comparison</span>
         <span class="sec-s" id="cfCityCount">—</span>
       </div>
 
@@ -337,13 +337,13 @@
         pasar di AODP yang dimonitor, karena feed itu crowd-sourced dan tidak semua item crafting ada
         harganya. Untung, ROI, dan rincian bahan dihitung ulang dari harga live tiap menit. Bahan
         dibeli di kota yang sama dengan kota jual, jadi ongkos transport tidak ikut dihitung.
-        Baris bertanda <span class="badge thin">jual instan</span> artinya harga itu dari buy order,
+        Baris bertanda <span class="badge thin">instant sell</span> artinya harga itu dari buy order,
         jadi silver langsung masuk tanpa menunggu buyer.
       </p>
     </section>
 
     <!-- ===== 4 REFINE ===== -->
-    <section class="view" id="view-refine" role="tabpanel" aria-label="Kalkulator refine">
+    <section class="view" id="view-refine" role="tabpanel" aria-label="Refine calculator">
       <div class="stats" id="rfStats"></div>
 
       <div class="hero" id="rfAutoHero"></div>
@@ -357,11 +357,11 @@
 
       <div class="tools" id="rfSort" role="group" aria-label="Urutkan perbandingan">
         <button type="button" class="chip" data-v="profit" aria-pressed="true">Urut: profit/unit</button>
-        <button type="button" class="chip" data-v="roi" aria-pressed="false">Urut: ROI</button>
+        <button type="button" class="chip" data-v="roi" aria-pressed="false">Sort: ROI</button>
       </div>
 
       <div class="sec">
-        <span class="sec-h">Bandingkan semua refine</span>
+        <span class="sec-h">Refine · compare all</span>
         <span class="sec-s" id="rfAutoCount">—</span>
       </div>
 
@@ -370,11 +370,11 @@
       <p class="note">
         Perbandingan ini memindai semua material × tier T2–T8 × semua kota dari harga live
         yang sudah ada di memori, jadi tidak menambah request. Baris di bawah memakai biaya bahan
-        <b>di kota yang sama</b> — beli bahan di sana, refine di sana, jual di sana, tanpa
+        <b>di kota yang sama</b> — beli bahan di sana, Craft di sana, sell di sana, tanpa
         transport. Ketuk baris untuk memindahkan kalkulator ke kombinasi itu.
       </p>
 
-      <div class="sec"><span class="sec-h">Kalkulator refine</span><span class="sec-s">biaya bahan live + RRR</span></div>
+      <div class="sec"><span class="sec-h">Refine calculator</span><span class="sec-s">live material cost + RRR</span></div>
 
       <div class="form">
         <div class="f2">
@@ -403,11 +403,11 @@
         </div>
         <div class="f2">
           <div>
-            <label class="lbl" for="rfQty">Jumlah unit</label>
+            <label class="lbl" for="rfQty">Quantity</label>
             <input type="number" id="rfQty" value="100" min="1" step="1" inputmode="numeric">
           </div>
           <div style="display:flex;align-items:flex-end">
-            <button type="button" class="btn" id="rfLive" style="width:100%">Cek harga live</button>
+            <button type="button" class="btn" id="rfLive" style="width:100%">Check live price</button>
           </div>
         </div>
       </div>
@@ -421,26 +421,26 @@
     </section>
 
     <!-- ===== 3 FLIP ===== -->
-    <section class="view" id="view-flip" role="tabpanel" aria-label="Kalkulator flip">
+    <section class="view" id="view-flip" role="tabpanel" aria-label="Flip calculator">
       <div class="stats" id="flStats"></div>
 
       <div class="hero" id="flAutoHero"></div>
       <details class="form" style="margin:0 0 4px">
         <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
-          Ladder tier 1–8 · flip paling untung per tier
+          Ladder tier 1–8 · flip most profitable per tier
         </summary>
         <div class="list" id="flLadder" style="margin-top:10px"></div>
       </details>
 
 
       <div class="tools" id="flSort" role="group" aria-label="Urutkan perbandingan">
-        <button type="button" class="chip" data-v="roi" aria-pressed="true">Urut: ROI</button>
+        <button type="button" class="chip" data-v="roi" aria-pressed="true">Sort: ROI</button>
         <button type="button" class="chip" data-v="profit" aria-pressed="false">Urut: profit/unit</button>
-        <button type="button" class="chip" data-v="sph" aria-pressed="false">Urut: silver/jam</button>
+        <button type="button" class="chip" data-v="sph" aria-pressed="false">Sort: silver/hour</button>
       </div>
 
       <div class="sec">
-        <span class="sec-h">Bandingkan semua flip</span>
+        <span class="sec-h">Flip · compare all</span>
         <span class="sec-s" id="flAutoCount">—</span>
       </div>
 
@@ -448,47 +448,46 @@
 
       <p class="note">
         Perbandingan ini memindai arbitrage antar kota <b>dan</b> flip satu kota di
-        <b>Kota acuan</b> untuk semua item yang dipantau, memakai ongkos transport dari
+        <b>Reference city</b> untuk semua item yang dipantau, memakai ongkos transport dari
         parameter di bawah. ROI dihitung dari modal yang benar-benar dipakai, jadi
         urutan ROI berguna saat modalmu kecil. Kota PK (Brecilien, Black Market)
         tidak ikut dibandingkan. Ketuk baris untuk mengisi kalkulator flip.
       </p>
 
-      <div class="sec"><span class="sec-h">Kalkulator flip</span><span class="sec-s" id="flName">belum ada item</span></div>
+      <div class="sec"><span class="sec-h">Flip calculator</span><span class="sec-s" id="flName">no item yet</span></div>
 
       <div class="form">
         <div class="f2">
           <div>
-            <label class="lbl" for="flBuy">Harga beli / unit</label>
+            <label class="lbl" for="flBuy">Buy price / unit</label>
             <input type="number" id="flBuy" step="any" placeholder="contoh: 1.250" inputmode="decimal">
           </div>
           <div>
-            <label class="lbl" for="flSell">Harga jual / unit</label>
+            <label class="lbl" for="flSell">Sell price / unit</label>
             <input type="number" id="flSell" step="any" placeholder="contoh: 1.600" inputmode="decimal">
           </div>
         </div>
         <div class="f2">
           <div>
-            <label class="lbl" for="flQty">Jumlah unit</label>
+            <label class="lbl" for="flQty">Quantity</label>
             <input type="number" id="flQty" value="100" min="1" step="1" inputmode="numeric">
           </div>
           <div style="display:flex;align-items:flex-end">
-            <button type="button" class="btn" id="flFromSel" style="width:100%">Isi dari item terpilih</button>
+            <button type="button" class="btn" id="flFromSel" style="width:100%">Fill from selected</button>
           </div>
         </div>
       </div>
 
       <div class="read" id="flOut"></div>
       <p class="note">
-        Spread harus menutup <b>setup fee</b> di kedua sisi plus <b>sales tax</b>. Field
-        <b>break-even</b> memberi tahu harga jual minimum supaya tidak rugi — kalau sudahaut lebih besar dari
+        Spread harus menutup <b>setup fee</b> di kedua sisi plus <b>sales tax</b>. Field <b>break-even</b> memberi tahu harga jual minimum supaya tidak rugi — kalau Spread sudah lebih besar dari
         spread pasar, jangan eksekusi.
       </p>
     </section>
 
     <!-- ===== 4 SESI ===== -->
     <section class="view" id="view-session" role="tabpanel" aria-label="Pelacak sesi">
-      <div class="sec"><span class="sec-h">Note · hasil nyata</span><span class="sec-s">kecepatan kamu vs peluang</span></div>
+      <div class="sec"><span class="sec-h">Note · your results</span><span class="sec-s">your rate vs opportunity</span></div>
 
       <p class="note">
         Ini bagian satu-satunya yang diisi kamu sendiri: silver yang benar-benar kamu dapat dari satu
@@ -501,22 +500,22 @@
       <div class="form">
         <div class="f2">
           <div>
-            <label class="lbl" for="snAct">Aktivitas</label>
+            <label class="lbl" for="snAct">Activity</label>
             <input type="text" id="snAct" placeholder="contoh: refine ore T4 Thetford">
           </div>
           <div>
-            <label class="lbl" for="snSilver">Silver bersih</label>
+            <label class="lbl" for="snSilver">Net silver</label>
             <input type="number" id="snSilver" step="any" placeholder="boleh minus" inputmode="decimal">
           </div>
         </div>
         <div class="f2">
           <div>
-            <label class="lbl" for="snMin">Durasi (menit)</label>
+            <label class="lbl" for="snMin">Duration (min)</label>
             <input type="number" id="snMin" value="60" min="1" step="1" inputmode="numeric">
           </div>
           <div style="display:flex;align-items:flex-end;gap:8px">
-            <button type="button" class="btn primary" id="snAdd" style="flex:1">Tambah sesi</button>
-            <button type="button" class="btn danger" id="snClear">Hapus</button>
+            <button type="button" class="btn primary" id="snAdd" style="flex:1">Add session</button>
+            <button type="button" class="btn danger" id="snClear">Delete</button>
           </div>
         </div>
       </div>
@@ -526,7 +525,7 @@
       <div class="stats" id="snStats"></div>
 
       <div class="btn-row" style="margin-top:12px">
-        <button type="button" class="btn primary" id="snGoBest">Buka peluang terbaik</button>
+        <button type="button" class="btn primary" id="snGoBest">Open best opportunity</button>
       </div>
 
       <div class="list" id="snList" style="margin-top:12px"></div>
@@ -535,11 +534,11 @@
 
     <!-- ===== 5 CARI ===== -->
     <section class="view" id="view-search" role="tabpanel" aria-label="Search item">
-      <div class="sec"><span class="sec-h">Search item</span><span class="sec-s">senjata, armor, makanan, mount</span></div>
+      <div class="sec"><span class="sec-h">Search item</span><span class="sec-s">weapons, armor, food, mounts</span></div>
 
       <div class="form">
         <div>
-          <label class="lbl" for="seInput">Nama atau id item</label>
+          <label class="lbl" for="seInput">Item name or id</label>
           <input type="text" id="seInput" placeholder="bar, cloth, sword, bag, bread, T6BAR…" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
       </div>
@@ -547,14 +546,14 @@
       <div class="hero" id="seAuto"></div>
 
       <div class="btn-row" id="seAutoBtns" style="display:none">
-        <button type="button" class="btn primary" id="seToFlip">Isi Flip dari rekomendasi</button>
-        <button type="button" class="btn" id="seToRefine">Isi Refine dari rekomendasi</button>
+        <button type="button" class="btn primary" id="seToFlip">Fill Flip from recommendation</button>
+        <button type="button" class="btn" id="seToRefine">Fill Refine from recommendation</button>
       </div>
 
       <div class="list" id="seList"></div>
       <p class="note">
         Kartu di atas sudah otomatis membandingkan semua kota untuk hasil teratas:
-        jual instan di kota mana, arbitrase dari kota mana ke kota mana, dan apakah bahan itu
+        instant sell di kota mana, arbitrase dari kota mana ke kota mana, dan apakah bahan itu
         lebih untung di-refine atau dijual mentah. Ketuk hasil untuk mengirim harga
         beli &amp; jual ke tab <b>Flip</b>.
       </p>
@@ -563,7 +562,7 @@
     <!-- ===== parameter global ===== -->
     <details class="form" style="margin-top:32px">
       <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
-        Parameter biaya &amp; throughput
+        Cost &amp; throughput settings
       </summary>
 
       <p class="hint" style="margin-top:12px">
@@ -572,7 +571,7 @@
 
       <div class="f2">
         <div>
-          <label class="lbl" for="cCity">Kota acuan</label>
+          <label class="lbl" for="cCity">Reference city</label>
           <select id="cCity"></select>
         </div>
         <p class="hint" style="align-self:center">
@@ -605,7 +604,7 @@
           <input type="number" id="cSetup" step="any" inputmode="decimal">
         </div>
         <div>
-          <label class="lbl" for="cYield">Yield bonus lokasi</label>
+          <label class="lbl" for="cYield">Yield bonus</label>
           <select id="cYield">
             <option value="58">Kota 58</option>
             <option value="40">Island 40</option>
@@ -621,30 +620,30 @@
           <input type="checkbox" id="cFocus">
         </label>
         <div>
-          <label class="lbl" for="cThru">Throughput (unit / jam)</label>
+          <label class="lbl" for="cThru">Throughput (units / hour)</label>
           <input type="number" id="cThru" step="1" min="0" inputmode="numeric">
         </div>
       </div>
 
       <div class="f2">
         <div>
-          <label class="lbl" for="cTransport">Biaya transport (✦ / unit)</label>
+          <label class="lbl" for="cTransport">Transport cost (✦ / unit)</label>
           <input type="number" id="cTransport" step="any" min="0" value="0" inputmode="decimal">
         </div>
         <p class="hint" style="align-self:center">
-          Dipakai hanya di tab Arbitrase. Isi perkiraan ongkos + risiko ambush jalan supaya
+          Dipakai hanya di tab Arbitrase. Isi perkiraan ongkos + ambush risk jalan supaya
           margin tidak terlihat untung padahal tidak selalu aman di perjalanan.
         </p>
       </div>
     </details>
 
     <footer class="ftr">
-      Silver Ops v3.2 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v3.3 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-crafting.js?v=3.2"></script>
-  <script src="../../data/js/albion-market.js?v=3.2"></script>
-  <script src="../../data/js/albion-v2.js?v=3.2"></script>
+  <script src="../../data/js/albion-crafting.js?v=3.3"></script>
+  <script src="../../data/js/albion-market.js?v=3.3"></script>
+  <script src="../../data/js/albion-v2.js?v=3.3"></script>
 </body>
 </html>
