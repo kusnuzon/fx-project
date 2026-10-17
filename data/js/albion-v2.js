@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.4';
+  var BUILD = '3.5';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -32,7 +32,7 @@
     aSortRefine: 'profit', aSortFlip: 'roi', seFocus: null,
     craftProf: 'Smithing', craftTier: 4, craftItem: null, craftEnch: 0,
     craftCity: '', craftQty: 10, craftSort: 'profit', craftBought: {},
-    craftDepth: 0, tdTier: 3
+    craftDepth: 0, tdTier: 3, demandSort: 'score'
   };
 
   var sessions = [];
@@ -1925,6 +1925,7 @@
         '<span class="hero-go">Kalau ini belum cocok dengan alatmu, pilih tier lain di atas.</span>';
     }
 
+    renderDemand();
     $('tdCuan').innerHTML = tierLadderHtml(cuan, 'Belum ada gather yang untung.');
     $('tdCraft').innerHTML = tierLadderHtml(craft, 'Belum ada crafting yang untung.');
     $('tdRefine').innerHTML = tierLadderHtml(refine, 'Belum ada refine yang untung.');
@@ -1945,6 +1946,163 @@
             '</span><span class="r-cell-v">' + esc(x[1]) + '</span></span>';
         }).join('') + '</span></div>';
     }).join('') : '<div class="state">Belum ada data kota.</div>';
+  }
+/* ---------- demand: barang yang dicari banyak & cepat terjual ----------
+     Sinyal yang bisa dihitung dari feed AODP:
+     - coverage : berapa kota punya order di sisi beli dan sisi jual
+     - spread   : jarak antara order beli tertinggi dan order jual terendah
+                  di kota acuan. Makin kecil, makin cepat laku.
+     - instant  : apakah ada buy order yang bisa langsung kamu pakai
+     - range    : sebaran harga antar waktu (dari riwayat lokal), makin
+                  stabil makin mudah terjual; harga yang melonjak_phi sering
+                  merupakan artifact, bukan permintaan
+     Skor 0-100 dipakai untuk mengurutkan, bukan untuk menentukan mutlak. */
+  var LS_HIST = 'so_hist_v1';
+  var hist = {};
+
+  function histLoad() {
+    try {
+      hist = JSON.parse(localStorage.getItem(LS_HIST) || '{}') || {};
+    } catch (e) { hist = {}; }
+  }
+
+  function histSave() {
+    try {
+      localStorage.setItem(LS_HIST, JSON.stringify(hist));
+    } catch (e) {}
+  }
+
+  /* rata-rata harga jual item di semua kota yang punya harga */
+  function histAvg(m) {
+    var rows = M.byCity(m.id), sum = 0, n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var p = rows[i].sell;
+      if (p > 0 && p < 999999) { sum += p; n++; }
+    }
+    return n ? sum / n : 0;
+  }
+
+  /* rekam satu sampel tiap feed selesai sync */
+  function histSample() {
+    var list = M.tracked(), now = Date.now(), changed = 0;
+    for (var i = 0; i < list.length; i++) {
+      var id = list[i].id, avg = histAvg(list[i]);
+      if (!avg) continue;
+      var h = hist[id];
+      if (!h) {
+        hist[id] = { p:avg, lo:avg, hi:avg, n:1, t:now };
+        changed++;
+      } else {
+        if (avg < h.lo) h.lo = avg;
+        if (avg > h.hi) h.hi = avg;
+        h.p = avg;
+        h.n++;
+        h.t = now;
+      }
+    }
+    /* buang riwayat yang sudah tidak ada di feed */
+    var keep = {};
+    for (var k = 0; k < list.length; k++) if (hist[list[k].id]) keep[list[k].id] = hist[list[k].id];
+    var before = Object.keys(hist).length;
+    hist = keep;
+    if (changed || before !== Object.keys(hist).length) histSave();
+  }
+
+  function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+
+  /* skor demand + alasan ringkas */
+  function demandOf(m) {
+    var rows = M.byCity(m.id), i;
+    var buyers = 0, sellers = 0, bestBuy = null, sellSum = 0, sellN = 0;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i].buy > 0) {
+        buyers++;
+        if (!bestBuy || rows[i].buy > bestBuy.px) bestBuy = { city:rows[i].city, px:rows[i].buy };
+      }
+      if (rows[i].sell > 0 && rows[i].sell < 999999) { sellers++; sellSum += rows[i].sell; sellN++; }
+    }
+    if (!sellN) return null;
+    var sellAvg = sellSum / sellN;
+    var spread = bestBuy ? Math.max(0, (bestBuy.px - sellAvg) / sellAvg) : 1;
+    var coverage = (buyers + sellers) / (2 * M.ROYALS.length);
+    var h = hist[m.id];
+    var stability = 1, range = 0;
+    if (h && h.n >= 2 && h.lo > 0) {
+      range = (h.hi - h.lo) / ((h.hi + h.lo) / 2);
+      stability = 1 - clamp01(range / 0.5);
+    }
+    var score = Math.round(100 * (0.45 * clamp01(coverage) +
+      0.35 * (1 - clamp01(spread)) + 0.20 * clamp01(stability)));
+    return {
+      id:m.id, name:m.label, tier:m.tier, score:score,
+      buyers:buyers, sellers:sellers, coverage:coverage, spread:spread,
+      stability:stability, range:range, samples:h ? h.n : 0,
+      instant:bestBuy, sellAvg:sellAvg
+    };
+  }
+
+  function demandList() {
+    var list = M.tracked(), out = [], i;
+    for (i = 0; i < list.length; i++) {
+      var d = demandOf(list[i]);
+      if (d && d.buyers > 0) out.push(d);
+    }
+    out.sort(function (a, b) {
+      if (STATE.demandSort === 'spread') return a.spread - b.spread;
+      if (STATE.demandSort === 'instant') return (b.instant ? b.instant.px : 0) - (a.instant ? a.instant.px : 0);
+      if (STATE.demandSort === 'cover') return b.coverage - a.coverage;
+      return b.score - a.score;
+    });
+    return out;
+  }
+
+  function demandBadge(d) {
+    if (!d) return '';
+    var cls = d.score >= 70 ? '' : (d.score >= 45 ? 'thin' : 'risk');
+    return '<span class="badge ' + cls + '">demand ' + d.score + '</span> ';
+  }
+
+  function renderDemand() {
+    var box = $('dmList');
+    var data = demandList();
+    $('dmCount').textContent = data.length + ' item';
+
+    var quick = data.filter(function (d) { return d.score >= 70; }).length;
+    $('dmStats').innerHTML =
+      statBox('Fast sell', quick + ' item', 'skor demand 70+', 'pos') +
+      statBox('Item dipantau', silver(data.length), 'punya buy order') +
+      statBox('Spread paling rapat',
+        data.length ? pct(data[data.length - 1].spread) : '—',
+        data.length ? data[0].name : '—') +
+      statBox('City coverage',
+        data.length ? pct(Math.max.apply(null, data.map(function (d) { return d.coverage; }))) : '—',
+        'kota dengan order dua sisi');
+
+    if (!data.length) {
+      box.innerHTML = '<div class="state">Belum ada item dengan buy order di region ini.</div>';
+      return;
+    }
+    box.innerHTML = data.slice(0, LIMIT).map(function (d) {
+      return '<button type="button" class="row" data-dm="' + esc(d.id) + '">' +
+        '<span class="r-main"><span class="r-tag">T' + (d.tier || 0) + '</span>' +
+        '<span class="r-name">' + esc(d.name) + '</span>' +
+        '<span class="r-how">buy order di ' + d.buyers + ' kota' +
+        (d.instant ? ' · instan di ' + esc(d.instant.city) : '') +
+        ' · spread ' + pct(d.spread) +
+        (d.samples >= 2 ? ' · range harga ' + pct(d.range) : '') + '</span>' +
+        demandBadge(d) + '</span>' +
+        '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
+          (d.instant ? money(d.instant.px) : '—') + '</span>' +
+        '<span class="r-roi">jual instan</span></span>' +
+        '<span class="r-grid">' +
+        '<span class="r-cell"><span class="r-cell-k">Score</span><span class="r-cell-v">' +
+          d.score + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Sell avg</span><span class="r-cell-v">' +
+          money(d.sellAvg) + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Buyers</span><span class="r-cell-v">' +
+          d.buyers + '</span></span>' +
+        '</span></button>';
+    }).join('') + autoHiddenNote(data.length);
   }
   /* ---------- shell ---------- */
   var VIEWS = ['scan', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
@@ -2084,12 +2242,17 @@
     try { Object.assign(CFG, JSON.parse(localStorage.getItem(LS_CFG) || '{}')); } catch (e) {}
     try { sessions = JSON.parse(localStorage.getItem(LS_SESS) || '[]') || []; } catch (e) {}
     try { STATE.view = localStorage.getItem(LS_VIEW) || 'scan'; } catch (e) {}
+    histLoad();
     if (VIEWS.indexOf(STATE.view) < 0) STATE.view = 'scan';
 
     fillCfgInputs();
 
     /* tombol region: west / east / europe */
     var rseg = $('regionSeg');
+    M.subscribe(function () {
+      histSample();
+      if (STATE.view === 'scan' && $('dmList')) renderDemand();
+    });
     M.REGION_ORDER.forEach(function (k) {
       var b = document.createElement('button');
       b.type = 'button';
@@ -2126,6 +2289,41 @@
     });
 
     /* chip tier di Today */
+    $('dmSort').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.demandSort = c.dataset.ds;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderDemand();
+    });
+
+    $('dmList').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      STATE.selected = b.dataset.dm;
+      var m = M.meta(b.dataset.dm);
+      var d = demandOf(m);
+      var ie = d && d.instant ? M.at(b.dataset.dm, d.instant.city) : null;
+      if (ie) {
+        if (M.ROYALS.indexOf(d.instant.city) > -1) {
+          CFG.city = d.instant.city;
+          saveCfg();
+          fillCfgInputs();
+        }
+        $('flBuy').value = Math.round(ie.sell || 0);
+        $('flSell').value = Math.round(ie.buy || 0);
+      } else {
+        var ent = M.at(b.dataset.dm, CFG.city);
+        if (ent) {
+          $('flBuy').value = Math.round(ent.sell || 0);
+          $('flSell').value = Math.round(ent.buy || 0);
+        }
+      }
+      setView('flip');
+    });
+
     $('tdTier').addEventListener('click', function (e) {
       var c = e.target.closest('.chip');
       if (!c) return;
