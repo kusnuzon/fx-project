@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.7';
+  var BUILD = '2.8';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -970,6 +970,7 @@
           if (o && o.profit > 0) {
             o.head = money(o.profit) + ' /unit';
             o.roiTxt = pct(o.roi) + ' ROI · modal ' + money(o.capital);
+            o.how = 'Beli bahan di ' + o.city + ', refine, jual refined di ' + o.city;
             o.badges = o.inst ? [] : [{ cls:'thin', t:'tanpa buy order' }];
             out.push(o);
           }
@@ -1354,44 +1355,132 @@
     }).join('');
   }
 
+/* peluang terbaik lintas semua strategi. Tidak bergantung mode di tab Scan,
+     supaya angka pembanding di tab Catatan selalu konsisten. */
+  function bestOppNow(pre) {
+    pre = pre || {};
+    var best = null;
+    function take(o) {
+      if (!o || !(o.sph > 0)) return;
+      if (!best || o.sph > best.sph) best = o;
+    }
+    var fl = pre.flip || autoFlip();
+    if (fl.length) take(fl[0]);
+    var rf = pre.refine || autoRefine();
+    if (rf.length) take(rf[0]);
+    var t = STATE.zTier, i;
+    for (i = 0; i < M.CHAINS.length; i++) take(zeroChain(M.CHAINS[i], t));
+    take(zeroFish(t));
+    if (!best) return null;
+    /* asalkan tab tujuan supaya tombol bisa langsung membuka tempatnya */
+    best.go = best.kind === 'refine' ? 'refine'
+      : (best.kind === 'zero' || best.kind === 'zero-fish') ? 'zero' : 'flip';
+    return best;
+  }
+
+  function rateOf(s) { return s.min > 0 ? s.silver / (s.min / 60) : 0; }
+
   function renderSession() {
     var box = $('snList'), tot = 0, min = 0, best = null;
     sessions.forEach(function (s) {
       tot += s.silver; min += s.min;
-      if (!best || s.silver / (s.min / 60) > best.silver / (best.min / 60)) best = s;
+      if (!best || rateOf(s) > rateOf(best)) best = s;
     });
     var rate = min > 0 ? tot / (min / 60) : 0;
-    var top = opportunities()[0];
-    var gap = top && rate > 0 ? (rate / top.sph) * 100 : 0;
+    /* daftar dihitung sekali lalu dipakai untuk hero, stat, dan saran aktivitas */
+    var flAll = autoFlip(), rfAll = autoRefine();
+    var top = bestOppNow({ flip:flAll, refine:rfAll });
+    var topRate = top ? top.sph : 0;
+    var gap = rate > 0 && topRate > 0 ? (rate / topRate) * 100 : 0;
 
     $('snStats').innerHTML =
-      '<span class="stat"><span class="stat-k">Total silver</span>' +
-        '<span class="stat-v">' + money(tot) + '</span>' +
-        '<span class="stat-s">' + sessions.length + ' sesi · ' + (min / 60).toFixed(1) + ' jam</span></span>' +
-      '<span class="stat' + (rate > 0 ? ' pos' : '') + '"><span class="stat-k">Silver / jam</span>' +
-        '<span class="stat-v">' + (rate > 0 ? money(rate) : '—') + '</span>' +
-        '<span class="stat-s">terbaik ' + (best ? money(best.silver / (best.min / 60)) : '—') + '</span></span>' +
-      '<span class="stat"><span class="stat-k">Peluang terbaik</span>' +
-        '<span class="stat-v">' + (top ? money(top.sph) : '—') + '</span>' +
-        '<span class="stat-s">' + (top ? esc(top.name) : 'tunggu feed') + '</span></span>' +
-      '<span class="stat' + (gap >= 100 ? ' pos' : gap > 0 ? ' neg' : '') + '"><span class="stat-k">Kamu vs peluang</span>' +
-        '<span class="stat-v">' + (gap > 0 ? pct(gap) : '—') + '</span>' +
-        '<span class="stat-s">' + (gap >= 100 ? 'di atas peluang' : 'bisa lebih cepat') + '</span></span>';
+      statBox('Kecepatan kamu', rate > 0 ? money(rate) : '—',
+        rate > 0 ? silver(sessions.length) + ' sesi · ' + (min / 60).toFixed(1) + ' jam'
+                 : 'belum ada catatan', rate > 0 ? 'pos' : '') +
+      statBox('Peluang terbaik', topRate > 0 ? money(topRate) : '—',
+        top ? top.name + ' · ' + top.tag : 'tunggu feed') +
+      statBox('Selisih', rate > 0 && topRate > 0 ? pct(gap) : '—',
+        rate > 0 && topRate > 0
+          ? (gap >= 100 ? 'kamu sudah lebih cepat' : 'peluang ' + pct(100 - gap) + ' lebih tinggi')
+          : 'isi catatan dulu',
+        rate > 0 && topRate > 0 ? (gap >= 100 ? 'pos' : 'neg') : '') +
+      statBox('Terbaik kamu', best ? money(rateOf(best)) : '—',
+        best ? esc(best.act) : '—');
+
+    /* hero: kesimpulan otomatis, tidak perlu user paham rumus */
+    var hero = $('snHero');
+    if (!top) {
+      hero.innerHTML =
+        '<span class="hero-k">Belum ada peluang yang bisa dihitung</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Tunggu feed harga selesai sync, atau ganti region di atas.</span>';
+    } else if (!rate) {
+      hero.innerHTML =
+        '<span class="hero-k">Mulai dari yang ini</span>' +
+        '<span class="hero-h">' + esc(top.name) + '</span>' +
+        '<span class="hero-s">' + esc(top.how || top.tag) + '</span>' +
+        '<span class="hero-money">' + money(topRate) + ' / jam</span>' +
+        '<span class="hero-meta">perkiraan dengan ' + silver(CFG.throughput) +
+        ' unit/jam · modal ' + (top.capital > 0 ? money(top.capital) : '0 ✦') + '</span>' +
+        '<span class="hero-go">Catat silver yang benar-benar kamu dapat, lalu ulangi — ' +
+        'nanti muncul perbandingan kecepatan kamu vs peluang.</span>';
+    } else if (gap >= 100) {
+      hero.innerHTML =
+        '<span class="hero-k">Catatan kamu · lebih cepat dari peluang</span>' +
+        '<span class="hero-h">' + esc(best.act) + '</span>' +
+        '<span class="hero-s">' + money(rateOf(best)) + ' per jam, peluang terbaik di scanner ' +
+        money(topRate) + ' per jam (' + esc(top.name) + ' di ' + esc(top.tag) + ').</span>' +
+        '<span class="hero-money">' + money(rate) + ' / jam</span>' +
+        '<span class="hero-meta">' + pct(gap) + ' dari peluang terbaik · ' +
+        silver(sessions.length) + ' sesi tercatat</span>' +
+        '<span class="hero-go">Pertahankan aktivitas ini.</span>';
+    } else {
+      hero.innerHTML =
+        '<span class="hero-k">Catatan kamu · belumARNING secepat peluang</span>' +
+        '<span class="hero-h">' + esc(top.name) + '</span>' +
+        '<span class="hero-s">' + esc(top.how || top.tag) +
+        ' — peluang ini ' + pct(100 - gap) + ' lebih tinggi dari kecepatan catatamu (' +
+        money(rate) + ' per jam).</span>' +
+        '<span class="hero-money">' + money(topRate) + ' / jam</span>' +
+        '<span class="hero-meta">' + money(rate) + ' per jam sekarang · modal ' +
+        (top.capital > 0 ? money(top.capital) : '0 ✦') +
+        ' · ketuk tombol di bawah untuk membukanya</span>' +
+        '<span class="hero-go">Coba satu siklus, lalu catat hasilnya di sini untuk dibandingkan.</span>';
+    }
+
+    /* saran aktivitas supaya tidak perlu ketik dari nol */
+    var acts = [], i;
+    for (i = 0; i < Math.min(3, rfAll.length); i++) {
+      acts.push('refine ' + rfAll[i].chain + ' T' + rfAll[i].tier + ' di ' + rfAll[i].city);
+    }
+    for (i = 0; i < Math.min(3, flAll.length); i++) {
+      acts.push('flip ' + flAll[i].name + ' ' + flAll[i].tag);
+    }
+    $('snActs').innerHTML = acts.map(function (a) {
+      return '<option value="' + esc(a) + '"></option>';
+    }).join('');
+    $('snAct').setAttribute('list', 'snActs');
 
     box.innerHTML = sessions.length
-      ? sessions.map(function (s, i) {
+      ? sessions.map(function (s) {
+          var r = rateOf(s);
+          var d = topRate > 0 && r > 0 ? (r / topRate) * 100 : 0;
+          var cmp = topRate > 0 && r > 0
+            ? '<span class="sess-m"> · ' + (d >= 100 ? 'lebih cepat dari peluang' : 'di bawah peluang ' + pct(d)) + '</span>'
+            : '';
           return '<div class="sess"><span class="sess-a">' +
             '<span class="sess-n">' + esc(s.act) + '</span>' +
-            '<span class="sess-m">' + silver(s.min) + ' mnt · ' + money(s.silver / (s.min / 60)) + '/jam</span>' +
+            '<span class="sess-m">' + silver(s.min) + ' mnt · ' + money(r) + '/jam' + cmp + '</span>' +
             '</span><span class="sess-v" style="color:' + (s.silver >= 0 ? 'var(--pos)' : 'var(--neg)') + '">' +
             signed(s.silver) + '</span>' +
-            '<button type="button" class="x" data-i="' + i + '" aria-label="Hapus sesi">' +
+            '<button type="button" class="x" data-i="' + i + '" aria-label="Hapus catatan">' +
             '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">' +
             '<path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>';
         }).join('')
-      : '<div class="state">Belum ada sesi. Catat silver yang kamu hasilkan supaya bisa dibandingkan dengan peluang di scanner.</div>';
+      : '<div class="state">Belum ada catatan. Isi aktivitas + silver bersih + durasi, lalu tekan ' +
+        '<b>Tambah catatan</b> — setelah itu bagian ini otomatis membandingkan kecepatanmu dengan ' +
+        'peluang terbaik dan memberi tahu kalau ada yang lebih cepat.</div>';
   }
-
   /* ---------- shell ---------- */
   var VIEWS = ['scan', 'zero', 'refine', 'flip', 'session', 'search'];
 
@@ -1851,6 +1940,23 @@
       try { localStorage.setItem(LS_SESS, JSON.stringify(sessions)); } catch (e) {}
       renderSession();
     });
+    $('snGoBest').addEventListener('click', function () {
+      var top = bestOppNow();
+      if (!top) return;
+      if (top.chain) {
+        STATE.chain = top.chain;
+        STATE.tier = top.tier || STATE.tier;
+        $('rfChain').value = STATE.chain;
+        $('rfTier').value = String(STATE.tier);
+        if (top.city && M.ROYALS.indexOf(top.city) > -1) {
+          CFG.city = top.city;
+          saveCfg();
+          fillCfgInputs();
+        }
+      }
+      setView(top.go || 'zero');
+    });
+
     $('snClear').addEventListener('click', function () {
       if (sessions.length && confirm('Hapus semua sesi?')) {
         sessions = [];
