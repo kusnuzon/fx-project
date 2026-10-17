@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.6';
+  var BUILD = '3.7';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -2104,8 +2104,274 @@
         '</span></button>';
     }).join('') + autoHiddenNote(data.length);
   }
+/* ---------- run: kalkulator gather di Red Zone / Black Zone ----------
+     Tujuannya satu: berapa yang harus kamu bawa ke zona berbahaya, dan
+     berapa yang harusaal hasil per jalan supaya sekali mati menghapus
+     hasil seluruh run.
+
+     Asumsi yang dipakai (bisa diubah user):
+     - Yield bonus zona berbahaya 15% (kota 58%), jadi unit per node naik
+     - Harga jual diambil dari kota tujuan (BZ = Caerleon)
+     - Risiko=user input jumlah kematian per jam; tidak ada angka aman dari
+       game, jadi ini murni penilaian player
+     Semua biaya alat/armor/-mount bisa diisi manual atau disinkron dari
+     harga pasar. */
+  var LS_RUN = 'so_run_v1';
+  var RUN_DEFAULT = {
+    zone: 'bz', prof: 'ore', tier: 4,
+    nodesPerTrip: 10, minutesPerTrip: 30, deathsPerHour: 0,
+    foodPerTrip: 2, foodCost: 120, transportPerTrip: 0,
+    capitalAtRisk: 0, gearAtRisk: true, safeRuns: 3,
+    gear: {}
+  };
+  var RUN = Object.assign({}, RUN_DEFAULT, { gear:{} });
+  var ZONE_YIELD = 15;
+  var SAFE_RATIO = 0.95;   /* harga gila: median kota lain, dipakai sebagai batas atas */
+
+  function runLoad() {
+    try {
+      var c = JSON.parse(localStorage.getItem(LS_RUN) || 'null');
+      if (c) RUN = Object.assign({}, RUN_DEFAULT, c, { gear:c.gear || {} });
+    } catch (e) { RUN = Object.assign({}, RUN_DEFAULT, { gear:{} }); }
+  }
+  function runSave() {
+    try { localStorage.setItem(LS_RUN, JSON.stringify(RUN)); } catch (e) {}
+  }
+
+  function runCities() {
+    return RUN.zone === 'bz' ? ['Caerleon'] : [CFG.city];
+  }
+
+  /* daftar gear yang dipakai, id-nya mengikuti tier dan profesi */
+  function runGear(tier, prof) {
+    var t = tier;
+    var tool = prof === 'ore' ? '2H_TOOL_PICK'
+      : prof === 'wood' ? '2H_TOOL_AXE'
+      : prof === 'fiber' ? '2H_TOOL_SICKLE'
+      : prof === 'hide' ? '2H_TOOL_KNIFE' : '';
+    var list = [
+      { k:'tool',   n:'Gathering tool', id:tool ? 'T' + t + '_' + tool : '', req:true },
+      { k:'armor',  n:'Gatherer armor', id:'T' + t + '_ARMOR_PLATE_SET1', req:true },
+      { k:'mount',  n:'Mount',          id:'T' + t + '_MOUNT_HORSE', req:true },
+      { k:'upg',    n:'Mount upgrade',  id:'T' + t + '_MOUNT_ARMORED_HORSE', req:false },
+      { k:'weapon', n:'Escape weapon',  id:'T' + t + '_MAIN_DAGGER', req:false },
+      { k:'shield', n:'Shield',         id:'T' + t + '_OFF_SHIELD', req:false },
+      { k:'bag',    n:'Bag / saddle',   id:'T' + t + '_BAG', req:true },
+      { k:'potion', n:'Energy potion',  id:'T' + t + '_POTION_ENERGY', req:false }
+    ];
+    if (prof === 'fish') list[0] = { k:'rod', n:'Fishing rod', id:'T' + t + '_ROD_FISHING', req:true };
+    return list;
+  }
+
+  /* harga pasar: median antar kota, harga gila dibuang */
+  function runMarketPrice(id) {
+    if (!id) return 0;
+    var vals = [], i;
+    for (i = 0; i < M.ROYALS.length; i++) {
+      var e = M.at(id, M.ROYALS[i]);
+      if (!e) continue;
+      var v = Math.max(num(e.sell), num(e.buy));
+      if (v > 0 && v < 999999) vals.push(v);
+    }
+    if (!vals.length) return 0;
+    vals.sort(function (a, b) { return a - b; });
+    var med = vals[Math.floor(vals.length / 2)];
+    /* buang harga yang jauh di atas median (order salah ketik) */
+    var safe = vals.filter(function (v) { return v <= med * SAFE_RATIO * 2; });
+    safe.sort(function (a, b) { return a - b; });
+    return safe.length ? safe[Math.floor(safe.length / 2)] : med;
+  }
+
+  function runGearTotal() {
+    var list = runGear(RUN.tier, RUN.prof), tot = 0;
+    list.forEach(function (g) { tot += num(RUN.gear[g.k]); });
+    return tot;
+  }
+
+  /* harga jual hasil gather di kota tujuan (BZ = Caerleon) */
+  function runSell() {
+    var chain = M.CHAINS.filter(function (c) { return c.key === RUN.prof; })[0];
+    if (!chain) return null;
+    var rawId = M.rawId(RUN.tier, chain);
+    var city = RUN.zone === 'bz' ? 'Caerleon' : CFG.city;
+    var rows = M.byCity(rawId), best = null, i;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i].city !== city) continue;
+      if (rows[i].buy > 0 && (!best || rows[i].buy > best.px)) best = { city:city, px:rows[i].buy };
+    }
+    /*BZ: kalau tidak ada buy order di Caerleon, cari kota terdekat sebagai fallback */
+    if (!best && RUN.zone === 'bz') {
+      var alt = null;
+      for (i = 0; i < rows.length; i++) {
+        if (rows[i].buy > 0 && (!alt || rows[i].buy > alt.px)) alt = { city:rows[i].city, px:rows[i].buy };
+      }
+      best = alt;
+    }
+    if (!best) return null;
+    return { id:rawId, name:M.meta(rawId).label, city:best.city, net:netSell(best.px) };
+  }
+
+  function runCalc() {
+    var sell = runSell();
+    var units = NODE_YIELD * (1 + ZONE_YIELD / 100);
+    var perNode = sell ? sell.net * units : 0;
+    var nodes = Math.max(1, num(RUN.nodesPerTrip));
+    var gross = perNode * nodes;
+    var food = num(RUN.foodPerTrip) * num(RUN.foodCost);
+    var trans = num(RUN.transportPerTrip);
+    var costPerTrip = food + trans;
+    var netTrip = gross - costPerTrip;
+    var mins = Math.max(1, num(RUN.minutesPerTrip));
+    var trips = 60 / mins;
+    var netHour = netTrip * trips;
+    var deaths = num(RUN.deathsPerHour);
+    /* default: di BZ isi tas hilang kalau mati, di RZ isi tas biasanya aman */
+    var capital = num(RUN.capitalAtRisk);
+    if (!capital) capital = RUN.zone === 'bz' ? (gross + costPerTrip) : 0;
+    var gearRisk = RUN.gearAtRisk ? runGearTotal() : 0;
+    var atRisk = capital + gearRisk;
+    var loss = deaths * atRisk;
+    var real = netHour - loss;
+    var breakEven = Math.max(0, netTrip);
+    var ceiling = netTrip * Math.max(1, num(RUN.safeRuns));
+    return {
+      sell:sell, units:units, perNode:perNode, nodes:nodes, gross:gross,
+      food:food, trans:trans, costPerTrip:costPerTrip, netTrip:netTrip,
+      mins:mins, trips:trips, netHour:netHour, deaths:deaths,
+      capital:capital, gearRisk:gearRisk, atRisk:atRisk, loss:loss, real:real,
+      breakEven:breakEven, ceiling:ceiling, runs:Math.max(1, num(RUN.safeRuns)),
+      verdict:atRisk <= breakEven ? 'safe'
+        : atRisk <= ceiling ? 'ok' : 'risky'
+    };
+  }
+
+  function runVerdictText(c) {
+    if (!c.sell) return { k:'No sell price', h:'Belum ada harga jual', s:'Belum ada buy order untuk hasil gather ini di kota tujuan.' };
+    if (c.verdict === 'safe') {
+      return { k:'Go', h:'Sekali mati masih tertutup',
+        s:'Capital yang dibawa (' + money(c.atRisk) + ') di bawah untung per jalan (' + money(c.netTrip) + ').' };
+    }
+    if (c.verdict === 'ok') {
+      return { k:'Go carefully', h:'Bawa lebih sedikit',
+        s:'Batas aman ' + money(c.ceiling) + '. Capital sekarang ' + money(c.atRisk) +
+          ' — turunkan isi tas supaya tidak rugi kalau mati.' };
+    }
+    return { k:'Too risky', h:'Capital terlalu besar',
+      s:'Capital ' + money(c.atRisk) + ' jauh di atas untung per jalan ' + money(c.netTrip) +
+        '. Satu kematian menghapus ' + Math.round(c.atRisk / Math.max(1, c.netTrip)) + 'Cx hasil run.' };
+  }
+
+  /* helper kecil supaya string hero tetap ringkas */
+  function renderRun() {
+    var c = runCalc();
+    var gear = runGear(RUN.tier, RUN.prof);
+    var zoneName = RUN.zone === 'bz' ? 'Black Zone (Caerleon)' : 'Red Zone';
+
+    $('runZone').querySelectorAll('button').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(x.dataset.rz === RUN.zone));
+    });
+    $('runProf').querySelectorAll('.chip').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(x.dataset.rp === RUN.prof));
+    });
+    $('runTier').querySelectorAll('.chip').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(num(x.dataset.rt) === RUN.tier));
+    });
+
+    $('runStats').innerHTML =
+      statBox('Sell per node', c.sell ? money(c.perNode) : '—',
+        c.sell ? c.sell.name + ' · ' + c.sell.city : 'belum ada harga', 'pos') +
+      statBox('Net per trip', money(c.netTrip),
+        c.nodes + ' node · ' + c.mins + ' menit') +
+      statBox('Net per hour', money(c.real),
+        c.deaths > 0 ? 'setelah risiko ' + money(c.loss) + '/jam' : 'belum dikurangi risiko') +
+      statBox('Max capital', money(c.ceiling),
+        'batas aman ' + c.runs + 'x', 'pos');
+
+    var v = runVerdictText(c);
+    $('runHero').innerHTML =
+      '<span class="hero-k">' + esc(v.k) + ' · ' + esc(zoneName) + ' · T' + RUN.tier + '</span>' +
+      '<span class="hero-h">' + esc(v.h) + '</span>' +
+      '<span class="hero-s">' + esc(v.s) + '</span>' +
+      '<span class="hero-money">' + money(c.real) + ' / hour</span>' +
+      '<span class="hero-meta">' + silver(Math.round(c.units * 10) / 10) + ' unit per node · yield ' + ZONE_YIELD +
+      '% · ' + silver(Math.round(c.trips * 10) / 10) + ' trip per jam</span>' +
+      '<span class="hero-go">Isi biaya alat di bawah, atau pakai Sync price untuk mengambil harga pasar.</span>';
+
+    /* gear */
+    var gearHtml = gear.map(function (g) {
+      var v2 = num(RUN.gear[g.k]);
+      var mk = runMarketPrice(g.id);
+      return '<div class="row" style="grid-template-columns:none">' +
+        '<span class="r-main">' +
+        '<span class="r-tag">' + (g.req ? 'WAJIB' : 'optional') + '</span>' +
+        '<span class="r-name">' + esc(g.n) + '</span>' +
+        '<span class="r-how">' + esc(g.id || 'manual') + '</span>' +
+        (g.req ? '' : '<span class="badge deep">optional</span>') +
+        '</span><span class="r-right" style="align-items:center">' +
+        '<input type="number" class="run-input" data-gear="' + esc(g.k) + '" value="' +
+        (v2 || '') + '" placeholder="' + (mk || 0) + '" step="1" min="0" inputmode="numeric">' +
+        '</span><span class="r-grid"><span class="r-cell">' +
+        '<span class="r-cell-k">Market median</span><span class="r-cell-v">' +
+        (mk ? money(mk) : '—') + '</span></span></span></div>';
+    }).join('');
+    $('runGearList').innerHTML = gearHtml ||
+      '<div class="state">Pilih profesi dulu.</div>';
+    $('runGearTotal').textContent = money(runGearTotal());
+
+    /* breakdown */
+    $('runOut').innerHTML =
+      '<dl class="kv">' +
+      '<dt>Zone</dt><dd>' + esc(zoneName) + '</dd>' +
+      '<dt>Item dijual</dt><dd>' + (c.sell ? esc(c.sell.name) + ' (' + esc(c.sell.city) + ')' : '—') + '</dd>' +
+      '<dt>Unit per node</dt><dd>' + silver(Math.round(c.units * 100) / 100) + ' <span style="color:var(--dim)">(yield ' + ZONE_YIELD + '% di zona)</span></dd>' +
+      '<dt>Nilai per node</dt><dd>' + money(c.perNode) + '</dd>' +
+      '<dt>Node per jalan</dt><dd>' + silver(c.nodes) + '</dd>' +
+      '<dt>Bruto per jalan</dt><dd>' + money(c.gross) + '</dd>' +
+      '<dt>Makan per jalan</dt><dd>' + money(c.food) + '</dd>' +
+      '<dt>Transport per jalan</dt><dd>' + money(c.trans) + '</dd>' +
+      '<dt>Net per jalan</dt><dd class="' + (c.netTrip >= 0 ? 'ok' : 'no') + '">' + money(c.netTrip) + '</dd>' +
+      '<dt>Waktu per jalan</dt><dd>' + silver(c.mins) + ' menit</dd>' +
+      '<dt>Trip per jam</dt><dd>' + silver(Math.round(c.trips * 10) / 10) + '</dd>' +
+      '<dt>Net per jam (sebelum risiko)</dt><dd>' + money(c.netHour) + '</dd>' +
+      '<dt>Kematian per jam</dt><dd class="wa">' + silver(c.deaths) + '</dd>' +
+      '<dt>Capital dibawa</dt><dd>' + money(c.capital) +
+        (c.gearRisk > 0 ? ' <span style="color:var(--dim)">+ gear ' + money(c.gearRisk) + '</span>' : '') + '</dd>' +
+      '<dt>Kerugian per jam</dt><dd class="no">−' + money(c.loss) + '</dd>' +
+      '<dt>Net per jam (real)</dt><dd class="' + (c.real >= 0 ? 'ok' : 'no') + '">' + money(c.real) + '</dd>' +
+      '<dt>Break-even 1 kematian</dt><dd class="wa">' + money(c.breakEven) + '</dd>' +
+      '<dt>Batas aman ' + silver(c.safeRuns) + '×</dt><dd class="ok">' + money(c.ceiling) + '</dd>' +
+      '</dl>';
+
+    /* langkah */
+    $('runSteps').innerHTML = [
+      ['Lengkapi gear', 'Alat T' + RUN.tier + ' + gatherer armor + mount + tas. Sisanya opsional tapi disarankan'],
+      ['Isi tas dengan survival kit', 'makan ' + silver(RUN.foodPerTrip) + 'x, potion energy, dan weapon untuk escape'],
+      ['Pilih hari dan jam sepi', 'BZ dan RZ paling aman jam sepi; income rate lebih rendah tapi risiko kecil'],
+      ['Ambil ' + silver(c.nodes) + ' node', 'kira-kira ' + c.mins + ' menit, lalu langsung pulang'],
+      ['Jual di ' + (c.sell ? c.sell.city : 'kota tujuan'),
+        'nilai ' + money(c.gross) + ' per jalan; jangan tinggal lebih lama dari itu']
+    ].map(function (s) {
+      return '<li><b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
+    }).join('');
+  }
+
+  function runSyncPrices() {
+    var gear = runGear(RUN.tier, RUN.prof);
+    var ids = gear.map(function (g) { return g.id; }).filter(Boolean);
+    if (!ids.length) return;
+    var apply = function () {
+      gear.forEach(function (g) {
+        var p = runMarketPrice(g.id);
+        if (p > 0) RUN.gear[g.k] = p;
+      });
+      runSave();
+      renderRun();
+    };
+    if (!M.hasAny()) { apply(); return; }
+    M.fetchIds(ids).then(apply, apply);
+  }
   /* ---------- shell ---------- */
-  var VIEWS = ['scan', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
+  var VIEWS = ['scan', 'run', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
 
   function setView(v) {
     STATE.view = v;
@@ -2123,6 +2389,7 @@
 
   function renderAll() {
     if (STATE.view === 'scan') renderToday();
+    else if (STATE.view === 'run') renderRun();
     else if (STATE.view === 'zero') renderZero();
     else if (STATE.view === 'craft') renderCraft();
     else if (STATE.view === 'refine') renderRefine();
@@ -2243,6 +2510,7 @@
     try { sessions = JSON.parse(localStorage.getItem(LS_SESS) || '[]') || []; } catch (e) {}
     try { STATE.view = localStorage.getItem(LS_VIEW) || 'scan'; } catch (e) {}
     histLoad();
+    runLoad();
     if (VIEWS.indexOf(STATE.view) < 0) STATE.view = 'scan';
 
     fillCfgInputs();
@@ -2322,6 +2590,90 @@
         }
       }
       setView('flip');
+    });
+
+    /* ---------- tab Run (Red/Black zone) ---------- */
+    function runFill() {
+      $('runNodes').value = RUN.nodesPerTrip;
+      $('runMins').value = RUN.minutesPerTrip;
+      $('runFoodQty').value = RUN.foodPerTrip;
+      $('runFoodCost').value = RUN.foodCost;
+      $('runTrans').value = RUN.transportPerTrip;
+      $('runDeaths').value = RUN.deathsPerHour;
+      $('runCapital').value = RUN.capitalAtRisk;
+      $('runSafe').value = RUN.safeRuns;
+      $('runGearRisk').checked = !!RUN.gearAtRisk;
+    }
+    runFill();
+
+    $('runZone').addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      RUN.zone = b.dataset.rz;
+      if (RUN.zone === 'rz') RUN.gearAtRisk = false;
+      if (RUN.zone === 'bz') RUN.gearAtRisk = true;
+      runFill();
+      runSave();
+      renderRun();
+    });
+
+    $('runProf').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      RUN.prof = c.dataset.rp;
+      runSave();
+      renderRun();
+    });
+
+    $('runTier').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      RUN.tier = num(c.dataset.rt);
+      runSave();
+      renderRun();
+    });
+
+    ['runNodes', 'runMins', 'runFoodQty', 'runFoodCost', 'runTrans', 'runDeaths',
+     'runCapital', 'runSafe'].forEach(function (id) {
+      $(id).addEventListener('input', function () {
+        RUN.nodesPerTrip = num($('runNodes').value) || 1;
+        RUN.minutesPerTrip = Math.max(1, num($('runMins').value) || 1);
+        RUN.foodPerTrip = num($('runFoodQty').value);
+        RUN.foodCost = num($('runFoodCost').value);
+        RUN.transportPerTrip = num($('runTrans').value);
+        RUN.deathsPerHour = num($('runDeaths').value);
+        RUN.capitalAtRisk = num($('runCapital').value);
+        RUN.safeRuns = Math.max(1, num($('runSafe').value) || 1);
+        runSave();
+        renderRun();
+      });
+    });
+
+    $('runGearRisk').addEventListener('change', function () {
+      RUN.gearAtRisk = this.checked;
+      runSave();
+      renderRun();
+    });
+
+    $('runGearList').addEventListener('input', function (e) {
+      var i = e.target;
+      if (!i.dataset || !i.dataset.gear) return;
+      RUN.gear[i.dataset.gear] = num(i.value);
+      runSave();
+      renderRun();
+    });
+
+    $('runSync').addEventListener('click', function () {
+      this.textContent = 'Syncing...';
+      var btn = this;
+      runSyncPrices();
+      setTimeout(function () { btn.textContent = 'Sync price from market'; }, 1200);
+    });
+
+    $('runGearReset').addEventListener('click', function () {
+      RUN.gear = {};
+      runSave();
+      renderRun();
     });
 
     $('tdTier').addEventListener('click', function (e) {

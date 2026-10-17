@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.6">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.7">
 </head>
 <body>
   <div class="app">
@@ -80,6 +80,12 @@
           <path d="M3 7.5h12M12 4l3.4 3.5L12 11" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M17 12.5H5M8 9l-3.4 3.5L8 16" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>Flip
+      </button>
+      <button type="button" data-v="run" role="tab" aria-controls="view-run" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M10 17.4s5.6-4.6 5.6-9a5.6 5.6 0 10-11.2 0c0 4.4 5.6 9 5.6 9z" stroke-linejoin="round"/>
+          <circle cx="10" cy="8.2" r="1.9"/>
+        </svg>Run
       </button>
       <button type="button" data-v="session" role="tab" aria-controls="view-session" aria-selected="false">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -184,6 +190,106 @@
         Semua angka memakai harga live dari Albion Online Data Project, sudah dipotong tax + setup fee
         sesuai parameter di bawah. Baris Gather dan Fishing tidak butuh silver — barangnya dari node
         atau sungai, jadi perbandingannya memakai <b>instant sell</b> (buy order tertinggi).
+      </p>
+    </section>
+
+    <!-- ===== 2 RUN (RZ/BZ) ===== -->
+    <section class="view" id="view-run" role="tabpanel" aria-label="Run red/black zone">
+      <p class="note" style="margin-top:0">
+        Kalkulator gather di zona berbahaya. Pertanyaan yang dijawab: <b>berapa yang harus dibawa, dan
+        berapa yang harus dapat dalam satu jalan supaya kalau mati tidak menghapus hasil run.</b>
+        Semua nilai bisa diisi sendiri atau disinkron dari harga pasar, dan tersimpan di perangkat ini.
+      </p>
+
+      <div class="seg" id="runZone" role="tablist" aria-label="Zone">
+        <button type="button" data-rz="rz" role="tab" aria-selected="false">Red Zone</button>
+        <button type="button" data-rz="bz" role="tab" aria-selected="true">Black Zone — Caerleon</button>
+      </div>
+
+      <div class="tools" id="runProf" role="group" aria-label="Profesi">
+        <button type="button" class="chip" data-rp="ore" aria-pressed="true">Mining</button>
+        <button type="button" class="chip" data-rp="wood" aria-pressed="false">Logging</button>
+        <button type="button" class="chip" data-rp="fiber" aria-pressed="false">Gather</button>
+        <button type="button" class="chip" data-rp="hide" aria-pressed="false">Skinning</button>
+        <button type="button" class="chip" data-rp="stone" aria-pressed="false">Stonecutting</button>
+        <button type="button" class="chip" data-rp="fish" aria-pressed="false">Fishing</button>
+      </div>
+
+      <div class="tools" id="runTier" role="group" aria-label="Tier">
+        <button type="button" class="chip" data-rt="1" aria-pressed="false">T1</button>
+        <button type="button" class="chip" data-rt="2" aria-pressed="false">T2</button>
+        <button type="button" class="chip" data-rt="3" aria-pressed="false">T3</button>
+        <button type="button" class="chip" data-rt="4" aria-pressed="true">T4</button>
+        <button type="button" class="chip" data-rt="5" aria-pressed="false">T5</button>
+        <button type="button" class="chip" data-rt="6" aria-pressed="false">T6</button>
+        <button type="button" class="chip" data-rt="7" aria-pressed="false">T7</button>
+        <button type="button" class="chip" data-rt="8" aria-pressed="false">T8</button>
+      </div>
+
+      <div class="stats" id="runStats"></div>
+
+      <div class="hero" id="runHero"></div>
+
+      <div class="sec"><span class="sec-h">Gear kit</span><span class="sec-s" id="runGearTotal">0 ✨</span></div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button type="button" class="btn primary" id="runSync">Sync price from market</button>
+        <button type="button" class="btn" id="runGearReset">Reset gear cost</button>
+      </div>
+      <div class="list" id="runGearList"></div>
+      <p class="hint" style="margin-top:6px">
+        Kolom kosong pakai harga median pasar. Tanda <b>WAJIB</b> berarti tanpa itu run tidak mungkin; sisanya opsional tapi disarankan supaya punya alat kabur dan ruang untuk bawa hasil.
+      </p>
+
+      <div class="sec"><span class="sec-h">Run settings</span><span class="sec-s">isi sesuai ritmemu</span></div>
+      <div class="f2">
+        <div><label class="lbl" for="runNodes">Nodes per run</label>
+          <input type="number" id="runNodes" min="1" step="1" inputmode="numeric"></div>
+        <div><label class="lbl" for="runMins">Minutes per run</label>
+          <input type="number" id="runMins" min="1" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="f2">
+        <div><label class="lbl" for="runFoodQty">Food per run</label>
+          <input type="number" id="runFoodQty" min="0" step="1" inputmode="numeric"></div>
+        <div><label class="lbl" for="runFoodCost">Food cost (silver)</label>
+          <input type="number" id="runFoodCost" min="0" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="f2">
+        <div><label class="lbl" for="runTrans">Transport per run (silver)</label>
+          <input type="number" id="runTrans" min="0" step="1" inputmode="numeric"></div>
+        <div><label class="lbl" for="runDeaths">Deaths per hour</label>
+          <input type="number" id="runDeaths" min="0" step="0.05" inputmode="decimal"></div>
+      </div>
+      <div class="f2">
+        <div><label class="lbl" for="runCapital">Capital carried (silver)</label>
+          <input type="number" id="runCapital" min="0" step="1" inputmode="numeric"></div>
+        <div><label class="lbl" for="runSafe">Safe runs before loss</label>
+          <input type="number" id="runSafe" min="1" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="f2">
+        <label class="switch">Hitung gear sebagai capital berisiko
+          <input type="checkbox" id="runGearRisk">
+        </label>
+        <p class="hint" style="align-self:center">
+          Di Black Zone, death berarti kehilangan isi tas dan gear yang dipakai. Di Red Zone, gear
+          umumnya aman, tapi kamu bisa di-grief berulang.
+        </p>
+      </div>
+
+      <div class="sec"><span class="sec-h">Rincian hitungan</span><span class="sec-s">profit vs risiko</span></div>
+      <div class="read" id="runOut"></div>
+
+      <div class="sec"><span class="sec-h">Run plan</span><span class="sec-s">urutan aman</span></div>
+      <ol class="steps" id="runSteps"></ol>
+
+      <p class="note">
+        Yield di zona berbahaya 15% (di kota 58%), jadi unit per node dihitung naik 15% dari asumsi
+        normal. Harga jual diambil dari buy order di kota tujuan supaya uang langsung masuk. Jumlah
+        kematian per jam murni penilaian player — tidak ada angka aman dari game, jadi isi sendiri
+        sesuai pengalamanmu.
+        Di Black Zone kematian berarti kehilangan isi tas (dan gear yang dipakai kalau di-toggle);
+        di Red Zone isi tas umumnya tetap ada tapi kamu bisa di-grief berulang.
+        Target: <b>capital dibawa harus di bawah untung per run</b>, supaya satu
+        kematian masih tertutup.
       </p>
     </section>
 
@@ -729,12 +835,12 @@
 
 
     <footer class="ftr">
-      Silver Ops v3.6 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v3.7 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-crafting.js?v=3.6"></script>
-  <script src="../../data/js/albion-market.js?v=3.6"></script>
-  <script src="../../data/js/albion-v2.js?v=3.6"></script>
+  <script src="../../data/js/albion-crafting.js?v=3.7"></script>
+  <script src="../../data/js/albion-market.js?v=3.7"></script>
+  <script src="../../data/js/albion-v2.js?v=3.7"></script>
 </body>
 </html>
