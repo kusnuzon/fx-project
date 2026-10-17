@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.1">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.2">
 </head>
 <body>
   <div class="app">
@@ -87,6 +87,9 @@
         <button type="button" data-s="flip" role="tab" aria-selected="true">Flip</button>
         <button type="button" data-s="refine" role="tab" aria-selected="false">Refine</button>
         <button type="button" data-s="arb" role="tab" aria-controls="view-arb" aria-selected="false">Arbitrase</button>
+        <button type="button" data-s="city" role="tab" aria-controls="view-city" aria-selected="false">Kota</button>
+        <button type="button" data-s="gather" role="tab" aria-controls="view-gather" aria-selected="false">Gather</button>
+        <button type="button" data-s="fish" role="tab" aria-controls="view-fish" aria-selected="false">Mancing</button>
         <button type="button" data-s="spread" role="tab" aria-controls="view-spread" aria-selected="false">Transmute</button>
       </div>
 
@@ -103,7 +106,6 @@
         <button type="button" class="chip" data-s="roi" aria-pressed="true">Urut: ROI</button>
         <button type="button" class="chip" data-s="profit" aria-pressed="false">Profit</button>
         <button type="button" class="chip" data-s="sph" aria-pressed="false">Silver/jam</button>
-        <button type="button" class="chip" data-s="stock" aria-pressed="false">Stok</button>
         <button type="button" class="chip" id="hideNeg" aria-pressed="true">Hide rugi</button>
       </div>
 
@@ -111,6 +113,18 @@
         <span class="sec-h">Peluang</span>
         <span class="sec-s" id="scanCount">—</span>
       </div>
+
+      <p class="note" id="cityNote" style="display:none">
+        <b>Kota</b> membandingkan untung-rugi di semua kota sekaligus: berapa item yang bisa di-flip
+        untung vs rugi, flip terbaik per unit, serta kota dengan pendapatan gather dan ikan tertinggi.
+        Diurutkan dari yang paling banyak opportunities-nya.
+      </p>
+
+      <p class="note" id="selfNote" style="display:none">
+        <b>Gather</b> dan <b>Mancing</b> memakai modal 0 — barang kamu dapat sendiri dari node atau
+        sungai. Yang dibandingkan adalah kota dengan <b>jual instan</b> (buy order tertinggi) paling tinggi.
+        Kolom kedua menunjukkan harga kalau kamu menunggu order laku — biasanya lebih untung tapi tidak instan.
+      </p>
 
       <p class="note" id="arbNote" style="display:none;color:var(--warn)">
         Arbitrase = beli di kota termurah, jual di kota termahal, sudah dikurangi biaya transport yang kamu
@@ -348,11 +362,11 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.1 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2.2 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.1"></script>
-  <script src="../../data/js/albion-v2.js?v=2.1"></script>
+  <script src="../../data/js/albion-market.js?v=2.2"></script>
+  <script src="../../data/js/albion-v2.js?v=2.2"></script>
 </body>
 </html>

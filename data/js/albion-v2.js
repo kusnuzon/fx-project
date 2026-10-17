@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.1';
+  var BUILD = '2.2';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -183,11 +183,143 @@
     };
   }
 
+  /* ---------- strategi: gather & mancing ----------
+     Modal 0 karena barang didapat sendiri. Jadi yang dibandingkan adalah
+     kota dengan pendapatan jual INSTAN (buy order tertinggi) tertinggi. */
+  function collectOpp(kind) {
+    var out = [];
+    var list = M.tracked();
+    var thru = num(CFG.throughput);
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      if (kind === 'gather' && m.kind !== 'raw') continue;
+      if (kind === 'fish' && m.kind !== 'fish') continue;
+
+      var rows = M.byCity(m.id);
+      var best = null, bestOrder = null, worst = null;
+      for (var j = 0; j < rows.length; j++) {
+        var e = rows[j];
+        if (e.buy > 0) {
+          var net = netSell(e.buy);
+          if (!best || net > best.net) best = { city:e.city, net:net, buy:e.buy };
+          if (!worst || net < worst.net) worst = { city:e.city, net:net };
+        }
+        if (e.sell > 0) {
+          var net2 = netSell(e.sell);
+          if (!bestOrder || net2 > bestOrder.net) bestOrder = { city:e.city, net:net2, sell:e.sell };
+        }
+      }
+      if (!best) continue;
+
+      var gain = best.net - (worst ? worst.net : 0);
+      out.push({
+        kind:kind, id:m.id, name:m.label,
+        tag:best.city + (m.rare ? ' · langka' : ''),
+        profit:best.net, roi:best.net > 0 ? gain / worst.net * 100 : 0,
+        capital:0, sph:best.net * thru,
+        cells:[
+          ['Jual instan di ' + best.city, money(best.net)],
+          ['Pasang order', bestOrder ? money(bestOrder.net) : '—'],
+          ['Modal', '0 ✦ (sendiri)']
+        ]
+      });
+    }
+    return out;
+  }
+
+  /* ---------- strategi: perbandingan kota ---------- */
+  function cityOpp() {
+    var thru = num(CFG.throughput);
+    var list = M.tracked();
+    var map = {};
+    M.ROYALS.concat(M.EXTRA_CITIES).forEach(function (c) {
+      map[c] = { flipWin:0, flipLose:0, bestFlip:0, bestFlipRoi:0,
+                 gather:0, fish:0, destBest:0, buyBest:0,
+                 destTop:0, buyTop:0, destItem:'', buyItem:'' };
+    });
+
+    /* pass 1:hitung puncak harga tiap item per kota */
+    var topDest = {}, topBuy = {};
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      var rows = M.byCity(m.id);
+      var bd = null, bb = null;
+      for (var j = 0; j < rows.length; j++) {
+        var e = rows[j];
+        if (e.buy > 0 && (!bd || e.buy > bd.buy)) bd = e;
+        if (e.sell > 0 && (!bb || e.sell < bb.sell)) bb = e;
+      }
+      if (bd) topDest[m.id] = bd;
+      if (bb) topBuy[m.id] = bb;
+    }
+
+    /* pass 2:isi per kota */
+    for (var k = 0; k < list.length; k++) {
+      var it = list[k];
+      var rows2 = M.byCity(it.id);
+      var dest = topDest[it.id], buyc = topBuy[it.id];
+      var isRaw = (it.kind === 'raw'), isFish = (it.kind === 'fish');
+
+      for (var x = 0; x < rows2.length; x++) {
+        var en = rows2[x];
+        var bag = map[en.city];
+        if (!bag) continue;
+
+        if (isRaw && en.buy > 0) {
+          var g = netSell(en.buy);
+          if (g > bag.gather) bag.gather = g;
+        }
+        if (isFish && en.buy > 0) {
+          var f = netSell(en.buy);
+          if (f > bag.fish) bag.fish = f;
+        }
+        if (dest && dest.city === en.city && dest.buy > 0) {
+          bag.destBest++;
+          var dv = netSell(dest.buy);
+          if (dv > bag.destTop) { bag.destTop = dv; bag.destItem = it.label; }
+        }
+        if (buyc && buyc.city === en.city && buyc.sell > 0) {
+          bag.buyBest++;
+          if (buyc.sell < bag.buyTop || !bag.buyTop) { bag.buyTop = buyc.sell; bag.buyItem = it.label; }
+        }
+        if (en.sell > 0 && en.buy > 0) {
+          var pf = netSell(en.buy) - costBuy(en.sell);
+          if (pf > 0) {
+            bag.flipWin++;
+            if (pf > bag.bestFlip) bag.bestFlip = pf;
+            var rf = pf / costBuy(en.sell) * 100;
+            if (rf > bag.bestFlipRoi) bag.bestFlipRoi = rf;
+          } else {
+            bag.flipLose++;
+          }
+        }
+      }
+    }
+
+    return Object.keys(map).map(function (c) {
+      var b = map[c];
+      return {
+        kind:'city', id:c, name:c,
+        tag:b.destBest + ' puncak harga · ' + b.buyBest + ' beli termurah',
+        profit:b.destTop, roi:0, capital:0, sph:b.destTop * thru,
+        cells:[
+          ['Gather terbaik', b.gather > 0 ? money(b.gather) : '—'],
+          ['Ikan terbaik', b.fish > 0 ? money(b.fish) : '—'],
+          ['Flip 1 kota', b.flipWin + ' untung / ' + b.flipLose + ' rugi']
+        ]
+      };
+    });
+  }
+
   /* ---------- kumpulan ---------- */
   function opportunities() {
     var out = [], st = STATE.strategy;
 
-    if (st === 'flip' || st === 'arb') {
+    if (st === 'city') {
+      out = cityOpp();
+    } else if (st === 'gather' || st === 'fish') {
+      out = collectOpp(st);
+    } else if (st === 'flip' || st === 'arb') {
       var list = M.tracked();
       for (var i = 0; i < list.length; i++) {
         var m = list[i];
@@ -219,11 +351,19 @@
       }
     }
 
-    if (STATE.hideNeg) out = out.filter(function (o) { return o.profit > 0; });
+    if (st === 'city') {
+      out.sort(function (a, b) {
+        var pa = parseInt(a.tag, 10) || 0, pb = parseInt(b.tag, 10) || 0;
+        if (pb !== pa) return pb - pa;
+        return b.profit - a.profit;
+      });
+    }
+    if (STATE.hideNeg) out = out.filter(function (o) { return o.profit > 0 || o.kind === 'city'; });
     var key = STATE.sort;
     out.sort(function (a, b) {
       if (key === 'profit') return b.profit - a.profit;
       if (key === 'sph') return b.sph - a.sph;
+      if (key === 'city') return b.profit - a.profit;
       return b.roi - a.roi;
     });
     return out;
@@ -232,6 +372,9 @@
   /* ---------- render ---------- */
   function rowHtml(o) {
     var p = o.profit >= 0 ? 'var(--pos)' : 'var(--neg)';
+    var right2 = o.capital === 0
+      ? money(o.sph) + '/jam'
+      : pct(o.roi) + ' ROI · ' + money(o.sph) + '/jam';
     var cells = o.cells.map(function (c) {
       return '<span class="r-cell"><span class="r-cell-k">' + esc(c[0]) +
         '</span><span class="r-cell-v">' + esc(c[1]) + '</span></span>';
@@ -241,7 +384,7 @@
       '<span class="r-main"><span class="r-tag">' + esc(o.tag) + '</span>' +
         '<span class="r-name">' + esc(o.name) + '</span></span>' +
       '<span class="r-right"><span class="r-profit" style="color:' + p + '">' + signed(o.profit) +
-        '</span><span class="r-roi">' + pct(o.roi) + ' ROI · ' + money(o.sph) + '/jam</span></span>' +
+        '</span><span class="r-roi">' + right2 + '</span></span>' +
       '<span class="r-grid">' + cells + '</span></button>';
   }
 
@@ -249,8 +392,11 @@
     var box = $('scanList'), st = M.status();
     var data = opportunities();
 
-    $('chainChips').style.display = (STATE.strategy === 'flip' || STATE.strategy === 'arb') ? 'none' : 'flex';
-    $('arbNote').style.display = STATE.strategy === 'arb' ? 'block' : 'none';
+    var chainBased = (STATE.strategy === 'refine' || STATE.strategy === 'spread');
+    $('chainChips').style.display = chainBased ? 'flex' : 'none';
+    $('arbNote').style.display = (STATE.strategy === 'arb') ? 'block' : 'none';
+    $('cityNote').style.display = (STATE.strategy === 'city') ? 'block' : 'none';
+    $('selfNote').style.display = (STATE.strategy === 'gather' || STATE.strategy === 'fish') ? 'block' : 'none';
     $('scanCount').textContent = data.length + ' peluang';
 
     var best = data[0];

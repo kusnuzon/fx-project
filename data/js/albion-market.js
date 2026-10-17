@@ -28,15 +28,55 @@
 
   var TIER_MIN = 2, TIER_MAX = 8;
 
-  /* nama id di AODP tidak seragam: CLOTH/LEATHER tunggal,
-     PLANKS jamak. Raw_material selalu bentuk jamak tunggal. */
+  /* Id item resmi dari daftar AODP (ao-bin-dumps/formatted/items.txt).
+     Penting: metal refined = METALBAR, stone mentah = ROCK,
+     stone refined = STONEBLOCK. Menebak BAR/STONE membuat feed kosong. */
   var CHAINS = [
-    { key:'ore',   raw:'ORE',   ref:'BAR',     refA:'BAR',     refB:'BARS',    label:'Ore → Bar' },
-    { key:'fiber', raw:'FIBER', ref:'CLOTH',   refA:'CLOTH',   refB:'CLOTHS',  label:'Fiber → Cloth' },
-    { key:'hide',  raw:'HIDE',  ref:'LEATHER', refA:'LEATHER', refB:'LEATHERS',label:'Hide → Leather' },
-    { key:'wood',  raw:'WOOD',  ref:'PLANK',   refA:'PLANK',   refB:'PLANKS',  label:'Wood → Plank' },
-    { key:'stone', raw:'STONE', ref:'BLOCK',   refA:'BLOCK',   refB:'BLOCKS',  label:'Stone → Block' }
+    { key:'ore',   raw:'ORE',       ref:'METALBAR',   label:'Ore → Bar' },
+    { key:'fiber', raw:'FIBER',     ref:'CLOTH',      label:'Fiber → Cloth' },
+    { key:'hide',  raw:'HIDE',      ref:'LEATHER',    label:'Hide → Leather' },
+    { key:'wood',  raw:'WOOD',      ref:'PLANKS',     label:'Wood → Plank' },
+    { key:'stone', raw:'ROCK',      ref:'STONEBLOCK', label:'Stone → Block' }
   ];
+
+  var FISH_COMMON = ['FISH_FRESHWATER_ALL_COMMON', 'FISH_SALTWATER_ALL_COMMON'];
+  var FISH_RARE_BIOME = ['FOREST_RARE', 'MOUNTAIN_RARE', 'HIGHLANDS_RARE',
+                         'SWAMP_RARE', 'STEPPE_RARE'];
+  var FISH_RARE_TIERS = [3, 5, 7];
+
+  var FISH_NAMES = {
+      "T1_FISH_FRESHWATER_ALL_COMMON": "Common Rudd",
+      "T2_FISH_FRESHWATER_ALL_COMMON": "Striped Carp",
+      "T3_FISH_FRESHWATER_ALL_COMMON": "Albion Perch",
+      "T3_FISH_FRESHWATER_FOREST_RARE": "Greenriver Eel",
+      "T3_FISH_FRESHWATER_HIGHLANDS_RARE": "Stonestream Lurcher",
+      "T3_FISH_FRESHWATER_MOUNTAIN_RARE": "Upland Coldeye",
+      "T3_FISH_FRESHWATER_STEPPE_RARE": "Lowriver Crab",
+      "T3_FISH_FRESHWATER_SWAMP_RARE": "Greenmoor Clam",
+      "T4_FISH_FRESHWATER_ALL_COMMON": "Bluescale Pike",
+      "T5_FISH_FRESHWATER_ALL_COMMON": "Spotted Trout",
+      "T5_FISH_FRESHWATER_FOREST_RARE": "Redspring Eel",
+      "T5_FISH_FRESHWATER_HIGHLANDS_RARE": "Rushwater Lurcher",
+      "T5_FISH_FRESHWATER_MOUNTAIN_RARE": "Mountain Blindeye",
+      "T5_FISH_FRESHWATER_STEPPE_RARE": "Drybrook Crab",
+      "T5_FISH_FRESHWATER_SWAMP_RARE": "Murkwater Clam",
+      "T6_FISH_FRESHWATER_ALL_COMMON": "Brightscale Zander",
+      "T7_FISH_FRESHWATER_ALL_COMMON": "Danglemouth Catfish",
+      "T7_FISH_FRESHWATER_FOREST_RARE": "Deadwater Eel",
+      "T7_FISH_FRESHWATER_HIGHLANDS_RARE": "Thunderfall Lurcher",
+      "T7_FISH_FRESHWATER_MOUNTAIN_RARE": "Frostpeak Deadeye",
+      "T7_FISH_FRESHWATER_STEPPE_RARE": "Dusthole Crab",
+      "T7_FISH_FRESHWATER_SWAMP_RARE": "Blackbog Clam",
+      "T8_FISH_FRESHWATER_ALL_COMMON": "River Sturgeon",
+      "T1_FISH_SALTWATER_ALL_COMMON": "Common Herring",
+      "T2_FISH_SALTWATER_ALL_COMMON": "Striped Mackerel",
+      "T3_FISH_SALTWATER_ALL_COMMON": "Flatshore Plaice",
+      "T4_FISH_SALTWATER_ALL_COMMON": "Bluescale Cod",
+      "T5_FISH_SALTWATER_ALL_COMMON": "Spotted Wolffish",
+      "T6_FISH_SALTWATER_ALL_COMMON": "Strongfin Salmon",
+      "T7_FISH_SALTWATER_ALL_COMMON": "Bluefin Tuna",
+      "T8_FISH_SALTWATER_ALL_COMMON": "Steelscale Swordfish"
+  };
 
   var CACHE_KEY = 'albion_market_v3';
   var CACHE_TTL = 10 * 60 * 1000;
@@ -62,22 +102,28 @@
   /* ---------- id ---------- */
   function rawId(tier, chain) { return 'T' + tier + '_' + chain.raw; }
   function refId(tier, chain) { return 'T' + tier + '_' + chain.ref; }
-  function refCandidates(tier, chain) {
-    var a = 'T' + tier + '_' + chain.refA, b = 'T' + tier + '_' + chain.refB;
-    return a === b ? [a] : [a, b];
-  }
 
-  /* watchlist: 5 material x 7 tier x (raw + refined) */
+  /* watchlist: material T2-T8 (raw + refined) + ikan */
   function watchIds() {
-    var ids = [], t, c;
+    var ids = [], t, c, i;
     for (c = 0; c < CHAINS.length; c++) {
       for (t = TIER_MIN; t <= TIER_MAX; t++) {
         ids.push(rawId(t, CHAINS[c]));
-        ids = ids.concat(refCandidates(t, CHAINS[c]));
+        ids.push(refId(t, CHAINS[c]));
       }
     }
-    return ids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    for (i = 0; i < FISH_COMMON.length; i++) {
+      for (t = 1; t <= TIER_MAX; t++) ids.push('T' + t + '_' + FISH_COMMON[i]);
+    }
+    for (i = 0; i < FISH_RARE_BIOME.length; i++) {
+      for (t = 0; t < FISH_RARE_TIERS.length; t++) {
+        ids.push('T' + FISH_RARE_TIERS[t] + '_FISH_FRESHWATER_' + FISH_RARE_BIOME[i]);
+      }
+    }
+    return ids.filter(function (v, i2, a) { return a.indexOf(v) === i2; });
   }
+
+  function isFish(id) { return /_FISH_/.test(id || ''); }
 
   function splitIds(ids) {
     var out = [];
@@ -272,23 +318,52 @@
     return null;
   }
 
+  /* item gatherable: 5 material mentah */
+  function isGather(id) {
+    var m = meta(id);
+    return m.kind === 'raw';
+  }
+
   /* meta untuk id apa pun, tanpa network */
   function meta(id) {
+    if (isFish(id)) {
+      var f = /^T(\d)_FISH_(.+)$/.exec(id);
+      var tier = f ? parseInt(f[1], 10) : 0;
+      var kindTxt = f ? f[2] : '';
+      var rare = /RARE/.test(kindTxt);
+      return {
+        id:id, tier:tier, code:'FISH', kind:'fish', chain:'',
+        label:(FISH_NAMES[id] || id) + (tier ? ' T' + tier : ''),
+        water:/SALTWATER/.test(kindTxt) ? 'Salt' : 'Fresh',
+        rare:rare
+      };
+    }
     var m = /^T(\d)_?([A-Z]+)$/.exec(id || '');
     if (!m) return { id:id, tier:0, code:id, kind:'other', label:String(id || '—') };
-    var tier = parseInt(m[1], 10), code = m[2];
+    var t = parseInt(m[1], 10), code = m[2];
     var ch = chainOf(code);
-    var kind = !ch ? 'other' : (ch.raw === code ? 'raw' : 'refined');
-    var name = ch
-      ? (ch.raw === code ? ch.raw.charAt(0) + ch.raw.slice(1).toLowerCase()
-                         : ch.ref.charAt(0) + ch.ref.slice(1).toLowerCase())
-      : code.charAt(0) + code.slice(1).toLowerCase();
-    return { id:id, tier:tier, code:code, kind:kind, chain:ch ? ch.key : '',
-             label:name + ' T' + tier };
+    if (!ch) return { id:id, tier:t, code:code, kind:'other', chain:'',
+                       label:code + ' T' + t };
+    var kind = (ch.raw === code) ? 'raw' : 'refined';
+    var nice = kind === 'raw'
+      ? (code.charAt(0) + code.slice(1).toLowerCase())
+      : ({ METALBAR:'Bar', CLOTH:'Cloth', LEATHER:'Leather',
+           PLANKS:'Plank', STONEBLOCK:'Block' }[code] || code);
+    return { id:id, tier:t, code:code, kind:kind, chain:ch.key,
+             label:nice + ' T' + t };
   }
 
   function citiesOf(id) {
     return Object.keys(S.data[id] || {}).sort();
+  }
+
+  /* semua entri harga sebuah item per kota */
+  function byCity(id) {
+    var bag = S.data[id] || {};
+    return Object.keys(bag)
+      .filter(function (c) { return bag[c].sell > 0 || bag[c].buy > 0; })
+      .sort()
+      .map(function (c) { return Object.assign({ city:c }, bag[c]); });
   }
 
   /* ambil entri kota; fallback: kota apa pun yang punya harga */
@@ -305,14 +380,10 @@
     return null;
   }
 
-  /* id refined mana yang benar-benar punya data (nama id beda-beda) */
   function refLive(tier, chain, city) {
-    var cands = refCandidates(tier, chain);
-    for (var i = 0; i < cands.length; i++) {
-      var e = at(cands[i], city);
-      if (e && (e.sell || e.buy)) return { id:cands[i], entry:e };
-    }
-    return null;
+    var id = refId(tier, chain);
+    var e = at(id, city);
+    return e ? { id:id, entry:e } : null;
   }
 
   /* daftar item unik yang punya harga, untuk tab Cari */
@@ -351,6 +422,9 @@
     ROYALS: ROYALS,
     EXTRA_CITIES: EXTRA_CITIES,
     CHAINS: CHAINS,
+    FISH_NAMES: FISH_NAMES,
+    isFish: isFish,
+    isGather: isGather,
     TIER_MIN: TIER_MIN,
     TIER_MAX: TIER_MAX,
     AUTO_REFRESH: AUTO_REFRESH,
@@ -364,6 +438,7 @@
     refLive: refLive,
     at: at,
     citiesOf: citiesOf,
+    byCity: byCity,
     tracked: tracked,
     search: search,
     watchIds: watchIds,
