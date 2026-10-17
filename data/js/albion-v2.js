@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.1';
+  var BUILD = '3.2';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -786,7 +786,7 @@
     return out;
   }
 
-  /* analisis satu item untuk tab Cari: jual instan, arbitrage, refine */
+  /* analisis satu item untuk tab Search: jual instan, arbitrage, refine */
   function autoItem(m) {
     var rows = M.byCity(m.id).filter(function (e) { return !ZERO_SKIP[e.city]; });
     if (!rows.length) return null;
@@ -1058,13 +1058,13 @@
   function renderFlip() {
     renderFlipAuto();
     var m = STATE.selected ? M.meta(STATE.selected) : null;
-    $('flName').textContent = m ? m.label + ' (' + m.id + ')' : 'belum ada item — cari di tab CARI';
+    $('flName').textContent = m ? m.label + ' (' + m.id + ')' : 'belum ada item — cari di tab Search';
 
     var buy = num($('flBuy').value), sell = num($('flSell').value);
     var qty = Math.max(1, STATE.qtyFlip);
 
     if (!buy && !sell) {
-      $('flOut').innerHTML = '<div class="state">Isi harga manual, atau pilih item di tab CARI lalu tekan isi.</div>';
+      $('flOut').innerHTML = '<div class="state">Isi harga manual, atau pilih item di tab Search lalu tekan isi.</div>';
       return;
     }
     var netS = netSell(sell), costB = costBuy(buy), profit = netS - costB;
@@ -1131,7 +1131,7 @@
   }
 
 /* peluang terbaik lintas semua strategi. Tidak bergantung mode di tab Scan,
-     supaya angka pembanding di tab Catatan selalu konsisten. */
+     supaya angka pembanding di tab Note selalu konsisten. */
   function bestOppNow(pre) {
     pre = pre || {};
     var best = null;
@@ -1201,7 +1201,7 @@
         'nanti muncul perbandingan kecepatan kamu vs peluang.</span>';
     } else if (gap >= 100) {
       hero.innerHTML =
-        '<span class="hero-k">Catatan kamu · lebih cepat dari peluang</span>' +
+        '<span class="hero-k">Note kamu · lebih cepat dari peluang</span>' +
         '<span class="hero-h">' + esc(best.act) + '</span>' +
         '<span class="hero-s">' + money(rateOf(best)) + ' per jam, peluang terbaik di scanner ' +
         money(topRate) + ' per jam (' + esc(top.name) + ' di ' + esc(top.tag) + ').</span>' +
@@ -1775,7 +1775,7 @@
       if (!best) continue;
       out.push({
         tier:t, city:best.tag, name:best.name, how:best.how, profit:best.profit,
-        perNode:best.mode !== 'fish', capital:0, go:'zero', goLabel:'Cuan',
+        perNode:best.mode !== 'fish', capital:0, go:'zero', goLabel:'Gather',
         id:best.id, chain:best.chain
       });
     }
@@ -2089,7 +2089,7 @@
       b.addEventListener('click', function () { setView(b.dataset.v); });
     });
 
-    /* chip tier di Hari Ini */
+    /* chip tier di Today */
     $('tdTier').addEventListener('click', function (e) {
       var c = e.target.closest('.chip');
       if (!c) return;
@@ -2202,7 +2202,7 @@
     $('flQty').addEventListener('input', function () { STATE.qtyFlip = num(this.value) || 1; renderFlip(); });
     $('flFromSel').addEventListener('click', function () {
       var e = M.at(STATE.selected, CFG.city);
-      if (!e) { alert('Pilih item dulu di tab CARI.'); return; }
+      if (!e) { alert('Pilih item dulu di tab Search.'); return; }
       $('flBuy').value = Math.round(e.sell || 0);
       $('flSell').value = Math.round(e.buy || 0);
       renderFlip();
@@ -2376,7 +2376,7 @@
       renderFlip();
     });
 
-    /* tombol di kartu otomatis tab Cari */
+    /* tombol di kartu otomatis tab Search */
     $('seToFlip').addEventListener('click', function () {
       var m = STATE.seFocus ? M.meta(STATE.seFocus) : null;
       var hits = m ? M.search(m.id) : [];
