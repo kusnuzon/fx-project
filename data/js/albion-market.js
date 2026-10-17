@@ -85,6 +85,15 @@
     return out;
   }
 
+  /* URL untuk AODP.
+     PENTING: koma pemisah id harus tetap polos. Kalau di-encode jadi %2C,
+     Rails memecah path menjadi segmen terpisah (T4%2CORE -> T4, ORE) dan
+     semua harga balik 0. Jadi encode per-id, lalu join dengan koma biasa. */
+  function pricesUrl(host, ids) {
+    return 'https://' + host + '/api/v2/stats/prices/' +
+      ids.map(encodeURIComponent).join(',') + '.json?qualities=1';
+  }
+
   /* ---------- normalisasi ---------- */
   function clean(v) {
     var n = parseFloat(v);
@@ -92,14 +101,25 @@
     return n;
   }
 
+  var KNOWN = null;
+  function knownSet() {
+    if (!KNOWN) {
+      KNOWN = {};
+      watchIds().forEach(function (id) { KNOWN[id] = 1; });
+    }
+    return KNOWN;
+  }
+
   function absorb(rows, into) {
     if (!rows || !rows.length) return 0;
     var n = 0;
+    var known = knownSet();
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (!r || !r.item_id || !r.city) continue;
+      if (!known[r.item_id]) S.badShape = true;
       var sell = clean(r.sell_price_min);   /* order jual terendah -> biaya beli instan */
-      var buy  = clean(r.buy_price_max);   /* order beli tertinggi ->|jual instan */
+      var buy  = clean(r.buy_price_max);   /* order beli tertinggi -> pendapatan jual instan */
       var sellMax = clean(r.sell_price_max);
       var buyMin  = clean(r.buy_price_min);
       if (!sell && !buy) continue;
@@ -180,9 +200,7 @@
       var host = REGIONS[region].host;
       return batches.reduce(function (chain, batch) {
         return chain.then(function (acc) {
-          var url = 'https://' + host + '/api/v2/stats/prices/' +
-            encodeURIComponent(batch.join(',')) + '.json?qualities=1';
-          return request(url).then(function (rows) {
+          return request(pricesUrl(host, batch)).then(function (rows) {
             acc.n += absorb(rows, S.data);
             return acc;
           }, function (e) { acc.err = e.message; return acc; });
@@ -215,7 +233,9 @@
         writeCache();
       } else {
         if (!hasAny()) S.status = 'offline';
-        S.error = note || S.error || 'tidak ada data di region ini';
+        S.error = note
+          || (S.badShape ? 'format respons tidak dikenali (kemungkinan URL salah)' : '')
+          || S.error || 'tidak ada data di region ini';
       }
       notify();
       inflight = null;
@@ -230,8 +250,7 @@
     var host = REGIONS[S.region].host;
     var uniq = ids.filter(function (v, i, a) { return v && a.indexOf(v) === i; });
     if (!uniq.length) return Promise.resolve(0);
-    return request('https://' + host + '/api/v2/stats/prices/' +
-      encodeURIComponent(uniq.join(',')) + '.json?qualities=1')
+    return request(pricesUrl(host, uniq))
       .then(function (rows) {
         var n = absorb(rows, S.data);
         if (n) writeCache();

@@ -7,6 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
+  var BUILD = '2.1';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -481,6 +482,9 @@
     }
     var banner = $('offBanner');
     banner.style.display = s.state === 'offline' ? 'block' : 'none';
+    banner.textContent = 'Feed live gagal: ' + (s.error || 'tidak diketahui') +
+      '. Angka memakai cache terakhir atau diisi manual — semua kalkulator tetap jalan. ' +
+      'Kalau ini tetap muncul, kirimkan build ' + BUILD + ' beserta pesan ini.';
   }
 
   function syncRegionSeg() {
