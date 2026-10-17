@@ -123,9 +123,17 @@
   function rawId(tier, chain) { return 'T' + tier + '_' + chain.raw; }
   function refId(tier, chain) { return 'T' + tier + '_' + chain.ref; }
 
-  /* watchlist: material T2-T8 (raw + refined) + ikan */
+  /* watchlist: material T2-T8 (raw + refined) + ikan + resep crafting */
   function watchIds() {
     var ids = [], t, c, i;
+
+    /* resep crafting: id hasil craft + bahan-bahannya, supaya tab Crafting
+       bisa hitung untung dari harga live tanpa request tambahan */
+    var C = typeof window !== 'undefined' ? window.AlbionCrafting : null;
+    if (C && C.watch) {
+      for (i = 0; i < C.watch.length; i++) ids.push(C.watch[i]);
+    }
+
     for (c = 0; c < CHAINS.length; c++) {
       for (t = TIER_MIN; t <= TIER_MAX; t++) {
         ids.push(rawId(t, CHAINS[c]));

@@ -180,7 +180,7 @@ body::before {
   bottom: 0;
   z-index: 7;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 2px;
   padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
   background: rgba(6, 9, 13, 0.96);
@@ -853,7 +853,7 @@ select option { color: var(--fg); background: var(--surface-2); }
     position: sticky;
     top: 0;
     bottom: auto;
-    grid-template-columns: repeat(6, auto);
+    grid-template-columns: repeat(7, auto);
     justify-content: start;
     gap: var(--sp-1);
     padding: 0 0 var(--sp-3);

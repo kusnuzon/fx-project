@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.8">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.9">
 </head>
 <body>
   <div class="app">
@@ -54,6 +54,13 @@
           <path d="M10 2.6l7.2 4-7.2 4-7.2-4 7.2-4z" stroke-linejoin="round"/>
           <path d="M6.4 8.8v2.4c0 1.2 1.6 2.2 3.6 2.2s3.6-1 3.6-2.2V8.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>Cuan
+      </button>
+      <button type="button" data-v="craft" role="tab" aria-controls="view-craft" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M4 15.4l4.4-4.4 2.6 2.6 5-6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 7.6h3v3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.4 17h13.2" stroke-linecap="round"/>
+        </svg>Craft
       </button>
       <button type="button" data-v="refine" role="tab" aria-controls="view-refine" aria-selected="false">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -271,7 +278,84 @@
       </p>
     </section>
 
-    <!-- ===== 3 REFINE ===== -->
+    <!-- ===== 3 CRAFTING ===== -->
+    <section class="view" id="view-craft" role="tabpanel" aria-label="Crafting">
+      <div class="stats" id="cfStats"></div>
+
+      <div class="hero" id="cfHero"></div>
+
+      <div class="tools" id="cfProf" role="group" aria-label="Profesi crafting">
+        <button type="button" class="chip" data-cp="Smithing" aria-pressed="true">Smithing</button>
+        <button type="button" class="chip" data-cp="Leatherworker" aria-pressed="false">Leatherworker</button>
+        <button type="button" class="chip" data-cp="Weaver" aria-pressed="false">Weaver</button>
+        <button type="button" class="chip" data-cp="Carpenter" aria-pressed="false">Carpenter</button>
+        <button type="button" class="chip" data-cp="Mason" aria-pressed="false">Mason</button>
+        <button type="button" class="chip" data-cp="Alchemist" aria-pressed="false">Alchemist</button>
+        <button type="button" class="chip" data-cp="Cooking" aria-pressed="false">Cooking</button>
+        <button type="button" class="chip" data-cp="all" aria-pressed="false">Semua</button>
+      </div>
+
+      <div class="tools" id="cfTier" role="group" aria-label="Tier crafting">
+        <button type="button" class="chip" data-ct="1">T1</button>
+        <button type="button" class="chip" data-ct="2">T2</button>
+        <button type="button" class="chip" data-ct="3">T3</button>
+        <button type="button" class="chip" data-ct="4" aria-pressed="true">T4</button>
+        <button type="button" class="chip" data-ct="5">T5</button>
+        <button type="button" class="chip" data-ct="6">T6</button>
+        <button type="button" class="chip" data-ct="7">T7</button>
+        <button type="button" class="chip" data-ct="8">T8</button>
+      </div>
+
+      <div class="tools" id="cfSort" role="group" aria-label="Urutkan crafting">
+        <button type="button" class="chip" data-cs="profit" aria-pressed="true">Urut: untung/unit</button>
+        <button type="button" class="chip" data-cs="roi" aria-pressed="false">Urut: ROI</button>
+        <button type="button" class="chip" data-cs="total" aria-pressed="false">Urut: untung total</button>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Crafting paling untung</span>
+        <span class="sec-s" id="cfCount">—</span>
+      </div>
+
+      <div class="list" id="cfList"></div>
+
+      <div class="form">
+        <div class="f2">
+          <div>
+            <label class="lbl" for="cfQty">Jumlah craft</label>
+            <input type="number" id="cfQty" value="10" min="1" step="1" inputmode="numeric">
+          </div>
+          <p class="hint" style="align-self:center">
+            Semua hitungan memakai jumlah ini: biaya bahan, modal, untung total, dan urutan daftar.
+          </p>
+        </div>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Rincian bahan &amp; untung</span>
+        <span class="sec-s" id="cfDetName">ketuk item di atas</span>
+      </div>
+
+      <div class="read" id="cfDetail"></div>
+
+      <div class="sec">
+        <span class="sec-h">Perbandingan kota</span>
+        <span class="sec-s" id="cfCityCount">—</span>
+      </div>
+
+      <div class="list" id="cfCityList"></div>
+
+      <p class="note">
+        Resep diambil dari dump resmi <b>ao-bin-dumps</b> lalu dikurasi: hanya item yang punya harga
+        pasar di AODP yang dimonitor, karena feed itu crowd-sourced dan tidak semua item crafting ada
+        harganya. Untung, ROI, dan rincian bahan dihitung ulang dari harga live tiap menit. Bahan
+        dibeli di kota yang sama dengan kota jual, jadi ongkos transport tidak ikut dihitung.
+        Baris bertanda <span class="badge thin">jual instan</span> artinya harga itu dari buy order,
+        jadi silver langsung masuk tanpa menunggu buyer.
+      </p>
+    </section>
+
+    <!-- ===== 4 REFINE ===== -->
     <section class="view" id="view-refine" role="tabpanel" aria-label="Kalkulator refine">
       <div class="stats" id="rfStats"></div>
 
@@ -554,11 +638,12 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.8 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v2.9 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.8"></script>
-  <script src="../../data/js/albion-v2.js?v=2.8"></script>
+  <script src="../../data/js/albion-crafting.js?v=2.9"></script>
+  <script src="../../data/js/albion-market.js?v=2.9"></script>
+  <script src="../../data/js/albion-v2.js?v=2.9"></script>
 </body>
 </html>
