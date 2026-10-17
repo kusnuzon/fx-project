@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.5';
+  var BUILD = '2.6';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -564,11 +564,16 @@
   /* average units per node: 1-3 + lucky strike */
   var NODE_YIELD = 2.6;
 
-  /* best city by a price field, already net of tax/setup */
+  /* best city by a price field, already net of tax/setup.
+     Kota PK sengaja dilewati: transport bolak-balik ke sana tidak
+     masuk akal buat pemain modal 0 dan buy order di sana bukan
+     tempat yang aman. */
+  var ZERO_SKIP = { 'Brecilien':1, 'Black Market':1 };
+
   function bestCity(rows, field) {
     var best = null;
     for (var i = 0; i < rows.length; i++) {
-      if (rows[i][field] <= 0) continue;
+      if (rows[i][field] <= 0 || ZERO_SKIP[rows[i].city]) continue;
       var v = netSell(rows[i][field]);
       if (!best || v > best.v) best = { city:rows[i].city, v:v, px:rows[i][field] };
     }
@@ -588,7 +593,7 @@
     var refRows = M.byCity(refId);
     for (var i = 0; i < refRows.length; i++) {
       var e = refRows[i];
-      if (e.buy <= 0) continue;
+      if (e.buy <= 0 || ZERO_SKIP[e.city]) continue;
       var r = M.at(rawId, e.city);
       var base = r ? (r.buy > 0 ? r.buy : r.sell) : 0;
       if (base <= 0) continue;
@@ -669,7 +674,7 @@
   }
 
   /* ---------- baris untuk profesi pilihan + cari tier paling murah ---------- */
-  var ZERO_TIERS = [2, 3, 4, 5, 6];
+  var ZERO_TIERS = [2, 3, 4, 5, 6, 7, 8];
 
   function zeroRowFor(prof, t) {
     if (prof === 'fish') return zeroFish(t);
