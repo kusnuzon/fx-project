@@ -1,1959 +1,728 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBMA MTF Journal - Oma Ally System</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #12121a;
-            --bg-input: #1a1a25;
-            --border: #2a2a3a;
-            --accent: #7c3aed;
-            --accent-light: #a78bfa;
-            --text: #e4e4eb;
-            --text-dim: #888899;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --pixel: #fbbf24;
-            --reentry: #22c55e;
-            --reject: #f59e0b;
-            --rejectbb: #ef4444;
-            --mhv: #8b5cf6;
-            --ext: #ec4899;
-        }
-        
-        body {
-            font-family: 'VT323', monospace;
-            background: var(--bg-dark);
-            color: var(--text);
-            min-height: 100vh;
-            font-size: 18px;
-            background-image: 
-                radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
-        }
-        
-        .pixel-font {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-        }
-        
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            text-align: center;
-            padding: 30px 20px;
-            border-bottom: 3px solid var(--border);
-            background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-dark) 100%);
-            margin-bottom: 20px;
-        }
-        
-        header h1 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(14px, 3vw, 24px);
-            color: var(--pixel);
-            text-shadow: 3px 3px 0 #000, 0 0 20px rgba(251, 191, 36, 0.5);
-            margin-bottom: 10px;
-            line-height: 1.8;
-        }
-        
-        header p {
-            color: var(--text-dim);
-            font-size: 20px;
-        }
-        
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        
-        .nav-tab {
-            padding: 12px 24px;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            color: var(--text);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-        }
-        
-        .nav-tab:hover {
-            border-color: var(--accent);
-            background: var(--bg-input);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-        }
-        
-        .nav-tab.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        /* Dashboard Styles */
-        .dashboard-container {
-            overflow-x: auto;
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-        }
-        
-        .dashboard-table {
-            min-width: 1000px;
-            border-collapse: collapse;
-        }
-        
-        .dashboard-table th,
-        .dashboard-table td {
-            border: 2px solid var(--border);
-            padding: 10px;
-            text-align: center;
-            min-width: 80px;
-        }
-        
-        .dashboard-table th {
-            background: var(--bg-input);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 9px;
-            padding: 15px 10px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        
-        .dashboard-table th.pair-header {
-            background: linear-gradient(180deg, var(--accent) 0%, var(--bg-input) 100%);
-            min-width: 120px;
-            left: 0;
-            z-index: 20;
-        }
-        
-        .dashboard-table th.tf-header {
-            background: linear-gradient(90deg, var(--accent-light) 0%, var(--accent) 100%);
-        }
-        
-        .dashboard-table td.pair-cell {
-            background: var(--bg-input);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            left: 0;
-            position: sticky;
-            z-index: 5;
-        }
-        
-        .signal-cell {
-            min-width: 100px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .signal-cell:hover {
-            background: var(--bg-input);
-        }
-        
-        .signal-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-family: 'VT323', monospace;
-        }
-        
-        .RE { background: rgba(34, 197, 94, 0.2); color: var(--reentry); border: 1px solid var(--reentry); }
-        .RJ { background: rgba(245, 158, 11, 0.2); color: var(--reject); border: 1px solid var(--reject); }
-        .RJB { background: rgba(239, 68, 68, 0.2); color: var(--rejectbb); border: 1px solid var(--rejectbb); }
-        .MHV { background: rgba(139, 92, 246, 0.2); color: var(--mhv); border: 1px solid var(--mhv); }
-        .EXT { background: rgba(236, 72, 153, 0.2); color: var(--ext); border: 1px solid var(--ext); }
-        .BUY { background: rgba(34, 197, 94, 0.3); color: var(--success); border: 2px solid var(--success); }
-        .SELL { background: rgba(239, 68, 68, 0.3); color: var(--danger); border: 2px solid var(--danger); }
-        
-        .setup-column {
-            min-width: 150px;
-            background: var(--bg-input);
-        }
-        
-        .setup-badge {
-            display: block;
-            padding: 8px;
-            margin: 2px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        
-        .setup-swing { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(124, 58, 237, 0.3)); border: 2px solid var(--pixel); }
-        .setup-intraday { background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.3)); border: 2px solid var(--info); }
-        .setup-scalping { background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(139, 92, 246, 0.3)); border: 2px solid var(--ext); }
-        
-        .controls {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            color: var(--text);
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
-        }
-        
-        .btn-primary {
-            background: var(--accent);
-            border-color: var(--accent);
-        }
-        
-        .btn-success {
-            background: var(--success);
-            border-color: var(--success);
-        }
-        
-        .btn-danger {
-            background: var(--danger);
-            border-color: var(--danger);
-        }
-        
-        /* Journal Form Styles */
-        .journal-form {
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            border-radius: 8px;
-            padding: 25px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .form-section {
-            margin-bottom: 25px;
-            padding: 20px;
-            background: var(--bg-input);
-            border: 2px solid var(--border);
-            border-radius: 6px;
-        }
-        
-        .form-section h3 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 11px;
-            color: var(--pixel);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .form-group label {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 8px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            padding: 12px;
-            background: var(--bg-dark);
-            border: 2px solid var(--border);
-            color: var(--text);
-            font-family: 'VT323', monospace;
-            font-size: 18px;
-            border-radius: 4px;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
-        }
-        
-        .tf-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        .tf-card {
-            background: var(--bg-dark);
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            padding: 15px;
-        }
-        
-        .tf-card h4 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            color: var(--accent-light);
-            margin-bottom: 15px;
-            text-align: center;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border);
-        }
-        
-        .indicator-checkboxes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            background: var(--bg-input);
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .checkbox-group:hover {
-            border-color: var(--accent);
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        
-        .checkbox-group span {
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .image-upload {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .image-upload-btn {
-            padding: 10px 15px;
-            background: var(--bg-input);
-            border: 2px dashed var(--border);
-            color: var(--text-dim);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 4px;
-        }
-        
-        .image-upload-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        
-        .image-preview {
-            width: 100%;
-            height: 120px;
-            background: var(--bg-dark);
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        
-        .image-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        
-        .image-preview .placeholder {
-            color: var(--text-dim);
-            font-size: 14px;
-        }
-        
-        /* Journal List Styles */
-        .journal-list {
-            display: grid;
-            gap: 20px;
-        }
-        
-        .journal-card {
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            transition: all 0.3s;
-        }
-        
-        .journal-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
-        }
-        
-        .journal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--border);
-        }
-        
-        .journal-title {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 11px;
-            color: var(--pixel);
-        }
-        
-        .journal-meta {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .journal-meta span {
-            background: var(--bg-input);
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        
-        .journal-setup {
-            display: flex;
-            gap: 10px;
-            align-wrap: wrap;
-        }
-        
-        .journal-body {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .journal-section h5 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 9px;
-            color: var(--accent-light);
-            margin-bottom: 10px;
-            margin-top: 15px;
-        }
-        
-        .journal-signals {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .journal-images {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .journal-images img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .journal-images img:hover {
-            border-color: var(--accent);
-            transform: scale(1.05);
-        }
-        
-        .journal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid var(--border);
-        }
-        
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            border-radius: 8px;
-            padding: 30px;
-            max-width: 90%;
-            max-height: 90%;
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 30px;
-            cursor: pointer;
-            color: var(--text-dim);
-            transition: color 0.2s;
-        }
-        
-        .modal-close:hover {
-            color: var(--accent);
-        }
-        
-        .modal-image {
-            max-width: 100%;
-            max-height: 80vh;
-            border: 3px solid var(--border);
-            border-radius: 6px;
-        }
-        
-        /* Signal Legend */
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 2px solid;
-        }
-        
-        /* Config Panel */
-        .config-panel {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100%;
-            background: var(--bg-card);
-            border-left: 3px solid var(--border);
-            z-index: 900;
-            padding: 20px;
-            overflow-y: auto;
-            transition: right 0.3s;
-        }
-        
-        .config-panel.active {
-            display: block;
-            right: 0;
-        }
-        
-        .config-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 800;
-        }
-        
-        .config-overlay.active {
-            display: block;
-        }
-        
-        .config-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--border);
-        }
-        
-        .config-header h3 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            color: var(--pixel);
-        }
-        
-        .config-close {
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-dim);
-        }
-        
-        .pair-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .pair-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: var(--bg-input);
-            border: 2px solid var(--border);
-            border-radius: 4px;
-        }
-        
-        .pair-item input[type="text"] {
-            flex: 1;
-            padding: 8px;
-            background: var(--bg-dark);
-            border: 2px solid var(--border);
-            color: var(--text);
-            font-family: 'VT323', monospace;
-            font-size: 16px;
-        }
-        
-        .pair-item button {
-            padding: 6px 12px;
-            background: var(--danger);
-            border: 2px solid var(--danger);
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        .add-pair-btn {
-            padding: 12px;
-            background: var(--accent);
-            border: 2px solid var(--accent);
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-top: 15px;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 9px;
-        }
-        
-        /* Stats Panel */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: var(--bg-input);
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 24px;
-            color: var(--pixel);
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            header h1 {
-                font-size: 12px;
-            }
-            
-            .nav-tab {
-                padding: 10px 15px;
-                font-size: 8px;
-            }
-            
-            .dashboard-table th,
-            .dashboard-table td {
-                padding: 5px;
-                min-width: 60px;
-                font-size: 12px;
-            }
-            
-            .signal-badge {
-                padding: 2px 4px;
-                font-size: 10px;
-            }
-            
-            .tf-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .journal-images {
-                grid-template-columns: 1fr;
-            }
-            
-            .config-panel {
-                width: 100%;
-                right: -100%;
-            }
-            
-            .controls {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--bg-dark);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-        
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-                color: black;
-            }
-            
-            .btn, .nav-tab, .controls, .config-panel {
-                display: none;
-            }
-        }
-        
-        /* Animation */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        .setup-matching {
-            background: linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(245, 158, 11, 0.3));
-            border-left: 4px solid var(--pixel);
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="CEBONK XAUUSD dashboard: Astrology Luxor→WIB 5M dan Technical XAU/USD M5 berbasis data Twelve Data.">
+<title>CEBONK • XAUUSD • Astrology + Technical</title>
+<style>
+:root{--bg:#080e17;--panel:#101a28;--panel2:#142134;--line:#26364c;--text:#e8eff8;--muted:#9eafc5;--accent:#f0c16c;--cyan:#70d7dc;--buy:#83dfb3;--sell:#ff9b9b;--amber:#f1c779}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--text)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:wait;opacity:.45}input,select,button{border:1px solid var(--line);border-radius:8px;background:#0d1725;color:var(--text);padding:10px 12px;min-height:44px;max-width:100%}input:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}input[type=checkbox]{width:18px;min-height:18px;accent-color:var(--accent)}button.primary{background:var(--accent);color:#152033;border-color:var(--accent);font-weight:750}button.ghost{background:transparent}a{color:var(--cyan)}.wrap{width:min(1160px,100%);margin:auto;padding:22px 20px 32px}.eyebrow{font-size:11px;font-weight:750;letter-spacing:1.8px;color:var(--accent)}.hero{border-bottom:1px solid var(--line);padding:3px 0 19px;display:flex;justify-content:space-between;align-items:center;gap:16px}.hero h1{font-size:clamp(26px,4vw,39px);line-height:1.15;letter-spacing:-1.1px;margin:8px 0}.hero p{color:var(--muted);margin:8px 0 0;font-size:13px}.version{border:1px solid var(--line);border-radius:999px;white-space:nowrap;padding:7px 12px;font-size:12px;color:var(--cyan)}.clocks{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;padding:20px 0}.clock{min-width:0}.clock label,.label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px}.clock strong{font-size:29px;letter-spacing:1px;font-variant-numeric:tabular-nums}.clock small{display:block;color:var(--muted);font-size:12px}.bridge{text-align:center;color:var(--cyan);font-size:12px}.bridge b{display:block;font-size:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 16px;overflow:hidden}.controls{padding:16px;display:grid;grid-template-columns:1fr 1.7fr 1.15fr auto;gap:12px;align-items:end}.controls label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}.controls input,.controls select{width:100%}.control-footer{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:0 16px 15px;font-size:12px;color:var(--muted)}.check{display:flex;align-items:center;gap:9px;cursor:pointer}.check span{line-height:1.4}.note{padding:13px 15px;background:#252014;border:1px solid #584a2d;border-radius:10px;color:#e9d4ab;font-size:12px;margin-bottom:16px}.note strong{color:#ffe2ac}.note p{margin:4px 0}.statusline{display:flex;align-items:center;gap:12px;margin:0 0 13px;min-height:26px;font-size:12px;color:var(--muted)}.statusline progress{width:110px;height:6px;accent-color:var(--cyan)}.error{padding:12px;color:#ffb8b8;border:1px solid #6f3d44;background:#291a22;border-radius:8px;margin-bottom:14px;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.metric{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:14px}.metric strong{display:block;font-size:23px;margin:6px 0 2px;font-variant-numeric:tabular-nums}.metric small{color:var(--muted);font-size:11px;display:block}.buy{color:var(--buy)}.sell{color:var(--sell)}.neutral,.data{color:#b5c2d2}.transition{color:var(--amber)}.badge{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:750;border:1px solid currentColor;border-radius:6px;padding:3px 7px;white-space:nowrap}.head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}.head h2,.head h3{font-size:15px;margin:0}.head small{font-size:11px;color:var(--muted)}.head .actions{display:flex;gap:8px;flex-wrap:wrap}.head button{min-height:36px;font-size:12px;padding:6px 10px}.empty{padding:22px 16px;color:var(--muted);font-size:13px}.timeline-row{display:grid;grid-template-columns:170px 112px 1fr;gap:14px;padding:13px 16px;border-bottom:1px solid #223047;align-items:start}.timeline-row:last-child{border-bottom:0}.timeline-time{font-variant-numeric:tabular-nums;font-weight:650;font-size:14px}.timeline-row small{font-size:11px;color:var(--muted);display:block;margin-top:3px}.timeline-info{font-size:12px;overflow-wrap:anywhere}.timeline-info b{font-weight:600}.inspect{padding:15px 16px;border-bottom:1px solid var(--line)}.inspect-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}.inspect-top p{margin:0;font-size:12px;color:var(--muted)}.stepper{display:flex;align-items:center;gap:6px}.stepper button{padding:7px 11px}.stepper select{min-width:125px;padding:8px}.inspect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.inspect-tile{background:var(--panel2);border-radius:8px;padding:10px 12px}.inspect-tile strong{display:block;font-size:15px}.inspect-tile small{display:block;font-size:11px;color:var(--muted)}.scroller{overflow:auto;max-width:100%;scrollbar-color:#405470 var(--panel)}table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}th,td{text-align:left;padding:10px 13px;border-bottom:1px solid #223047}th{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:#0c1522;font-weight:650;position:sticky;top:0;z-index:1}td small{font-size:10px;color:var(--muted)}tbody tr:last-child td{border-bottom:0}.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.muted{color:var(--muted)}.raw{max-height:440px}tr.selected{background:#20334a}.footnote{padding:11px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}.tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tabs select{min-height:35px;padding:5px 9px;font-size:12px}.raw tr[data-index]{cursor:pointer}.raw tr[data-index]:hover{background:#1b2e43}details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 16px;margin-bottom:12px;font-size:12px}summary{cursor:pointer;font-weight:650;padding:14px 0}details p{color:var(--muted);margin:4px 0 12px}details pre{font:11px/1.5 ui-monospace,Consolas,monospace;overflow:auto;padding:12px;background:#080f19;border:1px solid var(--line);border-radius:8px;max-height:270px}footer{font-size:11px;color:var(--muted);padding-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}#manualCopy{width:100%;height:130px;background:#08111c;color:var(--text);padding:10px}.hint{font-size:11px;color:var(--muted)}[hidden]{display:none!important}#results[data-stale=true]{opacity:.45}#results[data-stale=true] button,#results[data-stale=true] select{pointer-events:none}
+@media(max-width:760px){.wrap{padding:16px 12px 24px}.hero{align-items:flex-start;gap:8px}.eyebrow{font-size:9px;letter-spacing:1.1px}.version{font-size:10px;padding:5px 8px;margin-top:3px}.clocks{gap:10px;padding:16px 0}.clock strong{font-size:23px}.clock small{font-size:10px}.bridge{font-size:10px}.controls{grid-template-columns:1fr 1fr;padding:13px;gap:10px}.controls .mode-control{grid-column:1/-1;grid-row:2}.controls .run-control{grid-column:1/-1}.controls .run-control button{width:100%}.control-footer{padding:0 13px 13px;align-items:flex-start;gap:9px}.metrics{grid-template-columns:1fr 1fr;gap:8px}.metric{padding:12px}.metric strong{font-size:21px}.metric .label{font-size:10px;letter-spacing:.3px}.timeline-row{grid-template-columns:1fr auto;gap:6px 10px;padding:12px}.timeline-info{grid-column:1/-1}.timeline-row small{font-size:10px}.head{padding:12px;align-items:flex-start;flex-wrap:wrap;gap:8px}.head h2{font-size:14px}.inspect{padding:12px}.inspect-grid{grid-template-columns:1fr 1fr}.inspect-grid .inspect-tile:last-child{grid-column:1/-1}.clock label{font-size:9px;letter-spacing:.5px}.note{padding:11px 12px}.statusline{font-size:11px}.hero h1{font-size:29px}.hero p{font-size:11px}.head .actions{width:100%}.head .actions button{flex:1}.inspect-top .stepper{width:100%}.stepper select{flex:1}.raw{max-height:370px}}
+.viewtabs{display:flex;gap:8px;margin:14px 0 16px;padding:5px;background:#0b1420;border:1px solid var(--line);border-radius:12px}
+.viewtab{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800}
+.viewtab.active{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.tech-status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:12px}
+.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+.tech-card{background:var(--panel2);border:1px solid #25364d;border-radius:10px;padding:12px}
+.tech-card .label{font-size:10px}.tech-card strong{display:block;font-size:21px;margin-top:4px;font-variant-numeric:tabular-nums}
+.tech-signal{font-size:36px!important;letter-spacing:.5px}
+.tech-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 14px 14px}
+.tech-actions select{min-width:130px}.tech-actions button{min-width:130px}
+.rulelist{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
+.rule{padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#0d1725;font-size:12px}
+.rule.ok{border-color:#2f7c58}.rule.bad{border-color:#714048}.rule b{display:block;margin-bottom:2px}
+.tech-warn{padding:10px 14px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+@media(max-width:760px){.viewtabs{margin-top:10px}.tech-grid{grid-template-columns:1fr 1fr;padding:10px}.tech-card{padding:10px}.tech-card strong{font-size:18px}.tech-signal{font-size:28px!important}.rulelist{grid-template-columns:1fr;padding:10px}.tech-actions{padding:0 10px 10px}}
+@media(prefers-reduced-motion:no-preference){button{transition:background .15s,opacity .15s}}
+</style>
 </head>
 <body>
-    <header>
-        <h1>⚔️ BBMA MTF JOURNAL ⚔️</h1>
-        <p>Oma Ally Trading System - Multi Timeframe Dashboard</p>
-    </header>
-    
-    <div class="container">
-        <nav class="nav-tabs">
-            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="nav-tab" data-tab="journal">📝 New Entry</button>
-            <button class="nav-tab" data-tab="history">📜 History</button>
-            <button class="nav-tab" data-tab="stats">📈 Statistics</button>
-            <button class="nav-tab" data-tab="guide">📖 Guide</button>
-        </nav>
-        
-        <!-- Dashboard Tab -->
-        <div class="tab-content active" id="dashboard">
-            <div class="controls">
-                <button class="btn" onclick="openConfig()">⚙️ Configure Pairs</button>
-                <button class="btn" onclick="refreshDashboard()">🔄 Refresh</button>
-                <button class="btn" onclick="exportData()">💾 Export JSON</button>
-                <button class="btn" onclick="document.getElementById('importFile').click()">📂 Import JSON</button>
-                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
-            </div>
-            
-            <div class="legend">
-                <div class="legend-item"><div class="legend-color RE"></div> RE = Reentry</div>
-                <div class="legend-item"><div class="legend-color RJ"></div> RJ = Reject EMA 50</div>
-                <div class="legend-item"><div class="legend-color RJB"></div> RJB = Reject EMA+BB</div>
-                <div class="legend-item"><div class="legend-color MHV"></div> MHV = Market Hilang Volume</div>
-                <div class="legend-item"><div class="legend-color EXT"></div> EXT = Extreme</div>
-                <div class="legend-item"><div class="legend-color BUY"></div> 🟢 BUY SETUP</div>
-                <div class="legend-item"><div class="legend-color SELL"></div> 🔴 SELL SETUP</div>
-            </div>
-            
-            <div class="dashboard-container">
-                <table class="dashboard-table" id="dashboardTable">
-                    <thead>
-                        <tr id="tableHeader"></tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
-            
-            <p style="text-align:center; margin-top:20px; color:var(--text-dim); font-size:14px;">
-                Click on any cell to update signals • Setup matching is automatic
-            </p>
-        </div>
-        
-        <!-- Journal Form Tab -->
-        <div class="tab-content" id="journal">
-            <form class="journal-form" id="journalForm">
-                <div class="form-section">
-                    <h3>🎯 Basic Information</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Pair</label>
-                            <select id="pairSelect" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Setup Type</label>
-                            <select id="setupType" required>
-                                <option value="">Select Setup</option>
-                                <option value="swing">Swing (D1-H4-H1)</option>
-                                <option value="intraday">Intraday (H4-H1-M15)</option>
-                                <option value="scalping">Scalping (H1-M15-M5)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Direction</label>
-                            <select id="direction" required>
-                                <option value="">Select Direction</option>
-                                <option value="BUY">BUY 🟢</option>
-                                <option value="SELL">SELL 🔴</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Entry Date</label>
-                            <input type="datetime-local" id="entryDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Entry Price</label>
-                            <input type="number" step="0.00001" id="entryPrice" placeholder="0.00000">
-                        </div>
-                        <div class="form-group">
-                            <label>Lot Size</label>
-                            <input type="number" step="0.01" id="lotSize" placeholder="0.00">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>🎯 Target & Stop Loss</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Take Profit (High/Low BB)</label>
-                            <input type="number" step="0.00001" id="takeProfit" placeholder="0.00000" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Stop Loss (Below/Above WMA 10)</label>
-                            <input type="number" step="0.00001" id="stopLoss" placeholder="0.00000" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Risk:Reward Ratio</label>
-                            <input type="text" id="rrRatio" readonly placeholder="Auto calculated">
-                        </div>
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select id="status">
-                                <option value="OPEN">OPEN</option>
-                                <option value="TP">TAKE PROFIT</option>
-                                <option value="SL">STOP LOSS</option>
-                                <option value="MANUAL">MANUAL CLOSE</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>📊 Timeframe Analysis</h3>
-                    <div class="tf-grid" id="tfGrid"></div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>📝 Notes</h3>
-                    <div class="form-group">
-                        <textarea id="notes" rows="4" placeholder="Additional notes about this trade..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="controls">
-                    <button type="submit" class="btn btn-primary">💾 Save Entry</button>
-                    <button type="reset" class="btn btn-danger">🗑️ Clear Form</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- History Tab -->
-        <div class="tab-content" id="history">
-            <div class="controls">
-                <button class="btn" onclick="filterHistory('all')">All</button>
-                <button class="btn" onclick="filterHistory('OPEN')">Open</button>
-                <button class="btn" onclick="filterHistory('TP')">TP</button>
-                <button class="btn" onclick="filterHistory('SL')">SL</button>
-                <button class="btn btn-success" onclick="exportAllImages()">📷 Export All Images</button>
-            </div>
-            <div class="journal-list" id="journalList"></div>
-        </div>
-        
-        <!-- Statistics Tab -->
-        <div class="tab-content" id="stats">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalTrades">0</div>
-                    <div class="stat-label">Total Trades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="winRate">0%</div>
-                    <div class="stat-label">Win Rate</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalPips">0</div>
-                    <div class="stat-label">Total Pips</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="avgRR">0</div>
-                    <div class="stat-label">Avg R:R</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="swingCount">0</div>
-                    <div class="stat-label">Swing Trades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="intradayCount">0</div>
-                    <div class="stat-label">Intraday Trades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="scalpingCount">0</div>
-                    <div class="stat-label">Scalping Trades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="buyCount">0</div>
-                    <div class="stat-label">BUY Trades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="sellCount">0</div>
-                    <div class="stat-label">SELL Trades</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Guide Tab -->
-        <div class="tab-content" id="guide">
-            <div class="journal-form">
-                <div class="form-section">
-                    <h3>📜 BBMA Oma Ally Complete Guide</h3>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🔧 INDICATORS</h4>
-                    <ul style="margin-left:20px; line-height:1.8;">
-                        <li><strong>LWMA 5 & 10 High:</strong> Area Reentry Sell (Apply to High)</li>
-                        <li><strong>LWMA 5 & 10 Low:</strong> Area Reentry Buy (Apply to Low)</li>
-                        <li><strong>EMA 50:</strong> Filter Tren & Rejection Zone</li>
-                        <li><strong>Bollinger Bands (20):</strong> Batas Volatilitas</li>
-                    </ul>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">📊 SIGNAL CODES</h4>
-                    <ul style="margin-left:20px; line-height:1.8;">
-                        <li><strong>RE (Reentry):</strong> Harga menyentuh area LWMA 5/10</li>
-                        <li><strong>RJ (Reject EMA 50):</strong> Harga memantul di EMA 50</li>
-                        <li><strong>RJB (Reject EMA+BB):</strong> Harga memantul di EMA 50 + BB (Powerful!)</li>
-                        <li><strong>MHV (Market Hilang Volume):</strong> Ekor sentuh BB tapi body tetap di dalam</li>
-                        <li><strong>EXT (Extreme):</strong> WMA 5/10 keluar dari BB</li>
-                    </ul>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">⚙️ SETUP MATCHING RULES</h4>
-                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
-                        <p style="color:var(--reentry); font-weight:bold;">🟢 SWING SETUP (D1-H4-H1):</p>
-                        <p>D1 RE + H4 RJ/RJB + H1 RE/EXT/MHV</p>
-                    </div>
-                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
-                        <p style="color:var(--info); font-weight:bold;">🔵 INTRADAY SETUP (H4-H1-M15):</p>
-                        <p>H4 RE + H1 RJ/RJB + M15 RE/EXT/MHV</p>
-                    </div>
-                    <div style="background:var(--bg-input); padding:15px; border-radius:6px; margin:10px 0;">
-                        <p style="color:var(--ext); font-weight:bold;">🟣 SCALPING SETUP (H1-M15-M5):</p>
-                        <p>H1 RE + M15 RJ/RJB + M5 RE/EXT/MHV</p>
-                    </div>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🔄 BBMA CYCLE</h4>
-                    <ol style="margin-left:20px; line-height:1.8;">
-                        <li><strong>EXT →</strong> WMA keluar dari BB (Harga ekstrem)</li>
-                        <li><strong>TPW →</strong> Pantul ke WMA sebaliknya (Wajib TP)</li>
-                        <li><strong>MHV →</strong> Gagal breakout lagi (Bensin habis)</li>
-                        <li><strong>CSA →</strong> Tembus Mid BB (Sinyal awal)</li>
-                        <li><strong>CSAK →</strong> Tembus Mid BB + EMA 50 (Konfirmasi)</li>
-                        <li><strong>Momentum →</strong> Candle close di luar BB (Tren kuat!)</li>
-                        <li><strong>Re-Entry →</strong> Balik ke WMA 5/10 (Entry point)</li>
-                    </ol>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">🎯 TARGET & STOP LOSS</h4>
-                    <ul style="margin-left:20px; line-height:1.8;">
-                        <li><strong>Take Profit:</strong> High/ Low BB di timeframe signal RE</li>
-                        <li><strong>Stop Loss BUY:</strong> Di bawah WMA 10 Low + buffer</li>
-                        <li><strong>Stop Loss SELL:</strong> Di atas WMA 10 High + buffer</li>
-                    </ul>
-                    
-                    <h4 style="color:var(--pixel); margin:20px 0 10px; font-family:'Press Start 2P',cursive; font-size:10px;">⚠️ GOLDEN RULES</h4>
-                    <ul style="margin-left:20px; line-height:1.8;">
-                        <li>❌ No Momentum = No Re-Entry</li>
-                        <li>✅ Di atas EMA 50 = Fokus Buy saja</li>
-                        <li>✅ Di bawah EMA 50 = Fokus Sell saja</li>
-                        <li>⏳ Tunggu EXT → TPW → MHV selesai di TF konfirmasi</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Signal Modal -->
-    <div class="modal" id="signalModal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeSignalModal()">&times;</span>
-            <h3 style="font-family:'Press Start 2P',cursive; font-size:11px; color:var(--pixel); margin-bottom:20px;">
-                Edit: <span id="modalPair"></span> - <span id="modalTF"></span>
-            </h3>
-            <div class="form-group">
-                <label>Signals (Select all that apply)</label>
-                <div class="indicator-checkboxes">
-                    <label class="checkbox-group">
-                        <input type="checkbox" value="RE" id="chkRE">
-                        <span class="RE">RE</span>
-                    </label>
-                    <label class="checkbox-group">
-                        <input type="checkbox" value="RJ" id="chkRJ">
-                        <span class="RJ">RJ</span>
-                    </label>
-                    <label class="checkbox-group">
-                        <input type="checkbox" value="RJB" id="chkRJB">
-                        <span class="RJB">RJB</span>
-                    </label>
-                    <label class="checkbox-group">
-                        <input type="checkbox" value="MHV" id="chkMHV">
-                        <span class="MHV">MHV</span>
-                    </label>
-                    <label class="checkbox-group">
-                        <input type="checkbox" value="EXT" id="chkEXT">
-                        <span class="EXT">EXT</span>
-                    </label>
-                </div>
-            </div>
-            <div class="form-group" style="margin-top:20px;">
-                <label>Trend Direction (Optional)</label>
-                <select id="modalTrend">
-                    <option value="">-- Select --</option>
-                    <option value="BUY">BUY</option>
-                    <option value="SELL">SELL</option>
-                    <option value="NEUTRAL">NEUTRAL</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-top:20px;">
-                <label>Notes</label>
-                <textarea id="modalNotes" rows="3" placeholder="Notes for this TF..."></textarea>
-            </div>
-            <button class="btn btn-primary" style="margin-top:20px; width:100%;" onclick="saveSignal()">💾 Save Signal</button>
-        </div>
-    </div>
-    
-    <!-- Image Modal -->
-    <div class="modal" id="imageModal">
-        <span class="modal-close" onclick="closeImageModal()" style="position:fixed; top:20px; right:30px; z-index:1001; color:white; font-size:40px; cursor:pointer;">&times;</span>
-        <img id="modalImage" class="modal-image" src="" alt="Preview">
-    </div>
-    
-    <!-- Config Panel -->
-    <div class="config-overlay" id="configOverlay" onclick="closeConfig()"></div>
-    <div class="config-panel" id="configPanel">
-        <div class="config-header">
-            <h3>⚙️ Configure</h3>
-            <span class="config-close" onclick="closeConfig()">&times;</span>
-        </div>
-        <div class="form-section">
-            <h3 style="font-size:10px;">💱 Currency Pairs</h3>
-            <div class="pair-list" id="pairList"></div>
-            <button class="add-pair-btn" onclick="addPair()">+ Add Pair</button>
-        </div>
-        <button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="saveConfig()">💾 Save Configuration</button>
-    </div>
+<main class="wrap">
+<header class="hero">
+ <div><div class="eyebrow">SEKTE MUSANG · CEBONK COMPANY 22</div><h1>Luxor <span style="color:var(--cyan)">→</span> WIB</h1><p>ASTROLOGY XAUUSD / XAUUSDc · 10 benda langit + ASC/MC · Scanner 5 menit</p></div>
+ <span class="version">v2.0 / 5M</span>
+</header>
+<nav class="viewtabs" aria-label="Mode analisis">
+ <button class="viewtab active" id="tabAstro" type="button">ASTROLOGY</button>
+ <button class="viewtab" id="tabTechnical" type="button">FIBO MUSANG</button>
+ <button class="viewtab" id="tabCombined" type="button">COMBINED</button>
+</nav>
+<div id="astroView">
+<section class="clocks" aria-label="Jam sekarang, bukan tanggal hasil scan">
+ <div class="clock"><label>Jam Luxor sekarang <span id="liveLuxorOffset"></span></label><strong id="clockLuxor">—</strong><small id="clockLuxorDate">—</small></div>
+ <div class="bridge"><b>→</b><span id="clockDifference">—</span></div>
+ <div class="clock"><label>Jam WIB sekarang · UTC+7</label><strong id="clockWib">—</strong><small id="clockWibDate">—</small></div>
+</section>
+<section class="panel">
+ <div class="controls">
+  <div><label for="dateInput">Tanggal jadwal (WIB)</label><input id="dateInput" type="date" min="2020-01-01" max="2040-12-31" required></div>
+  <div class="mode-control"><label for="tzMode">Acuan jam Luxor</label><select id="tzMode"><option value="AUTO">Otomatis DST · Africa/Cairo (UTC+2 / +3)</option><option value="FIXED3">UTC+3 tetap · acuan web contoh, tanpa DST</option></select></div>
+  <div><label for="startMinute">Rentang scan WIB</label><select id="startMinute"><option value="360">06:00 – 00:00 (+1 hari)</option><option value="0">00:00 – 00:00 (+1 hari)</option></select></div>
+  <div class="run-control"><button class="primary" id="runBtn" type="button">Hitung 5 menit</button></div>
+ </div>
+ <div class="control-footer"><label class="check"><input id="modelEnabled" type="checkbox" checked><span>Tampilkan BUY/SELL <strong>model eksperimen V1</strong></span></label><button class="ghost" id="todayBtn" type="button">Hari ini</button></div>
+</section>
+<div class="note"><strong>Data astronomi dan arah harga itu berbeda.</strong><p>BUY/SELL di sini berasal dari bobot eksperimen V1, <b>belum divalidasi terhadap harga XAUUSD</b>. ASC/MC menambah data aspek lokasi Luxor; tidak diberi bobot arah rekaan. Skor bukan confidence, win rate, atau instruksi entry.</p></div>
+<div id="errorBox" class="error" role="alert" hidden></div>
+<div class="statusline" role="status" aria-live="polite"><progress id="progress" max="100" value="0" hidden></progress><span id="statusText">Memuat Astronomy Engine…</span></div>
+<section id="results" data-stale="false">
+ <div class="metrics">
+  <div class="metric"><span class="label">Window arah terpanjang*</span><strong id="dominant" class="neutral">—</strong><small id="duration">Model eksperimen, bukan pasar live</small></div>
+  <div class="metric"><span class="label">Awal window (WIB)</span><strong id="entryStart">—</strong><small id="entryStartLuxor">—</small></div>
+  <div class="metric"><span class="label">Inti / skor puncak (WIB)</span><strong id="entryCore">—</strong><small id="entryCoreLuxor">—</small></div>
+  <div class="metric"><span class="label">Akhir window (WIB)</span><strong id="entryEnd">—</strong><small id="entryEndLuxor">—</small></div>
+ </div>
+ <section class="panel">
+  <div class="head"><div><h2>Timeline ringkas</h2><small id="rangeLabel">Interval berurutan dengan label sama digabung, tanpa membuang slot.</small></div><div class="actions"><button id="copyBtn" type="button" disabled>Salin ringkasan</button><button id="csvBtn" type="button" disabled>Unduh CSV 5M</button></div></div>
+  <div id="timeline"><div class="empty">Hasil akan muncul setelah perhitungan selesai.</div></div>
+  <div class="footnote">*Dipilih berdasarkan durasi window BUY/SELL terpanjang, bukan klaim arah pasar. Awal/akhir di batas rentang scan bukan konfirmasi sinyal baru atau expired.</div>
+ </section>
+ <section class="panel">
+  <div class="head"><div><h2>Periksa satu slot 5 menit</h2><small>Koordinat Luxor: 25.6872° LU · 32.6396° BT. Bukan lokasi perangkat.</small></div></div>
+  <div class="inspect">
+   <div class="inspect-top"><p id="inspectStamp">Pilih waktu setelah scan.</p><div class="stepper"><button id="prevSlot" type="button" aria-label="Mundur lima menit" disabled>−5m</button><select id="slotSelect" aria-label="Slot waktu WIB" disabled><option>—</option></select><button id="nextSlot" type="button" aria-label="Maju lima menit" disabled>+5m</button></div></div>
+   <div class="inspect-grid"><div class="inspect-tile"><span class="label">Waktu Luxor</span><strong id="sampleLuxor">—</strong><small id="sampleLuxorDate">—</small></div><div class="inspect-tile"><span class="label">Waktu WIB</span><strong id="sampleWib">—</strong><small id="sampleWibDate">—</small></div><div class="inspect-tile"><span class="label">Status model / skor</span><strong id="sampleState">—</strong><small id="sampleScore">Bukan ukuran probabilitas</small></div></div>
+  </div>
+  <div class="head"><h3>Aspek aktif pada slot dipilih</h3><div class="tabs"><select id="aspectFilter" aria-label="Filter aspek"><option value="ALL">Semua aspek</option><option value="LOCAL">Planet ↔ ASC/MC Luxor</option><option value="PLANET">Antarplanet</option></select><small id="aspectCount">—</small></div></div>
+  <div class="scroller"><table><thead><tr><th>Pasangan</th><th>Aspek</th><th>Orb −5m</th><th>Orb kini</th><th>Orb +5m</th><th>Fase*</th><th>Kontribusi model</th></tr></thead><tbody id="aspectBody"><tr><td colspan="7">—</td></tr></tbody></table></div>
+  <div class="footnote">EXACT* = orb ≤ 0.06°, bukan waktu exact yang diselesaikan sampai detik. Grid 5 menit bisa melewati momen exact di antara dua slot. Orb ASC/MC ≤ 2°. Aspek ASC/MC hanya dicatat sebagai data timing.</div>
+  <div class="head"><h3>Ephemeris pada waktu yang sama</h3><small>Sun–Pluto + ASC & MC Luxor</small></div>
+  <div class="scroller"><table><thead><tr><th>Objek</th><th>Zodiak</th><th>Longitude 360°</th><th>Deklinasi</th><th>Laju °/hari</th><th>Status</th></tr></thead><tbody id="ephBody"><tr><td colspan="6">—</td></tr></tbody></table></div>
+  <div class="footnote">Planet: apparent geocentric, tropical, true ecliptic of date. ASC/MC: sudut geometris Luxor tanpa refraksi. Laju dihitung dari selisih posisi ±5 menit; ASC/MC bukan planet retrograde.</div>
+ </section>
+ <section class="panel">
+  <div class="head"><div><h2>Seluruh data 5 menit</h2><small id="rawCount">Tidak ada pemotongan baris; klik baris untuk memeriksa ephemeris.</small></div></div>
+  <div class="scroller raw"><table><thead><tr><th>WIB</th><th>Luxor · offset</th><th>Model V1</th><th>Skor*</th><th>ASC Luxor</th><th>MC Luxor</th><th>Aspek lokasi aktif</th></tr></thead><tbody id="rawBody"><tr><td colspan="7">—</td></tr></tbody></table></div>
+ </section>
+</section>
+<div id="manualCopyBox" class="panel" hidden><div class="head"><h2>Salin teks secara manual</h2></div><textarea id="manualCopy" readonly aria-label="Ringkasan untuk disalin"></textarea></div>
+<details><summary>Cara baca & batasan versi ini</summary><p>Tanggal input selalu tanggal jadwal WIB. Setiap slot diubah menjadi satu timestamp UTC; posisi planet dan ASC/MC dihitung pada timestamp yang sama, lalu ditampilkan dalam WIB dan jam Luxor. Mengganti mode jam Luxor tidak mengubah posisi langit pada timestamp UTC yang sama.</p><p>Mode otomatis mengikuti aturan Africa/Cairo: UTC+2 atau UTC+3 menurut tanggal. Versi ini menyertakan snapshot aturan IANA yang diperiksa 3 Oktober 2026 untuk rentang 2020–2040, sehingga tidak bergantung pada database zona waktu Android yang mungkin lama. Aturan tahun mendatang dapat berubah; aplikasi harus diperbarui bila aturan resmi berubah. Mode UTC+3 tetap hanya untuk menyamai konvensi waktu pada web contoh, bukan selalu jam sipil Luxor.</p><p>Model arah masih formula eksperimen V1. Tidak ada backtest, data harga, persen confidence, rule Astrodox tervalidasi, atau kepastian profit. Tidak ada order MT5 maupun sinyal Telegram otomatis. Sebutan “inti” hanya skor absolut tertinggi di dalam window terpanjang. Menonaktifkan model menampilkan DATA, bukan memaksa BUY/SELL.</p><p>Belum mencakup Nodes, Chiron, Lilith, rumah astrologi lengkap, atau asteroid. Angka dari layanan lain dapat berbeda bila memakai sidereal, topocentric, mean ecliptic, koordinat, orb, atau acuan waktu berbeda.</p><p>Butuh internet untuk memuat Astronomy Engine sekali setiap pembukaan bila belum tersedia di cache. File dapat dipublikasikan sebagai <code>index.html</code>. Tidak memuat font, gambar, akun, API key, atau tracker eksternal.</p></details>
+<details><summary>Aturan model V1 yang dipakai (terbuka, belum tervalidasi)</summary><p>Hanya aspek antarplanet masuk ke penjumlahan skor. BUY bila skor ≥ 1.15; SELL bila skor ≤ −1.15; di antaranya NEUTRAL atau TRANSITION bila perubahan skor antarslot ≥ 0.55. Bobot berikut diwarisi dari prototype, bukan hasil riset XAUUSD.</p><pre id="modelRules"></pre></details>
+<details><summary>Sumber perhitungan & informasi teknis</summary><p><a href="https://github.com/cosinekitty/astronomy/tree/v2.1.19/source/js" target="_blank" rel="noopener noreferrer">Astronomy Engine 2.1.19 — dokumentasi & lisensi MIT</a>. Konversi geocentric EQJ → ECT, true obliquity dan sidereal time digunakan konsisten untuk ASC/MC.</p><p><a href="https://data.iana.org/time-zones/tzdb/africa" target="_blank" rel="noopener noreferrer">IANA tzdb — aturan Africa/Cairo</a>. Koordinat konfigurasi mengikuti titik acuan Luxor dari <a href="https://kusnuzon.github.io/fx-project/tools/fx-tools/AstroCycleFX.html" target="_blank" rel="noopener noreferrer">web contoh</a>; aplikasi ini bukan salinan atau implementasi resmi Astrodox.</p><p>SSOT: satu CFG. Modul terpisah: waktu, geometri ASC/MC, ephemeris, aspek, model eksperimen, dan tampilan. Tidak ada fallback posisi planet rekaan bila library gagal.</p></details>
 
-    <script>
-        // ==================== DATA STRUCTURES ====================
-        let appData = {
-            pairs: [
-                'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 
-                'NZDUSD', 'USDCHF', 'EURGBP', 'EURJPY', 'GBPJPY',
-                'AUDJPY', 'CADJPY', 'NZDJPY', 'XAUUSD', 'XAGUSD',
-                'BTCUSD', 'ETHUSD', 'EURUSD', 'GBPJPY', 'AUDJPY'
-            ],
-            timeframes: ['W1', 'D1', 'H4', 'H1', 'M15', 'M5', 'M1'],
-            journal: [],
-            dashboard: {}
-        };
-        
-        let currentModalCell = null;
-        
-        // ==================== INITIALIZATION ====================
-        function init() {
-            loadData();
-            renderDashboard();
-            renderTFCards();
-            renderPairSelect();
-            renderJournalList();
-            updateStats();
-            setDefaultDate();
-        }
-        
-        function setDefaultDate() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('entryDate').value = now.toISOString().slice(0, 16);
-        }
-        
-        function loadData() {
-            const saved = localStorage.getItem('bbmaJournal_v1');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    appData = { ...appData, ...parsed };
-                } catch (e) {
-                    console.error('Error loading data:', e);
-                }
-            }
-            
-            // Initialize dashboard structure
-            appData.timeframes.forEach(tf => {
-                if (!appData.dashboard[tf]) {
-                    appData.dashboard[tf] = {};
-                }
-            });
-        }
-        
-        function saveData() {
-            localStorage.setItem('bbmaJournal_v1', JSON.stringify(appData));
-        }
-        
-        // ==================== DASHBOARD ====================
-        function renderDashboard() {
-            const thead = document.getElementById('tableHeader');
-            const tbody = document.getElementById('tableBody');
-            
-            // Render header
-            let headerHTML = '<th class="pair-header">PAIR 📊</th>';
-            appData.timeframes.forEach(tf => {
-                headerHTML += `<th class="tf-header">${tf}</th>`;
-            });
-            headerHTML += '<th class="setup-column">SETUP</th>';
-            thead.innerHTML = headerHTML;
-            
-            // Render body
-            let bodyHTML = '';
-            appData.pairs.forEach(pair => {
-                bodyHTML += `<tr>`;
-                bodyHTML += `<td class="pair-cell">${pair}</td>`;
-                
-                appData.timeframes.forEach(tf => {
-                    const cellData = appData.dashboard[tf]?.[pair] || {};
-                    const signals = cellData.signals || [];
-                    const trend = cellData.trend || '';
-                    
-                    let signalHTML = '';
-                    if (signals.length > 0) {
-                        signalHTML = signals.map(s => `<span class="signal-badge ${s}">${s}</span>`).join(' ');
-                    } else {
-                        signalHTML = '<span style="color:var(--text-dim);">-</span>';
-                    }
-                    
-                    let trendIcon = '';
-                    if (trend === 'BUY') trendIcon = '<span style="color:var(--success);">▲</span>';
-                    if (trend === 'SELL') trendIcon = '<span style="color:var(--danger);">▼</span>';
-                    
-                    bodyHTML += `<td class="signal-cell" onclick="openSignalModal('${pair}', '${tf}')" data-pair="${pair}" data-tf="${tf}">
-                        ${trendIcon} ${signalHTML}
-                    </td>`;
-                });
-                
-                // Detect setups
-                const setups = detectSetups(pair);
-                bodyHTML += `<td class="setup-column">${setups}</td>`;
-                
-                bodyHTML += `</tr>`;
-            });
-            
-            tbody.innerHTML = bodyHTML;
-        }
-        
-        function detectSetups(pair) {
-            const d = appData.dashboard;
-            const s = (tf, p) => d[tf]?.[p]?.signals || [];
-            
-            let setups = [];
-            const hasSignal = (signals, types) => types.some(t => signals.includes(t));
-            
-            // Swing: D1 RE + H4 RJ/RJB + H1 RE/EXT/MHV
-            const d1 = s('D1', pair);
-            const h4 = s('H4', pair);
-            const h1 = s('H1', pair);
-            
-            if (hasSignal(d1, ['RE']) && hasSignal(h4, ['RJ', 'RJB']) && hasSignal(h1, ['RE', 'EXT', 'MHV'])) {
-                const trendD1 = d['D1']?.[pair]?.trend || '';
-                const dir = trendD1 === 'BUY' ? 'BUY 🟢' : (trendD1 === 'SELL' ? 'SELL 🔴' : '⚠️');
-                setups.push(`<span class="setup-badge setup-swing">SWING ${dir}</span>`);
-            }
-            
-            // Intraday: H4 RE + H1 RJ/RJB + M15 RE/EXT/MHV
-            const m15 = s('M15', pair);
-            if (hasSignal(h4, ['RE']) && hasSignal(h1, ['RJ', 'RJB']) && hasSignal(m15, ['RE', 'EXT', 'MHV'])) {
-                const trendH4 = d['H4']?.[pair]?.trend || '';
-                const dir = trendH4 === 'BUY' ? 'BUY 🟢' : (trendH4 === 'SELL' ? 'SELL 🔴' : '⚠️');
-                setups.push(`<span class="setup-badge setup-intraday">INTRADAY ${dir}</span>`);
-            }
-            
-            // Scalping: H1 RE + M15 RJ/RJB + M5 RE/EXT/MHV
-            const m5 = s('M5', pair);
-            if (hasSignal(h1, ['RE']) && hasSignal(m15, ['RJ', 'RJB']) && hasSignal(m5, ['RE', 'EXT', 'MHV'])) {
-                const trendH1 = d['H1']?.[pair]?.trend || '';
-                const dir = trendH1 === 'BUY' ? 'BUY 🟢' : (trendH1 === 'SELL' ? 'SELL 🔴' : '⚠️');
-                setups.push(`<span class="setup-badge setup-scalping">SCALPING ${dir}</span>`);
-            }
-            
-            return setups.join('');
-        }
-        
-        function openSignalModal(pair, tf) {
-            currentModalCell = { pair, tf };
-            const cellData = appData.dashboard[tf]?.[pair] || {};
-            
-            document.getElementById('modalPair').textContent = pair;
-            document.getElementById('modalTF').textContent = tf;
-            
-            // Reset checkboxes
-            ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
-                document.getElementById('chk' + sig).checked = (cellData.signals || []).includes(sig);
-            });
-            
-            document.getElementById('modalTrend').value = cellData.trend || '';
-            document.getElementById('modalNotes').value = cellData.notes || '';
-            
-            document.getElementById('signalModal').classList.add('active');
-        }
-        
-        function closeSignalModal() {
-            document.getElementById('signalModal').classList.remove('active');
-            currentModalCell = null;
-        }
-        
-        function saveSignal() {
-            if (!currentModalCell) return;
-            
-            const { pair, tf } = currentModalCell;
-            const signals = [];
-            
-            ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
-                if (document.getElementById('chk' + sig).checked) {
-                    signals.push(sig);
-                }
-            });
-            
-            if (!appData.dashboard[tf]) appData.dashboard[tf] = {};
-            appData.dashboard[tf][pair] = {
-                signals,
-                trend: document.getElementById('modalTrend').value,
-                notes: document.getElementById('modalNotes').value,
-                updatedAt: new Date().toISOString()
-            };
-            
-            saveData();
-            renderDashboard();
-            closeSignalModal();
-        }
-        
-        // ==================== JOURNAL FORM ====================
-        function renderTFCards() {
-            const grid = document.getElementById('tfGrid');
-            grid.innerHTML = '';
-            
-            const tfGroups = {
-                'Swing': ['W1', 'D1', 'H4', 'H1'],
-                'Intraday': ['H4', 'H1', 'M15'],
-                'Scalping': ['H1', 'M15', 'M5']
-            };
-            
-            Object.entries(tfGroups).forEach(([group, tfs]) => {
-                const wrapper = document.createElement('div');
-                wrapper.style.gridColumn = '1 / -1';
-                wrapper.innerHTML = `<h4 style="color:var(--pixel); font-family:'Press Start 2P',cursive; font-size:10px; margin:15px 0 10px;">${group} Timeframes</h4>`;
-                grid.appendChild(wrapper);
-                
-                tfs.forEach(tf => {
-                    const card = document.createElement('div');
-                    card.className = 'tf-card';
-                    card.innerHTML = `
-                        <h4>📊 ${tf}</h4>
-                        <div class="indicator-checkboxes">
-                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RE" value="RE"><span class="RE">RE</span></label>
-                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RJ" value="RJ"><span class="RJ">RJ</span></label>
-                            <label class="checkbox-group"><input type="checkbox" name="${tf}_RJB" value="RJB"><span class="RJB">RJB</span></label>
-                            <label class="checkbox-group"><input type="checkbox" name="${tf}_MHV" value="MHV"><span class="MHV">MHV</span></label>
-                            <label class="checkbox-group"><input type="checkbox" name="${tf}_EXT" value="EXT"><span class="EXT">EXT</span></label>
-                        </div>
-                        <div class="form-group">
-                            <label>Trend</label>
-                            <select name="${tf}_trend">
-                                <option value="">-- Select --</option>
-                                <option value="BUY">BUY</option>
-                                <option value="SELL">SELL</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-top:10px;">
-                            <label>Price EMA50</label>
-                            <input type="number" step="0.00001" name="${tf}_ema50" placeholder="0.00000">
-                        </div>
-                        <div class="form-group" style="margin-top:10px;">
-                            <label>Price BB High</label>
-                            <input type="number" step="0.00001" name="${tf}_bbHigh" placeholder="0.00000">
-                        </div>
-                        <div class="form-group" style="margin-top:10px;">
-                            <label>Price BB Low</label>
-                            <input type="number" step="0.00001" name="${tf}_bbLow" placeholder="0.00000">
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                            <div class="image-upload">
-                                <label class="image-upload-btn" onclick="triggerImageUpload('${tf}_before')">
-                                    📷 Before ${tf}
-                                </label>
-                                <input type="file" id="${tf}_before" accept="image/*" style="display:none" onchange="handleImageUpload(this, '${tf}_before_preview')">
-                                <div class="image-preview" id="${tf}_before_preview">
-                                    <span class="placeholder">No Image</span>
-                                </div>
-                            </div>
-                            <div class="image-upload">
-                                <label class="image-upload-btn" onclick="triggerImageUpload('${tf}_after')">
-                                    📷 After ${tf}
-                                </label>
-                                <input type="file" id="${tf}_after" accept="image/*" style="display:none" onchange="handleImageUpload(this, '${tf}_after_preview')">
-                                <div class="image-preview" id="${tf}_after_preview">
-                                    <span class="placeholder">No Image</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            });
-        }
-        
-        function triggerImageUpload(inputId) {
-            document.getElementById(inputId).click();
-        }
-        
-        function handleImageUpload(input, previewId) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById(previewId);
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" onclick="openImageModal('${e.target.result}')">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-        
-        function openImageModal(src) {
-            document.getElementById('modalImage').src = src;
-            document.getElementById('imageModal').classList.add('active');
-        }
-        
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.remove('active');
-        }
-        
-        function renderPairSelect() {
-            const select = document.getElementById('pairSelect');
-            select.innerHTML = '<option value="">Select Pair</option>';
-            appData.pairs.forEach(pair => {
-                select.innerHTML += `<option value="${pair}">${pair}</option>`;
-            });
-        }
-        
-        // Calculate RR Ratio
-        function calculateRR() {
-            const entry = parseFloat(document.getElementById('entryPrice').value) || 0;
-            const tp = parseFloat(document.getElementById('takeProfit').value) || 0;
-            const sl = parseFloat(document.getElementById('stopLoss').value) || 0;
-            const direction = document.getElementById('direction').value;
-            
-            if (entry > 0 && tp > 0 && sl > 0 && direction) {
-                let risk, reward;
-                if (direction === 'BUY') {
-                    risk = entry - sl;
-                    reward = tp - entry;
-                } else {
-                    risk = sl - entry;
-                    reward = entry - tp;
-                }
-                
-                if (risk > 0) {
-                    const rr = (reward / risk).toFixed(2);
-                    document.getElementById('rrRatio').value = `1:${rr}`;
-                }
-            }
-        }
-        
-        document.addEventListener('input', function(e) {
-            if (['entryPrice', 'takeProfit', 'stopLoss', 'direction'].includes(e.target.id)) {
-                calculateRR();
-            }
-        });
-        
-        // Form submission
-        document.getElementById('journalForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const tfData = {};
-            const images = {};
-            
-            appData.timeframes.forEach(tf => {
-                const signals = [];
-                ['RE', 'RJ', 'RJB', 'MHV', 'EXT'].forEach(sig => {
-                    if (formData.get(`${tf}_${sig}`)) {
-                        signals.push(sig);
-                    }
-                });
-                
-                // Get image data
-                const beforePreview = document.getElementById(`${tf}_before_preview`);
-                const afterPreview = document.getElementById(`${tf}_after_preview`);
-                
-                tfData[tf] = {
-                    signals,
-                    trend: formData.get(`${tf}_trend`),
-                    ema50: formData.get(`${tf}_ema50`),
-                    bbHigh: formData.get(`${tf}_bbHigh`),
-                    bbLow: formData.get(`${tf}_bbLow`)
-                };
-                
-                images[tf] = {
-                    before: beforePreview.querySelector('img')?.src || null,
-                    after: afterPreview.querySelector('img')?.src || null
-                };
-            });
-            
-            const entry = {
-                id: Date.now(),
-                pair: document.getElementById('pairSelect').value,
-                setupType: document.getElementById('setupType').value,
-                direction: document.getElementById('direction').value,
-                entryDate: document.getElementById('entryDate').value,
-                entryPrice: document.getElementById('entryPrice').value,
-                takeProfit: document.getElementById('takeProfit').value,
-                stopLoss: document.getElementById('stopLoss').value,
-                rrRatio: document.getElementById('rrRatio').value,
-                lotSize: document.getElementById('lotSize').value,
-                status: document.getElementById('status').value,
-                notes: document.getElementById('notes').value,
-                tfData,
-                images,
-                createdAt: new Date().toISOString()
-            };
-            
-            appData.journal.unshift(entry);
-            saveData();
-            renderJournalList();
-            updateStats();
-            
-            alert('✅ Journal entry saved successfully!');
-            e.target.reset();
-            
-            // Reset image previews
-            appData.timeframes.forEach(tf => {
-                ['before', 'after'].forEach(type => {
-                    document.getElementById(`${tf}_${type}_preview`).innerHTML = '<span class="placeholder">No Image</span>';
-                });
-            });
-            
-            setDefaultDate();
-        });
-        
-        // ==================== JOURNAL LIST ====================
-        function renderJournalList(filter = 'all') {
-            const list = document.getElementById('journalList');
-            const filtered = filter === 'all' ? appData.journal : appData.journal.filter(j => j.status === filter);
-            
-            if (filtered.length === 0) {
-                list.innerHTML = '<p style="text-align:center; color:var(--text-dim); padding:40px;">No journal entries found.</p>';
-                return;
-            }
-            
-            list.innerHTML = filtered.map(entry => {
-                const statusColor = entry.status === 'OPEN' ? 'var(--info)' : (entry.status === 'TP' ? 'var(--success)' : (entry.status === 'SL' ? 'var(--danger)' : 'var(--warning)'));
-                
-                let tfHTML = '';
-                Object.entries(entry.tfData).forEach(([tf, data]) => {
-                    const signals = (data.signals || []).map(s => `<span class="signal-badge ${s}" style="font-size:10px;">${s}</span>`).join(' ');
-                    tfHTML += `
-                        <div style="background:var(--bg-input); padding:10px; margin:5px 0; border-radius:4px;">
-                            <strong style="color:var(--accent-light);">${tf}</strong>
-                            <div style="margin-top:5px;">${signals || '-'} ${data.trend ? `<span class="${data.trend}" style="font-size:12px;">${data.trend}</span>` : ''}</div>
-                        </div>
-                    `;
-                });
-                
-                const setupIcon = entry.setupType === 'swing' ? '🎯' : (entry.setupType === 'intraday' ? '⚡' : '🔪');
-                const dirIcon = entry.direction === 'BUY' ? '🟢' : '🔴';
-                
-                return `
-                    <div class="journal-card">
-                        <div class="journal-header">
-                            <div>
-                                <div class="journal-title">${setupIcon} ${entry.pair} - ${entry.setupType.toUpperCase()} ${dirIcon}</div>
-                                <div class="journal-meta">
-                                    <span>📅 ${new Date(entry.entryDate).toLocaleString()}</span>
-                                    <span>💰 Entry: ${entry.entryPrice}</span>
-                                    <span style="border:2px solid ${statusColor};">${entry.status}</span>
-                                </div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:14px; color:var(--text-dim);">R:R</div>
-                                <div style="font-size:20px; color:var(--pixel);">${entry.rrRatio || '-'}</div>
-                            </div>
-                        </div>
-                        <div class="journal-body">
-                            <div class="journal-section">
-                                <h5>🎯 Targets</h5>
-                                <p>TP: <span style="color:var(--success);">${entry.takeProfit}</span></p>
-                                <p>SL: <span style="color:var(--danger);">${entry.stopLoss}</span></p>
-                                <p>Lot: ${entry.lotSize || '-'}</p>
-                            </div>
-                            <div class="journal-section">
-                                <h5>📊 Signals</h5>
-                                ${tfHTML}
-                            </div>
-                            <div class="journal-section">
-                                <h5>📷 Screenshots</h5>
-                                <div class="journal-images">
-                                    ${Object.entries(entry.images).map(([tf, imgs]) => {
-                                        let imgHTML = '';
-                                        if (imgs.before) imgHTML += `<img src="${imgs.before}" alt="${tf} before" onclick="openImageModal('${imgs.before}')">`;
-                                        if (imgs.after) imgHTML += `<img src="${imgs.after}" alt="${tf} after" onclick="openImageModal('${imgs.after}')">`;
-                                        return imgHTML;
-                                    }).join('')}
-                                    ${!Object.values(entry.images).some(img => img.before || img.after) ? '<p style="color:var(--text-dim); font-size:14px;">No images</p>' : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${entry.notes ? `<div style="margin-top:15px; padding:10px; background:var(--bg-input); border-radius:4px;"><strong>📝 Notes:</strong> ${entry.notes}</div>` : ''}
-                        <div class="journal-actions">
-                            <button class="btn" onclick="editEntry(${entry.id})">✏️ Edit</button>
-                            <button class="btn" onclick="duplicateEntry(${entry.id})">📋 Duplicate</button>
-                            <button class="btn btn-success" onclick="updateStatus(${entry.id}, 'TP')">✅ Set TP</button>
-                            <button class="btn btn-danger" onclick="updateStatus(${entry.id}, 'SL')">❌ Set SL</button>
-                            <button class="btn btn-danger" onclick="deleteEntry(${entry.id})">🗑️ Delete</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function filterHistory(status) {
-            renderJournalList(status);
-        }
-        
-        function updateStatus(id, status) {
-            const entry = appData.journal.find(j => j.id === id);
-            if (entry) {
-                entry.status = status;
-                saveData();
-                renderJournalList();
-                updateStats();
-            }
-        }
-        
-        function deleteEntry(id) {
-            if (confirm('Are you sure you want to delete this entry?')) {
-                appData.journal = appData.journal.filter(j => j.id !== id);
-                saveData();
-                renderJournalList();
-                updateStats();
-            }
-        }
-        
-        function duplicateEntry(id) {
-            const entry = appData.journal.find(j => j.id === id);
-            if (entry) {
-                const newEntry = { ...entry, id: Date.now(), createdAt: new Date().toISOString() };
-                appData.journal.unshift(newEntry);
-                saveData();
-                renderJournalList();
-                updateStats();
-            }
-        }
-        
-        function editEntry(id) {
-            const entry = appData.journal.find(j => j.id === id);
-            if (entry) {
-                // Switch to journal tab
-                document.querySelector('[data-tab="journal"]').click();
-                
-                // Fill form
-                document.getElementById('pairSelect').value = entry.pair;
-                document.getElementById('setupType').value = entry.setupType;
-                document.getElementById('direction').value = entry.direction;
-                document.getElementById('entryDate').value = entry.entryDate;
-                document.getElementById('entryPrice').value = entry.entryPrice;
-                document.getElementById('takeProfit').value = entry.takeProfit;
-                document.getElementById('stopLoss').value = entry.stopLoss;
-                document.getElementById('lotSize').value = entry.lotSize;
-                document.getElementById('status').value = entry.status;
-                document.getElementById('notes').value = entry.notes || '';
-                
-                // Fill TF data
-                Object.entries(entry.tfData).forEach(([tf, data]) => {
-                    data.signals?.forEach(sig => {
-                        const chk = document.querySelector(`[name="${tf}_${sig}"]`);
-                        if (chk) chk.checked = true;
-                    });
-                    const trendSel = document.querySelector(`[name="${tf}_trend"]`);
-                    if (trendSel) trendSel.value = data.trend || '';
-                    const emaInput = document.querySelector(`[name="${tf}_ema50"]`);
-                    if (emaInput) emaInput.value = data.ema50 || '';
-                    const bbHighInput = document.querySelector(`[name="${tf}_bbHigh"]`);
-                    if (bbHighInput) bbHighInput.value = data.bbHigh || '';
-                    const bbLowInput = document.querySelector(`[name="${tf}_bbLow"]`);
-                    if (bbLowInput) bbLowInput.value = data.bbLow || '';
-                    
-                    // Show images
-                    if (entry.images[tf]?.before) {
-                        document.getElementById(`${tf}_before_preview`).innerHTML = `<img src="${entry.images[tf].before}" alt="before">`;
-                    }
-                    if (entry.images[tf]?.after) {
-                        document.getElementById(`${tf}_after_preview`).innerHTML = `<img src="${entry.images[tf].after}" alt="after">`;
-                    }
-                });
-                
-                // Remove old entry (will be replaced on save)
-                appData.journal = appData.journal.filter(j => j.id !== id);
-                
-                calculateRR();
-                alert('Entry loaded for editing. Make changes and save to update.');
-            }
-        }
-        
-        // ==================== STATISTICS ====================
-        function updateStats() {
-            const trades = appData.journal;
-            const total = trades.length;
-            const tp = trades.filter(t => t.status === 'TP').length;
-            const sl = trades.filter(t => t.status === 'SL').length;
-            const completed = tp + sl;
-            
-            document.getElementById('totalTrades').textContent = total;
-            document.getElementById('winRate').textContent = completed > 0 ? Math.round((tp / completed) * 100) + '%' : '0%';
-            
-            // Calculate pips (approximate)
-            let totalPips = 0;
-            trades.forEach(t => {
-                if (t.status === 'TP' || t.status === 'SL') {
-                    const entry = parseFloat(t.entryPrice) || 0;
-                    const tp = parseFloat(t.takeProfit) || 0;
-                    const sl = parseFloat(t.stopLoss) || 0;
-                    const direction = t.direction;
-                    
-                    let pips = 0;
-                    if (direction === 'BUY') {
-                        if (t.status === 'TP') pips = Math.abs(tp - entry);
-                        else pips = -Math.abs(entry - sl);
-                    } else {
-                        if (t.status === 'TP') pips = Math.abs(entry - tp);
-                        else pips = -Math.abs(sl - entry);
-                    }
-                    
-                    // Convert to pips (multiply by 10000 for most pairs, 100 for JPY pairs)
-                    const multiplier = t.pair.includes('JPY') ? 100 : 10000;
-                    totalPips += pips * multiplier;
-                }
-            });
-            
-            document.getElementById('totalPips').textContent = Math.round(totalPips);
-            
-            // Calculate average RR
-            const rrValues = trades.filter(t => t.rrRatio).map(t => parseFloat(t.rrRatio.replace('1:', '')) || 0);
-            const avgRR = rrValues.length > 0 ? (rrValues.reduce((a, b) => a + b, 0) / rrValues.length).toFixed(2) : 0;
-            document.getElementById('avgRR').textContent = `1:${avgRR}`;
-            
-            // Count by setup type
-            document.getElementById('swingCount').textContent = trades.filter(t => t.setupType === 'swing').length;
-            document.getElementById('intradayCount').textContent = trades.filter(t => t.setupType === 'intraday').length;
-            document.getElementById('scalpingCount').textContent = trades.filter(t => t.setupType === 'scalping').length;
-            
-            // Count by direction
-            document.getElementById('buyCount').textContent = trades.filter(t => t.direction === 'BUY').length;
-            document.getElementById('sellCount').textContent = trades.filter(t => t.direction === 'SELL').length;
-        }
-        
-        // ==================== CONFIG PANEL ====================
-        function openConfig() {
-            document.getElementById('configPanel').classList.add('active');
-            document.getElementById('configOverlay').classList.add('active');
-            renderPairList();
-        }
-        
-        function closeConfig() {
-            document.getElementById('configPanel').classList.remove('active');
-            document.getElementById('configOverlay').classList.remove('active');
-        }
-        
-        function renderPairList() {
-            const list = document.getElementById('pairList');
-            list.innerHTML = appData.pairs.map((pair, index) => `
-                <div class="pair-item">
-                    <input type="text" value="${pair}" id="pair_${index}">
-                    <button onclick="removePair(${index})">🗑️</button>
-                </div>
-            `).join('');
-        }
-        
-        function addPair() {
-            appData.pairs.push('');
-            renderPairList();
-        }
-        
-        function removePair(index) {
-            appData.pairs.splice(index, 1);
-            renderPairList();
-        }
-        
-        function saveConfig() {
-            // Collect pairs from inputs
-            appData.pairs = [];
-            document.querySelectorAll('[id^="pair_"]').forEach(input => {
-                const value = input.value.trim().toUpperCase();
-                if (value) {
-                    appData.pairs.push(value);
-                }
-            });
-            
-            saveData();
-            renderDashboard();
-            renderPairSelect();
-            closeConfig();
-            alert('Configuration saved!');
-        }
-        
-        function refreshDashboard() {
-            renderDashboard();
-            alert('Dashboard refreshed!');
-        }
-        
-        // ==================== IMPORT/EXPORT ====================
-        function exportData() {
-            const dataStr = JSON.stringify(appData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `bbma_journal_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        function importData(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const imported = JSON.parse(e.target.result);
-                        appData = { ...appData, ...imported };
-                        saveData();
-                        renderDashboard();
-                        renderPairSelect();
-                        renderJournalList();
-                        updateStats();
-                        alert('✅ Data imported successfully!');
-                    } catch (err) {
-                        alert('❌ Error importing data: ' + err.message);
-                    }
-                };
-                reader.readAsText(file);
-            }
-        }
-        
-        function exportAllImages() {
-            if (appData.journal.length === 0) {
-                alert('No journal entries to export images from.');
-                return;
-            }
-            
-            let allImages = [];
-            appData.journal.forEach(entry => {
-                Object.entries(entry.images).forEach(([tf, imgs]) => {
-                    if (imgs.before) {
-                        allImages.push({ pair: entry.pair, tf, type: 'before', data: imgs.before });
-                    }
-                    if (imgs.after) {
-                        allImages.push({ pair: entry.pair, tf, type: 'after', data: imgs.after });
-                    }
-                });
-            });
-            
-            if (allImages.length === 0) {
-                alert('No images found in journal entries.');
-                return;
-            }
-            
-            let html = '<!DOCTYPE html><html><head><title>BBMA Journal Images</title>';
-            html += '<style>body{background:#1a1a2e;color:#eee;font-family:sans-serif;padding:20px;}';
-            html += '.img-container{margin:20px 0;padding:15px;background:#16213e;border-radius:8px;}';
-            html += '.img-title{color:#fbbf24;margin-bottom:10px;font-weight:bold;}';
-            html += 'img{max-width:100%;border:3px solid #0f3460;border-radius:4px;}</style></head><body>';
-            html += '<h1 style="text-align:center;color:#fbbf24;">BBMA Journal Images Export</h1>';
-            
-            allImages.forEach(img => {
-                html += `
-                    <div class="img-container">
-                        <div class="img-title">${img.pair} - ${img.tf} (${img.type})</div>
-                        <img src="${img.data}" alt="${img.pair} ${img.tf} ${img.type}">
-                    </div>
-                `;
-            });
-            
-            html += '</body></html>';
-            
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `bbma_images_${new Date().toISOString().split('T')[0]}.html`;
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        // ==================== TAB NAVIGATION ====================
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
-                this.classList.add('active');
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
-        
-        // ==================== KEYBOARD SHORTCUTS ====================
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeSignalModal();
-                closeImageModal();
-                closeConfig();
-            }
-        });
-        
-        // ==================== CLICK OUTSIDE MODAL ====================
-        document.getElementById('imageModal').addEventListener('click', function(e) {
-            if (e.target === this) closeImageModal();
-        });
-        
-        document.getElementById('signalModal').addEventListener('click', function(e) {
-            if (e.target === this) closeSignalModal();
-        });
-        
-        // ==================== INITIALIZE ====================
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
+</div>
+<section id="technicalView" hidden>
+ <section class="panel">
+  <div class="head"><div><h2>Fibo Musang — CB1 Entry</h2><small>Execution M1 · trend filter mung MA20/MA50 M5 + M15 · touch CB1 = ENTRY</small></div><span class="badge neutral" id="techFeed">OFFLINE</span></div>
+  <div class="tech-status"><span id="techStatus">Belum mengambil data.</span><span id="techUpdated" class="mono">—</span></div>
+  <div class="tech-grid">
+   <div class="tech-card"><span class="label">Signal</span><strong id="techSignal" class="tech-signal neutral">WAIT</strong><small id="techScore">—</small></div>
+   <div class="tech-card"><span class="label">Stage</span><strong id="techStage">—</strong><small id="techStructure">—</small></div>
+   <div class="tech-card"><span class="label">CB1 / Entry</span><strong id="techEntry">—</strong><small id="techCandleTime">—</small></div>
+   <div class="tech-card"><span class="label">Stop Loss</span><strong id="techSL">—</strong><small>Swing 0 + buffer ATR</small></div>
+   <div class="tech-card"><span class="label">TP1 · 161.8</span><strong id="techTP1">—</strong><small id="techRR1">—</small></div>
+   <div class="tech-card"><span class="label">TP2 · 261.8</span><strong id="techTP2">—</strong><small id="techRR2">—</small></div>
+   <div class="tech-card"><span class="label">TP3 · 423.6</span><strong id="techTP3">—</strong><small id="techRR3">—</small></div>
+   <div class="tech-card"><span class="label">ATR(14) M1</span><strong id="techAtr">—</strong><small id="techAge">—</small></div>
+   <div class="tech-card"><span class="label">Fibo 0.0</span><strong id="techFib0">—</strong><small>Swing anchor</small></div>
+   <div class="tech-card"><span class="label">Fibo 100 / CB1</span><strong id="techFib100">—</strong><small>ENTRY level</small></div>
+   <div class="tech-card"><span class="label">CB1</span><strong id="techCB1">—</strong><small id="techCB1State">—</small></div>
+   <div class="tech-card"><span class="label">Trend M5</span><strong id="techZone">—</strong><small id="techZoneState">—</small></div>
+  </div>
+  <div class="tech-actions">
+   <button class="primary" id="techRefresh" type="button">Refresh Fibo Musang</button>
+   <label class="check"><input id="techAuto" type="checkbox" checked><span>Auto refresh 5 menit</span></label>
+  </div>
+ </section>
+ <section class="panel">
+  <div class="head"><div><h2>Rule Fibo Musang — CB1 Entry</h2><small>Trend mung MA20/MA50 M5 lan M15. CB1 break ora ditunggu.</small></div></div>
+  <div class="rulelist" id="techRules"><div class="empty">Belum ada data.</div></div>
+  <div class="tech-warn">CB1 M1 dadi level entry. BUY/SELL mung valid yen MA20 vs MA50 ing M5 lan M15 selaras karo arah CB1. Fibo 0→CB1(100), target 161.8 / 261.8 / 423.6.</div>
+ </section>
+ <section class="panel">
+  <div class="head"><div><h2>Level Fibo aktif</h2><small>0 / 23.6 / 38.2 / 50 / 61.8 / 100(CB1) / 161.8 / 200 / 261.8 / 423.6</small></div></div>
+  <div class="scroller"><table><thead><tr><th>Level</th><th>Harga</th><th>Keterangan</th></tr></thead><tbody id="techFibBody"><tr><td colspan="3">—</td></tr></tbody></table></div>
+ </section>
+ <section class="panel">
+  <div class="head"><div><h2>Candle M1 terbaru</h2><small>20 candle terakhir saka backend Cloudflare Worker.</small></div></div>
+  <div class="scroller"><table><thead><tr><th>Waktu WIB</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead><tbody id="techCandleBody"><tr><td colspan="5">—</td></tr></tbody></table></div>
+ </section>
+</section>
+
+<section id="combinedView" hidden>
+ <section class="panel">
+  <div class="head"><div><h2>Combined — Astrology × Fibo Musang CB1</h2><small>Astrology = master arah/jam. Fibo Musang M1 = CB1 entry.</small></div><span class="badge neutral" id="comboStatus">WAIT</span></div>
+  <div class="tech-grid">
+   <div class="tech-card"><span class="label">Astrology aktif</span><strong id="comboAstro" class="neutral">—</strong><small id="comboWindow">—</small></div>
+   <div class="tech-card"><span class="label">Fibo Musang</span><strong id="comboTech" class="neutral">—</strong><small id="comboTechScore">—</small></div>
+   <div class="tech-card"><span class="label">Keputusan</span><strong id="comboDecision" class="neutral">WAIT</strong><small id="comboReason">Menunggu data.</small></div>
+   <div class="tech-card"><span class="label">Entry</span><strong id="comboEntry">—</strong><small id="comboEntryTime">—</small></div>
+   <div class="tech-card"><span class="label">Stop Loss</span><strong id="comboSL">—</strong><small>Di luar swing 0 + buffer</small></div>
+   <div class="tech-card"><span class="label">TP1 · 161.8</span><strong id="comboTP1">—</strong><small id="comboRR1">—</small></div>
+   <div class="tech-card"><span class="label">TP2 · 261.8</span><strong id="comboTP2">—</strong><small id="comboRR2">—</small></div>
+   <div class="tech-card"><span class="label">TP3 · 423.6</span><strong id="comboTP3">—</strong><small id="comboRR3">—</small></div>
+   <div class="tech-card"><span class="label">Astro date</span><strong id="comboAstroDate">—</strong><small>Jadwal WIB sing lagi dihitung</small></div>
+   <div class="tech-card"><span class="label">Candle M1</span><strong id="comboCandle">—</strong><small>Feed Twelve Data</small></div>
+  </div>
+  <div class="tech-warn">ENTRY mung metu yen Astrology + arah CB1 + MA20/MA50 M5 + MA20/MA50 M15 kabeh selaras. Ora nunggu CB1 break utawa retest Zone IB. NEUTRAL / TRANSITION / trend beda = WAIT.</div>
+ </section>
+</section>
+
+<footer><span>CEBONK XAUUSD · ASTROLOGY + FIBO MUSANG + COMBINED</span><span>Riset, bukan jaminan hasil trading.</span></footer>
+<noscript><div class="error">JavaScript harus diaktifkan agar aplikasi bisa menghitung.</div></noscript>
+</main>
+<script>
+/* CEBONK ASTROLOGY • v2.0 • SSOT / pure computation / no trading API.
+   Ephemeris: Astronomy Engine 2.1.19 (MIT), apparent geocentric tropical ECT.
+   Cairo time rules: IANA tzdb africa, verified 2026-10-03. Supported 2020–2040.
+   The legacy V1 directional score is an UNVALIDATED experiment, not astronomy. */
+(function(root){
+'use strict';
+const freeze = o => { Object.values(o).forEach(v => {if(v && typeof v==='object' && !Object.isFrozen(v)) freeze(v);}); return Object.freeze(o); };
+const CFG=freeze({
+ version:'2.0.0', step:5, yearMin:2020, yearMax:2040, wibOffset:420,
+ luxor:{name:'Luxor, Mesir',lat:25.6872,lon:32.6396,zone:'Africa/Cairo'},
+ timezoneSnapshot:'2026-10-03',
+ planets:[
+  {id:'Sun',nature:1.10,weight:1.25},{id:'Moon',nature:0.55,weight:1.45},
+  {id:'Mercury',nature:0.20,weight:0.90},{id:'Venus',nature:1.00,weight:1.10},
+  {id:'Mars',nature:-1.00,weight:1.20},{id:'Jupiter',nature:1.25,weight:1.25},
+  {id:'Saturn',nature:-1.25,weight:1.25},{id:'Uranus',nature:-0.45,weight:0.85},
+  {id:'Neptune',nature:-0.25,weight:0.80},{id:'Pluto',nature:-0.95,weight:1.05}
+ ],
+ angles:['ASC','MC'],
+ aspects:[
+  {name:'Conjunction',symbol:'0°',angle:0,pol:0.40,weight:1.35,orb:2.2},
+  {name:'Sextile',symbol:'60°',angle:60,pol:1.00,weight:1.00,orb:1.8},
+  {name:'Square',symbol:'90°',angle:90,pol:-1.00,weight:1.25,orb:2.0},
+  {name:'Trine',symbol:'120°',angle:120,pol:1.10,weight:1.20,orb:2.0},
+  {name:'Opposition',symbol:'180°',angle:180,pol:-1.15,weight:1.35,orb:2.2}
+ ],
+ angleOrb:2.0, exactOrb:0.06, buy:1.15, sell:-1.15, transitionDelta:0.55,
+ zodiac:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
+});
+const DEG=Math.PI/180, MIN=60000, DAY=86400000;
+const norm=x=>((x%360)+360)%360;
+const signed=x=>norm(x+180)-180;
+const pad=x=>String(x).padStart(2,'0');
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function assert(v,msg){if(!v) throw new Error(msg);}
+function parts(ms,offset){
+ const d=new Date(ms+offset*MIN);
+ return {year:d.getUTCFullYear(),month:d.getUTCMonth()+1,day:d.getUTCDate(),hour:d.getUTCHours(),minute:d.getUTCMinutes(),second:d.getUTCSeconds(),offset};
+}
+function dateISO(p){return `${p.year}-${pad(p.month)}-${pad(p.day)}`;}
+function hm(p){return `${pad(p.hour)}:${pad(p.minute)}`;}
+function hms(p){return `${hm(p)}:${pad(p.second)}`;}
+function offsetLabel(n){return `UTC${n<0?'-':'+'}${Math.floor(Math.abs(n)/60)}${Math.abs(n)%60?':'+pad(Math.abs(n)%60):''}`;}
+function parseDate(s){
+ assert(/^\d{4}-\d{2}-\d{2}$/.test(s),'Pilih tanggal yang valid.');
+ const [y,m,d]=s.split('-').map(Number),t=Date.UTC(y,m-1,d),z=new Date(t);
+ assert(y>=CFG.yearMin&&y<=CFG.yearMax,`Tanggal didukung ${CFG.yearMin}–${CFG.yearMax}.`);
+ assert(z.getUTCFullYear()===y&&z.getUTCMonth()===m-1&&z.getUTCDate()===d,'Tanggal kalender tidak valid.');
+ return t;
+}
+function wibToUTC(iso,minute){
+ assert(Number.isInteger(minute)&&minute>=0&&minute<=1440,'Jam WIB tidak valid.');
+ return parseDate(iso)+(minute-CFG.wibOffset)*MIN;
+}
+function lastWeekday(y,monthIndex,weekday){
+ const d=new Date(Date.UTC(y,monthIndex+1,0));
+ return d.getUTCDate()-(d.getUTCDay()-weekday+7)%7;
+}
+function cairoBounds(y){
+ // Start last Fri Apr at 00:00 STANDARD (+2); end last Thu Oct at 24:00 DAYLIGHT (+3).
+ return {start:Date.UTC(y,3,lastWeekday(y,3,5),-2),end:Date.UTC(y,9,lastWeekday(y,9,4)+1,-3)};
+}
+function luxorOffset(ms,mode='AUTO'){
+ assert(Number.isFinite(ms),'Waktu UTC tidak valid.');
+ assert(mode==='AUTO'||mode==='FIXED3','Mode waktu tidak valid.');
+ if(mode==='FIXED3') return 180;
+ const y=new Date(ms).getUTCFullYear();
+ // One adjacent year is allowed for timezone conversion of a boundary date.
+ assert(y>=CFG.yearMin-1&&y<=CFG.yearMax+1,'Tahun di luar tabel waktu.');
+ if(y<2023) return 120;
+ const b=cairoBounds(y);
+ return ms>=b.start&&ms<b.end?180:120;
+}
+const Time=Object.freeze({parts,dateISO,hm,hms,offsetLabel,parseDate,wibToUTC,cairoBounds,luxorOffset,
+ wib:ms=>parts(ms,CFG.wibOffset),luxor:(ms,mode)=>parts(ms,luxorOffset(ms,mode)),
+ today:()=>dateISO(parts(Date.now(),CFG.wibOffset))
+});
+function anglesFromSidereal(lstDeg,obliquityDeg,latitude){
+ assert([lstDeg,obliquityDeg,latitude].every(Number.isFinite),'Sudut astronomi tidak valid.');
+ assert(Math.abs(latitude)<66,'Latitude di luar batas mesin ASC/MC ini.');
+ const t=lstDeg*DEG,e=obliquityDeg*DEG,p=latitude*DEG;
+ // Eastern ecliptic/horizon intersection; the opposite root is DSC, not ASC.
+ const ASC=norm(Math.atan2(Math.cos(t),-Math.sin(t)*Math.cos(e)-Math.tan(p)*Math.sin(e))/DEG);
+ // Upper meridian intersection; atan2 preserves the correct quadrant.
+ const MC=norm(Math.atan2(Math.sin(t),Math.cos(t)*Math.cos(e))/DEG);
+ return {ASC,MC};
+}
+function aspectGeometry(lon1,lon2,a){
+ const d=norm(lon2-lon1);
+ const first=signed(d-a.angle),second=signed(d+a.angle);
+ const error=Math.abs(first)<=Math.abs(second)?first:second;
+ return {error,orb:Math.abs(error)};
+}
+function phase(error,rate){
+ const orb=Math.abs(error),orbRate=Math.sign(error)*rate;
+ if(orb<=CFG.exactOrb) return 'EXACT';
+ if(Math.abs(rate)<1e-7) return 'STATIONARY';
+ return orbRate<0?'APPLYING':'SEPARATING';
+}
+const planetMap=Object.fromEntries(CFG.planets.map(p=>[p.id,p]));
+function legacyImpact(id1,id2,a,orb,ph){
+ // This is the inherited V1 HEURISTIC, not an empirically estimated price relationship.
+ // Local angles never receive invented BUY/SELL coefficients.
+ if(!planetMap[id1]||!planetMap[id2]) return 0;
+ const p=planetMap[id1],q=planetMap[id2],near=clamp(1-orb/a.orb,0,1);
+ const pol=a.angle===0?(p.nature+q.nature)/2:a.pol;
+ const blend=(Math.abs(p.nature)+Math.abs(q.nature)+0.8)/2;
+ const boost=ph==='EXACT'?1.25:ph==='APPLYING'?1.10:0.90;
+ return pol*a.weight*blend*(p.weight+q.weight)/2*near*boost;
+}
+const pairs=[];
+for(let i=0;i<CFG.planets.length;i++){
+ for(let j=i+1;j<CFG.planets.length;j++) pairs.push([CFG.planets[i].id,CFG.planets[j].id,false]);
+ for(const angle of CFG.angles) pairs.push([CFG.planets[i].id,angle,true]);
+}
+freeze(pairs);
+function analyse(prev,now,next,modelEnabled=true){
+ const speeds={};
+ for(const id of Object.keys(now.positions)) speeds[id]=signed(next.positions[id].lon-prev.positions[id].lon)/(next.ms-prev.ms)*DAY;
+ const active=[]; let score=0;
+ for(const [id1,id2,local] of pairs){
+  for(const a of CFG.aspects){
+   const g=aspectGeometry(now.positions[id1].lon,now.positions[id2].lon,a),limit=local?CFG.angleOrb:a.orb;
+   if(g.orb>limit) continue;
+   const ph=phase(g.error,speeds[id2]-speeds[id1]);
+   const impact=local?0:legacyImpact(id1,id2,a,g.orb,ph);
+   if(!local) score+=impact;
+   active.push({id1,id2,local,name:a.name,angle:a.angle,orb:g.orb,phase:ph,impact,limit,
+    prevOrb:aspectGeometry(prev.positions[id1].lon,prev.positions[id2].lon,a).orb,
+    nextOrb:aspectGeometry(next.positions[id1].lon,next.positions[id2].lon,a).orb});
+  }
+ }
+ active.sort((a,b)=>a.orb-b.orb||a.id1.localeCompare(b.id1));
+ return {ms:now.ms,positions:now.positions,speeds,active,score:modelEnabled?score:null,state:'NEUTRAL'};
+}
+function classify(score,prev){
+ if(score===null) return 'DATA';
+ if(score>=CFG.buy) return 'BUY';
+ if(score<=CFG.sell) return 'SELL';
+ if(prev!==null&&Math.abs(score-prev)>=CFG.transitionDelta) return 'TRANSITION';
+ return 'NEUTRAL';
+}
+function segments(samples){
+ const out=[];
+ for(const s of samples){
+  let g=out[out.length-1];
+  if(!g||g.state!==s.state){g={state:s.state,start:s.ms,end:s.ms+CFG.step*MIN,best:s,samples:[],sum:0};out.push(g);}
+  g.end=s.ms+CFG.step*MIN; g.samples.push(s);g.sum+=s.score||0;
+  if(Math.abs(s.score||0)>Math.abs(g.best.score||0)) g.best=s;
+ }
+ return out; // Keep every interval, including single 5-minute NEUTRAL/TRANSITION intervals.
+}
+function longestWindow(groups){
+ return groups.filter(g=>g.state==='BUY'||g.state==='SELL').sort((a,b)=>
+  (b.end-b.start)-(a.end-a.start)||Math.abs(b.best.score)-Math.abs(a.best.score)||a.start-b.start)[0]||null;
+}
+function checkAPI(A){
+ for(const name of ['GeoVector','Ecliptic','MakeTime','SiderealTime','Rotation_ECT_EQD','Rotation_EQJ_EQD','RotateVector','EquatorFromVector','Vector'])
+  assert(A&&typeof A[name]==='function',`Astronomy Engine tidak lengkap: ${name}.`);
+}
+function createEngine(A){
+ checkAPI(A);
+ const cache=new Map();
+ function get(ms){
+  if(cache.has(ms)) return cache.get(ms);
+  const time=A.MakeTime(new Date(ms)), positions={};
+  const rotation=A.Rotation_EQJ_EQD(time);
+  for(const p of CFG.planets){
+   const vector=A.GeoVector(p.id,time,true),ec=A.Ecliptic(vector);
+   const eq=A.EquatorFromVector(A.RotateVector(rotation,vector));
+   assert(Number.isFinite(ec.elon)&&Number.isFinite(eq.dec),`Ephemeris ${p.id} gagal.`);
+   positions[p.id]={lon:norm(ec.elon),lat:ec.elat,dec:eq.dec};
+  }
+  const ectToEqd=A.Rotation_ECT_EQD(time);
+  const y=A.RotateVector(ectToEqd,new A.Vector(0,1,0,time));
+  const obliquity=Math.atan2(y.z,y.y)/DEG;
+  const lst=norm(15*A.SiderealTime(time)+CFG.luxor.lon);
+  const local=anglesFromSidereal(lst,obliquity,CFG.luxor.lat);
+  for(const id of CFG.angles){
+   const l=local[id]*DEG;
+   const eq=A.EquatorFromVector(A.RotateVector(ectToEqd,new A.Vector(Math.cos(l),Math.sin(l),0,time)));
+   positions[id]={lon:local[id],lat:0,dec:eq.dec};
+  }
+  const state={ms,positions,lst,obliquity};cache.set(ms,state);return state;
+ }
+ return Object.freeze({get,clear:()=>cache.clear(),cacheSize:()=>cache.size});
+}
+async function scan(engine,iso,startMinute,modelEnabled,onProgress=()=>{},cancelled=()=>false){
+ assert(startMinute===0||startMinute===360,'Window scan tidak valid.');
+ const start=wibToUTC(iso,startMinute),end=wibToUTC(iso,1440),step=CFG.step*MIN;
+ const n=(end-start)/step;engine.clear();
+ // One cached ephemeris snapshot per grid point, including phase edge samples.
+ for(let i=-1;i<=n;i++){
+  assert(!cancelled(),'Perhitungan dibatalkan.'); engine.get(start+i*step);
+  if((i+1)%8===0){onProgress(Math.round((i+2)/(n+2)*85));await new Promise(r=>setTimeout(r,0));}
+ }
+ const result=[]; let priorScore=null;
+ for(let i=0;i<n;i++){
+  const t=start+i*step,s=analyse(engine.get(t-step),engine.get(t),engine.get(t+step),modelEnabled);
+  s.state=classify(s.score,priorScore);priorScore=s.score;result.push(s);
+ }
+ onProgress(100);return result;
+}
+const Core=Object.freeze({CFG,Time,norm,signed,anglesFromSidereal,aspectGeometry,phase,legacyImpact,analyse,classify,segments,longestWindow,createEngine,scan,pairs});
+if(typeof module!=='undefined'&&module.exports) module.exports=Core;
+root.CebonkCore=Core;
+})(typeof window!=='undefined'?window:globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+const C=window.CebonkCore,T=C.Time,CFG=C.CFG,$=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(x,n=2)=>Number.isFinite(x)?x.toFixed(n):'—';
+const sign=x=>(x>=0?'+':'')+fmt(x);
+const modeName=m=>m==='AUTO'?'Luxor otomatis DST':'Luxor UTC+3 tetap';
+let engine=null,libPromise=null,current=null,index=0,busy=false;
+function error(msg){$('errorBox').hidden=!msg;$('errorBox').textContent=msg||'';}
+function status(msg){$('statusText').textContent=msg;}
+function luxorText(ms,mode){const p=T.luxor(ms,mode);return `${T.dateISO(p)} ${T.hm(p)} ${T.offsetLabel(p.offset)}`;}
+function wibText(ms){const p=T.wib(ms);return `${T.dateISO(p)} ${T.hm(p)} WIB`;}
+function shortWib(ms,base){const p=T.wib(ms);return T.hm(p)+(T.dateISO(p)!==base?' (+1 hari)':'');}
+function zodiac(lon){const degrees=Math.round((C.norm(lon)%30)*60);let zi=Math.floor(C.norm(lon)/30);if(degrees===1800) zi=(zi+1)%12;return `${CFG.zodiac[zi]} ${String(Math.floor(degrees/60)%30).padStart(2,'0')}°${String(degrees%60).padStart(2,'0')}′`;}
+function badge(s){return `<span class="badge ${s.toLowerCase()}">${s==='DATA'?'DATA ASTRO':s}</span>`;}
+function clock(){
+ const now=Date.now(),mode=$('tzMode').value,w=T.wib(now),l=T.luxor(now,mode);
+ $('clockWib').textContent=T.hms(w);$('clockWibDate').textContent=T.dateISO(w);
+ $('clockLuxor').textContent=T.hms(l);$('clockLuxorDate').textContent=T.dateISO(l)+(mode==='FIXED3'?' · acuan tetap':' · sipil');
+ $('liveLuxorOffset').textContent='· '+T.offsetLabel(l.offset);
+ $('clockDifference').textContent=`WIB +${(CFG.wibOffset-l.offset)/60} jam`;
+}
+function markStale(){
+ if(busy) return;
+ $('results').dataset.stale=current?'true':'false';
+ $('copyBtn').disabled=true;$('csvBtn').disabled=true;
+ if(current) status('Setelan berubah. Tekan Hitung 5 menit untuk memperbarui hasil.');
+ clock();
+}
+function setBusy(value){
+ busy=value;
+ for(const id of ['runBtn','todayBtn','dateInput','tzMode','startMinute','modelEnabled']) $(id).disabled=value;
+ $('progress').hidden=!value;
+ $('runBtn').textContent=value?'Menghitung…':'Hitung 5 menit';
+}
+function script(src){return new Promise((resolve,reject)=>{
+ const el=document.createElement('script');let done=false;
+ const timer=setTimeout(()=>finish(new Error('Koneksi ke library melewati batas waktu.')),10000);
+ function finish(err){if(done)return;done=true;clearTimeout(timer);el.onload=el.onerror=null;if(err){el.remove();reject(err);}else resolve();}
+ el.src=src;el.async=true;el.referrerPolicy='no-referrer';el.onload=()=>finish();el.onerror=()=>finish(new Error('Library tidak dapat dimuat.'));document.head.appendChild(el);
+});}
+async function loadLibrary(){
+ if(window.Astronomy){engine=engine||C.createEngine(window.Astronomy);return;}
+ if(libPromise) return libPromise;
+ libPromise=(async()=>{
+  const urls=['https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js','https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.min.js'];
+  for(const url of urls){try{await script(url);engine=C.createEngine(window.Astronomy);return;}catch(e){console.warn('Astronomy dependency:',e.message);}}
+  throw new Error('Astronomy Engine gagal dimuat. Aktifkan internet, buka HTML di browser yang menjalankan JavaScript, lalu tekan Hitung lagi. Tidak ada hasil pengganti yang dibuat-buat.');
+ })();
+ try{await libPromise;}finally{libPromise=null;}
+}
+function clearResults(){
+ current=null;window.CEBONK_ASTRO_STATE=null;
+ for(const id of ['dominant','entryStart','entryCore','entryEnd','entryStartLuxor','entryCoreLuxor','entryEndLuxor']) $(id).textContent='—';
+ $('duration').textContent='Belum ada hasil';$('dominant').className='neutral';
+ $('timeline').innerHTML='<div class="empty">Belum ada hasil perhitungan yang valid.</div>';
+ $('aspectBody').innerHTML='<tr><td colspan="7">—</td></tr>';$('rawBody').innerHTML='<tr><td colspan="7">—</td></tr>';$('ephBody').innerHTML='<tr><td colspan="6">—</td></tr>';
+ for(const id of ['copyBtn','csvBtn','prevSlot','nextSlot','slotSelect']) $(id).disabled=true;
+ $('slotSelect').innerHTML='<option>—</option>';
+ for(const id of ['sampleLuxor','sampleLuxorDate','sampleWib','sampleWibDate','sampleState','sampleScore','aspectCount']) $(id).textContent='—';
+ $('inspectStamp').textContent='Belum ada slot.';$('rawCount').textContent='—';$('rangeLabel').textContent='—';
+ $('manualCopyBox').hidden=true;
+}
+function kpi(){
+ const g=C.longestWindow(current.groups),base=current.iso,mode=current.mode;
+ if(!g){
+  $('dominant').textContent=current.model?'NEUTRAL':'DATA ASTRO';$('dominant').className='neutral';
+  $('duration').textContent=current.model?'Tidak ada window BUY/SELL pada model ini':'Model arah dimatikan';
+  for(const id of ['entryStart','entryCore','entryEnd','entryStartLuxor','entryCoreLuxor','entryEndLuxor']) $(id).textContent='—';return;
+ }
+ $('dominant').textContent=g.state;$('dominant').className=g.state.toLowerCase();
+ $('duration').textContent=`${(g.end-g.start)/60000} menit · skor, bukan probabilitas`;
+ [['entryStart',g.start],['entryCore',g.best.ms],['entryEnd',g.end]].forEach(([id,t])=>{$(id).textContent=shortWib(t,base);$(id+'Luxor').textContent=luxorText(t,mode);});
+}
+function timeline(){
+ const {groups,mode,iso}=current;
+ $('rangeLabel').textContent=`Tanggal WIB ${iso} · ${modeName(mode)} · ${current.samples.length} slot`;
+ $('timeline').innerHTML=groups.map(g=>{
+  const reason=g.best.active.filter(a=>!a.local).sort((a,b)=>Math.abs(b.impact)-Math.abs(a.impact))[0];
+  const explanation=reason?`${reason.id1} — ${reason.id2} · ${reason.name} · orb ${fmt(reason.orb)}°`:'Tidak ada aspek planet dalam orb.';
+  const avg=g.samples.length?g.sum/g.samples.length:0;
+  const boundary=(g.start===current.samples[0].ms?'Awal pada batas scan. ':'')+(g.end===T.wibToUTC(iso,1440)?'Akhir pada batas scan.':'');
+  return `<div class="timeline-row"><div class="timeline-time">${shortWib(g.start,iso)} – ${shortWib(g.end,iso)}<small>Luxor: ${esc(luxorText(g.start,mode))}<br>s.d. ${esc(luxorText(g.end,mode))}</small></div><div>${badge(g.state)}<small>${(g.end-g.start)/60000} menit</small></div><div class="timeline-info"><b>${esc(explanation)}</b><small>${current.model?`Rata-rata skor ${fmt(avg)} · Puncak ${fmt(g.best.score)}. `:'Model arah OFF. '}${esc(boundary)}</small></div></div>`;
+ }).join('');
+}
+function rawRows(){
+ const {samples,mode}=current;
+ $('rawCount').textContent=`${samples.length} baris, interval ${CFG.step} menit. Klik baris untuk memeriksa posisi dan aspek.`;
+ $('rawBody').innerHTML=samples.map((s,i)=>{
+  const l=T.luxor(s.ms,mode),local=s.active.filter(a=>a.local);
+  const list=local.slice(0,2).map(a=>`${a.id1}–${a.id2} ${a.angle}° (${fmt(a.orb)}°)`).join(' · ');
+  return `<tr data-index="${i}" ${i===index?'class="selected"':''}><td class="mono">${T.hm(T.wib(s.ms))}</td><td class="mono">${T.hm(l)} <small>${T.offsetLabel(l.offset)}</small></td><td>${badge(s.state)}</td><td class="mono">${s.score===null?'—':fmt(s.score)}</td><td class="mono">${fmt(s.positions.ASC.lon,3)}°</td><td class="mono">${fmt(s.positions.MC.lon,3)}°</td><td>${esc(list||'—')}${local.length>2?` · +${local.length-2} aspek`:''}</td></tr>`;
+ }).join('');
+}
+function selected(){
+ if(!current) return;
+ const s=current.samples[index],mode=current.mode,w=T.wib(s.ms),l=T.luxor(s.ms,mode);
+ $('slotSelect').value=String(index);$('prevSlot').disabled=index===0;$('nextSlot').disabled=index===current.samples.length-1;
+ $('inspectStamp').textContent=`Timestamp tunggal: ${new Date(s.ms).toISOString().replace('.000Z',' UTC')}`;
+ $('sampleLuxor').textContent=T.hm(l)+' '+T.offsetLabel(l.offset);$('sampleLuxorDate').textContent=T.dateISO(l)+' · '+modeName(mode);
+ $('sampleWib').textContent=T.hm(w)+' WIB';$('sampleWibDate').textContent=T.dateISO(w)+' · UTC+7';
+ $('sampleState').innerHTML=badge(s.state);$('sampleScore').textContent=s.score===null?'Model arah dimatikan':`Skor ${fmt(s.score)} · bukan confidence`;
+ const filter=$('aspectFilter').value,aspects=s.active.filter(a=>filter==='ALL'||(filter==='LOCAL'?a.local:!a.local));
+ $('aspectCount').textContent=`${aspects.length} / ${s.active.length} aspek aktif`;
+ $('aspectBody').innerHTML=aspects.map(a=>`<tr><td>${a.id1} — ${a.id2}${a.local?' <small>Luxor</small>':''}</td><td>${a.name} ${a.angle}°</td><td class="mono">${fmt(a.prevOrb,3)}°</td><td class="mono">${fmt(a.orb,3)}°</td><td class="mono">${fmt(a.nextOrb,3)}°</td><td>${a.phase}${a.phase==='EXACT'?'*':''}</td><td class="${a.local?'muted':a.impact>=0?'buy':'sell'}">${a.local?'Timing saja':!current.model?'Model OFF':sign(a.impact)}</td></tr>`).join('')||'<tr><td colspan="7">Tidak ada aspek aktif untuk filter ini.</td></tr>';
+ $('ephBody').innerHTML=[...CFG.planets.map(p=>p.id),...CFG.angles].map(id=>{
+  const p=s.positions[id],speed=s.speeds[id],angle=CFG.angles.includes(id),st=angle?'SUDUT LOKAL':Math.abs(speed)<0.001?'STATIONARY':speed<0?'RETROGRADE':'DIRECT';
+  return `<tr><td><strong>${id}</strong>${angle?' <small>Luxor</small>':''}</td><td>${zodiac(p.lon)}</td><td class="mono">${fmt(p.lon,4)}°</td><td class="mono">${fmt(p.dec,4)}°</td><td class="mono">${fmt(speed,4)}</td><td>${st}</td></tr>`;
+ }).join('');
+ const old=$('rawBody').querySelector('.selected');if(old)old.classList.remove('selected');const row=$('rawBody').querySelector(`[data-index="${index}"]`);if(row)row.classList.add('selected');
+}
+function render(){
+ kpi();timeline();
+ const {samples}=current,now=Date.now();
+ const target=current.iso===T.today()?now:T.wibToUTC(current.iso,720);
+ index=Math.max(0,Math.min(samples.length-1,Math.floor((target-samples[0].ms)/(CFG.step*60000))));
+ $('slotSelect').innerHTML=samples.map((s,i)=>`<option value="${i}">${T.hm(T.wib(s.ms))} WIB</option>`).join('');
+ $('slotSelect').disabled=false;rawRows();selected();
+ $('copyBtn').disabled=false;$('csvBtn').disabled=false;
+}
+async function run(){
+ if(busy) return;
+ error('');$('manualCopyBox').hidden=true;
+ let iso,mode,start,model;
+ try{iso=$('dateInput').value;T.parseDate(iso);mode=$('tzMode').value;start=Number($('startMinute').value);model=$('modelEnabled').checked;}
+ catch(e){markStale();error(e.message);return;}
+ clearResults();$('results').dataset.stale='false';setBusy(true);$('progress').value=0;status('Memuat mesin astronomi…');
+ try{
+  await loadLibrary();
+  const samples=await C.scan(engine,iso,start,model,p=>{$('progress').value=p;status(`Menghitung posisi & aspek 5 menit · ${p}%`);});
+  current={iso,mode,start,model,samples,groups:C.segments(samples)};render();
+  window.CEBONK_ASTRO_STATE=current;
+  window.dispatchEvent(new Event('cebonk-astro-update'));
+  const offsets=[...new Set(samples.map(s=>T.luxorOffset(s.ms,mode)))].map(T.offsetLabel).join(' / ');
+  status(`${samples.length} slot selesai · Luxor ${offsets} → WIB UTC+7 · koordinat Luxor aktif · model ${model?'EKSPERIMEN':'OFF'}`);
+ }catch(e){clearResults();error(e.message||String(e));status('Perhitungan gagal — tidak ada sinyal yang diterbitkan.');}
+ finally{setBusy(false);}
+}
+function summary(){
+ const lines=['SEKTE MUSANG — CEBONK COMPANY 22','ASTROLOGY XAUUSD / XAUUSDc • Luxor → WIB • v2.0',`Tanggal jadwal WIB: ${current.iso}`,`Lokasi: ${CFG.luxor.lat} N, ${CFG.luxor.lon} E | ${modeName(current.mode)}`,'MODEL EKSPERIMEN, BELUM TERVALIDASI. Bukan instruksi entry.',''];
+ current.groups.forEach(g=>{lines.push(`${wibText(g.start)} → ${wibText(g.end)} | ${g.state} | ${(g.end-g.start)/60000} menit`);lines.push(`Luxor: ${luxorText(g.start,current.mode)} → ${luxorText(g.end,current.mode)}`);});
+ lines.push('','Grid 5 menit. Awal/akhir pada batas scan bukan konfirmasi sinyal/expired.','Skor bukan confidence/win rate. ASC/MC hanya data timing.');return lines.join('\n');
+}
+function exportCSV(){
+ if(!current||$('results').dataset.stale==='true') return;
+ const ids=[...CFG.planets.map(p=>p.id),...CFG.angles];
+ const header=['UTC','date_WIB','time_WIB','date_Luxor','time_Luxor','Luxor_offset_minutes','Luxor_mode','model_state_UNVALIDATED','score_NOT_probability',...ids.flatMap(id=>[id+'_lon_deg',id+'_declination_deg',id+'_speed_deg_day']),'active_aspects'];
+ const quote=x=>'"'+String(x===null?'':x).replace(/"/g,'""')+'"';
+ const rows=current.samples.map(s=>{
+  const w=T.wib(s.ms),l=T.luxor(s.ms,current.mode);
+  return [new Date(s.ms).toISOString(),T.dateISO(w),T.hm(w),T.dateISO(l),T.hm(l),l.offset,current.mode,s.state,s.score===null?'':s.score.toFixed(6),...ids.flatMap(id=>[s.positions[id].lon.toFixed(6),s.positions[id].dec.toFixed(6),s.speeds[id].toFixed(6)]),s.active.map(a=>`${a.id1}/${a.id2} ${a.angle}deg orb=${a.orb.toFixed(4)} ${a.phase} ${a.local?'TIMING_ONLY':'EXPERIMENT'}`).join(' | ')];
+ });
+ const blob=new Blob(['\uFEFF'+[header,...rows].map(row=>row.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`CEBONK_LUXOR_WIB_5M_${current.iso}_${current.mode}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+$('runBtn').addEventListener('click',run);
+$('todayBtn').addEventListener('click',()=>{$('dateInput').value=T.today();run();});
+for(const id of ['dateInput','tzMode','startMinute','modelEnabled']) $(id).addEventListener('change',markStale);
+$('slotSelect').addEventListener('change',()=>{if(current){index=Number($('slotSelect').value);selected();}});
+$('prevSlot').addEventListener('click',()=>{if(current&&index>0){index--;selected();}});
+$('nextSlot').addEventListener('click',()=>{if(current&&index<current.samples.length-1){index++;selected();}});
+$('aspectFilter').addEventListener('change',selected);
+$('rawBody').addEventListener('click',e=>{const row=e.target.closest('tr[data-index]');if(row&&current){index=Number(row.dataset.index);selected();}});
+$('copyBtn').addEventListener('click',async()=>{
+ if(!current||$('results').dataset.stale==='true')return;const txt=summary();
+ try{if(!navigator.clipboard)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(txt);status('Ringkasan tersalin, termasuk label eksperimen.');}
+ catch(e){$('manualCopyBox').hidden=false;$('manualCopy').value=txt;$('manualCopy').focus();$('manualCopy').select();status('Clipboard tidak tersedia. Salin dari kotak teks di bawah tabel.');}
+});
+$('csvBtn').addEventListener('click',exportCSV);
+$('modelRules').textContent=JSON.stringify({planetWeights:CFG.planets,aspects:CFG.aspects,buyThreshold:CFG.buy,sellThreshold:CFG.sell,phaseBoost:{EXACT:1.25,APPLYING:1.10,SEPARATING:0.90},ASC_MC:'TIMING_ONLY — zero directional contribution',formula:'polarity × aspectWeight × (abs(nature1)+abs(nature2)+0.8)/2 × (weight1+weight2)/2 × max(0,1-orb/maxOrb) × phaseBoost'},null,2);
+$('dateInput').value=T.today();clock();setInterval(clock,1000);run();
+})();
+
+</script>
+
+<script>
+(function(){
+'use strict';
+const API_BASE='https://cebonk-xau-api.enggarprasetiyo330.workers.dev/xau';
+const $=id=>document.getElementById(id);
+const PIVOT_DEPTH=2, SL_BUFFER_ATR=0.15, ENTRY_HOLD_BARS=5;
+let autoTimer=null,loading=false;
+
+function show(mode){
+ const astro=mode==='astro',technical=mode==='technical',combined=mode==='combined';
+ $('astroView').hidden=!astro;$('technicalView').hidden=!technical;$('combinedView').hidden=!combined;
+ $('tabAstro').classList.toggle('active',astro);
+ $('tabTechnical').classList.toggle('active',technical);
+ $('tabCombined').classList.toggle('active',combined);
+ if(technical||combined) refreshTech();
+ if(combined) renderCombined();
+}
+$('tabAstro').addEventListener('click',()=>show('astro'));
+$('tabTechnical').addEventListener('click',()=>show('technical'));
+$('tabCombined').addEventListener('click',()=>show('combined'));
+
+function parseUtc(s){return new Date(String(s).replace(' ','T')+'Z').getTime();}
+function wib(ms){return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms))+' WIB';}
+function n(v,d=2){return Number.isFinite(v)?v.toFixed(d):'—';}
+function sma(values,period){
+ if(values.length<period)return NaN;
+ return values.slice(-period).reduce((a,b)=>a+b,0)/period;
+}
+function trendMA(candles){
+ const closes=candles.map(c=>c.close),ma20=sma(closes,20),ma50=sma(closes,50);
+ const direction=!Number.isFinite(ma20)||!Number.isFinite(ma50)?'WAIT':ma20>ma50?'BUY':ma20<ma50?'SELL':'WAIT';
+ return {ma20,ma50,direction};
+}
+function atr(candles,period=14){
+ if(candles.length<=period) return NaN;
+ const tr=[];for(let i=1;i<candles.length;i++){const c=candles[i],p=candles[i-1];tr.push(Math.max(c.high-c.low,Math.abs(c.high-p.close),Math.abs(c.low-p.close)));}
+ return tr.slice(-period).reduce((a,b)=>a+b,0)/period;
+}
+function pivots(candles,depth=PIVOT_DEPTH){
+ const highs=[],lows=[];
+ for(let i=depth;i<candles.length-depth;i++){
+  let ph=true,pl=true;
+  for(let k=1;k<=depth;k++){
+   if(candles[i].high<=candles[i-k].high||candles[i].high<candles[i+k].high) ph=false;
+   if(candles[i].low>=candles[i-k].low||candles[i].low>candles[i+k].low) pl=false;
+  }
+  if(ph) highs.push({i,price:candles[i].high,ms:candles[i].ms});
+  if(pl) lows.push({i,price:candles[i].low,ms:candles[i].ms});
+ }
+ return {highs,lows};
+}
+function latestStructure(p){
+ if(p.highs.length<2||p.lows.length<2) return {direction:'WAIT',label:'Struktur belum cukup'};
+ const h1=p.highs[p.highs.length-2],h2=p.highs[p.highs.length-1],l1=p.lows[p.lows.length-2],l2=p.lows[p.lows.length-1];
+ if(h2.price>h1.price&&l2.price>l1.price) return {direction:'BUY',label:'HH + HL'};
+ if(h2.price<h1.price&&l2.price<l1.price) return {direction:'SELL',label:'LH + LL'};
+ return {direction:'WAIT',label:'Mixed / transition'};
+}
+function makeSellSetup(candles,p){
+ if(p.highs.length<2) return null;
+ const h1=p.highs[p.highs.length-2],h2=p.highs[p.highs.length-1];
+ if(h2.price<=h1.price) return null;
+ const between=p.lows.filter(x=>x.i>h1.i&&x.i<h2.i);
+ if(!between.length) return null;
+ const cb1=between.reduce((a,b)=>b.price<a.price?b:a);
+ const touchIndex=candles.findIndex((c,i)=>i>h2.i&&c.low<=cb1.price&&c.high>=cb1.price);
+ return {direction:'SELL',anchor0:h2,cb1,touchIndex};
+}
+function makeBuySetup(candles,p){
+ if(p.lows.length<2) return null;
+ const l1=p.lows[p.lows.length-2],l2=p.lows[p.lows.length-1];
+ if(l2.price>=l1.price) return null;
+ const between=p.highs.filter(x=>x.i>l1.i&&x.i<l2.i);
+ if(!between.length) return null;
+ const cb1=between.reduce((a,b)=>b.price>a.price?b:a);
+ const touchIndex=candles.findIndex((c,i)=>i>l2.i&&c.low<=cb1.price&&c.high>=cb1.price);
+ return {direction:'BUY',anchor0:l2,cb1,touchIndex};
+}
+function bestSetup(candles,p){
+ const s=makeSellSetup(candles,p),b=makeBuySetup(candles,p);
+ return [s,b].filter(Boolean).sort((x,y)=>y.anchor0.i-x.anchor0.i)[0]||null;
+}
+function fibPrices(direction,a0,a100){
+ const range=Math.abs(a0-a100),f=r=>direction==='SELL'?a0-r*range:a0+r*range;
+ return {'0.0':f(0),'23.6':f(.236),'38.2':f(.382),'50.0':f(.5),'61.8':f(.618),'100.0':f(1),'161.8':f(1.618),'200.0':f(2),'261.8':f(2.618),'423.6':f(4.236)};
+}
+function rr(entry,sl,tp){const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);return risk>0?reward/risk:NaN;}
+function ruleHtml(label,ok,detail){return '<div class="rule '+(ok?'ok':'bad')+'"><b>'+(ok?'✓ ':'✕ ')+label+'</b><span>'+detail+'</span></div>';}
+
+async function refreshTech(){
+ if(loading)return;loading=true;$('techRefresh').disabled=true;$('techStatus').textContent='Mengambil M1 + M5 + M15…';
+ try{
+  const urls=[
+   API_BASE+'?interval=1min&outputsize=500',
+   API_BASE+'?interval=5min&outputsize=100',
+   API_BASE+'?interval=15min&outputsize=100'
+  ];
+  const responses=await Promise.all(urls.map(u=>fetch(u,{cache:'no-store'})));
+  const payloads=await Promise.all(responses.map(r=>r.json()));
+  for(let i=0;i<responses.length;i++)if(!responses[i].ok||!payloads[i].ok)throw new Error(payloads[i].message||payloads[i].error||('HTTP '+responses[i].status));
+  const parse=x=>(x.values||[]).map(v=>({ms:parseUtc(v.datetime),open:+v.open,high:+v.high,low:+v.low,close:+v.close})).filter(c=>Number.isFinite(c.close)).sort((a,b)=>a.ms-b.ms);
+  const candles=parse(payloads[0]),m5=parse(payloads[1]),m15=parse(payloads[2]);
+  if(candles.length<100||m5.length<50||m15.length<50)throw new Error('Data MA durung cukup.');
+  const last=candles[candles.length-1],a=atr(candles,14),p=pivots(candles),setup=bestSetup(candles,p);
+  const trend5=trendMA(m5),trend15=trendMA(m15);
+  let signal='WAIT',stage='NO SETUP',entry=NaN,sl=NaN,tp1=NaN,tp2=NaN,tp3=NaN,fib=null,direction='WAIT',entryMs=NaN,touchFresh=false;
+  if(setup){
+   direction=setup.direction;
+   fib=fibPrices(direction,setup.anchor0.price,setup.cb1.price);
+   entry=setup.cb1.price;
+   sl=direction==='SELL'?setup.anchor0.price+SL_BUFFER_ATR*a:setup.anchor0.price-SL_BUFFER_ATR*a;
+   tp1=fib['161.8'];tp2=fib['261.8'];tp3=fib['423.6'];
+   if(setup.touchIndex>=0){
+    entryMs=candles[setup.touchIndex].ms;
+    const barsAgo=(candles.length-1)-setup.touchIndex;
+    touchFresh=barsAgo<=ENTRY_HOLD_BARS;
+    const trendAligned=trend5.direction===direction&&trend15.direction===direction;
+    stage=touchFresh?(trendAligned?'CB1 ENTRY + TREND OK':'CB1 TOUCH / TREND WAIT'):'CB1 TOUCHED / EXPIRED';
+    if(touchFresh&&trendAligned)signal=direction;
+   }else stage='WAIT CB1 TOUCH';
+  }
+  const ageMin=Math.max(0,Math.round((Date.now()-last.ms)/60000));
+  $('techSignal').textContent=signal;$('techSignal').className='tech-signal '+(signal==='BUY'?'buy':signal==='SELL'?'sell':'neutral');
+  $('techScore').textContent=setup?direction+' CB1 setup':'Ora ana setup valid';
+  $('techStage').textContent=stage;$('techStructure').textContent='M5 '+trend5.direction+' · M15 '+trend15.direction;
+  $('techEntry').textContent=setup?n(entry):'—';$('techSL').textContent=setup?n(sl):'—';$('techTP1').textContent=setup?n(tp1):'—';$('techTP2').textContent=setup?n(tp2):'—';$('techTP3').textContent=setup?n(tp3):'—';
+  $('techRR1').textContent=setup?'RR 1:'+n(rr(entry,sl,tp1),2):'—';$('techRR2').textContent=setup?'RR 1:'+n(rr(entry,sl,tp2),2):'—';$('techRR3').textContent=setup?'RR 1:'+n(rr(entry,sl,tp3),2):'—';
+  $('techAtr').textContent=n(a);$('techAge').textContent='umur candle '+ageMin+' menit';
+  $('techFib0').textContent=setup?n(setup.anchor0.price):'—';$('techFib100').textContent=setup?n(setup.cb1.price):'—';
+  $('techCB1').textContent=setup?n(setup.cb1.price):'—';$('techCB1State').textContent=setup?(setup.touchIndex>=0?'TOUCHED':'MENUNGGU TOUCH'):'—';
+  $('techZone').textContent=trend5.direction;$('techZone').className=trend5.direction==='BUY'?'buy':trend5.direction==='SELL'?'sell':'neutral';$('techZoneState').textContent='MA20 '+n(trend5.ma20)+' · MA50 '+n(trend5.ma50)+' | M15 '+trend15.direction+' ('+n(trend15.ma20)+' / '+n(trend15.ma50)+')';
+  $('techCandleTime').textContent=setup&&setup.touchIndex>=0?wib(entryMs):wib(last.ms);
+  $('techUpdated').textContent='Update '+wib(Date.now());$('techStatus').textContent='Feed M1/M5/M15 aktif · trend MA20/MA50 · provider '+payloads[0].provider;
+  $('techFeed').textContent=ageMin<=5?'LIVE':'STALE';$('techFeed').className='badge '+(ageMin<=5?'buy':'transition');
+
+  const trendAligned=!!setup&&trend5.direction===direction&&trend15.direction===direction;
+  const rules=[
+   ['Trend M5 MA20/MA50',!!setup&&trend5.direction===direction,'MA20 '+n(trend5.ma20)+' · MA50 '+n(trend5.ma50)+' → '+trend5.direction],
+   ['Trend M15 MA20/MA50',!!setup&&trend15.direction===direction,'MA20 '+n(trend15.ma20)+' · MA50 '+n(trend15.ma50)+' → '+trend15.direction],
+   ['CB1 terbentuk',!!setup,setup?('CB1 '+n(setup.cb1.price)):'Belum ada'],
+   ['Harga touch CB1',!!setup&&setup.touchIndex>=0,setup&&setup.touchIndex>=0?wib(entryMs):'Belum touch'],
+   ['ENTRY valid',touchFresh&&trendAligned,touchFresh&&trendAligned?direction+' · M5+M15 SELARAS':'WAIT']
+  ];
+  $('techRules').innerHTML=rules.map(x=>ruleHtml(x[0],x[1],x[2])).join('');
+  $('techFibBody').innerHTML=fib?Object.entries(fib).map(([k,v])=>'<tr><td>'+k+'</td><td>'+n(v)+'</td><td>'+(k==='100.0'?'CB1 / ENTRY':k==='161.8'?'TP1':k==='261.8'?'TP2':k==='423.6'?'TP3':k==='0.0'?'Swing 0':'Retracement / extension')+'</td></tr>').join(''):'<tr><td colspan="3">Belum ada Fibo valid.</td></tr>';
+  $('techCandleBody').innerHTML=candles.slice(-20).reverse().map(c=>'<tr><td class="mono">'+wib(c.ms)+'</td><td>'+n(c.open)+'</td><td>'+n(c.high)+'</td><td>'+n(c.low)+'</td><td>'+n(c.close)+'</td></tr>').join('');
+
+  window.CEBONK_TECH_STATE={signal,direction,stage,entry,sl,tp:tp2,tp1,tp2,tp3,rr1:rr(entry,sl,tp1),rr2:rr(entry,sl,tp2),rr3:rr(entry,sl,tp3),lastMs:last.ms,entryMs,lastClose:last.close,atr:a,ageMin,updatedMs:Date.now(),cb1:setup?.cb1?.price??NaN,trend5,trend15};
+  window.dispatchEvent(new Event('cebonk-tech-update'));
+ }catch(e){
+  $('techStatus').textContent='Gagal: '+e.message;$('techFeed').textContent='ERROR';$('techFeed').className='badge sell';
+ }finally{loading=false;$('techRefresh').disabled=false;}
+}
+
+function comboFmt(v){return Number.isFinite(v)?v.toFixed(2):'—';}
+function comboWib(ms){return Number.isFinite(ms)?new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms))+' WIB':'—';}
+function renderCombined(){
+ const a=window.CEBONK_ASTRO_STATE,t=window.CEBONK_TECH_STATE;
+ if(!a){$('comboAstro').textContent='NO DATA';$('comboAstro').className='neutral';$('comboDecision').textContent='WAIT';$('comboReason').textContent='Astrology durung siap.';return;}
+ $('comboAstroDate').textContent=a.iso||'—';
+ if(!t){$('comboTech').textContent='NO DATA';$('comboTech').className='neutral';$('comboDecision').textContent='WAIT';$('comboReason').textContent='Fibo Musang durung siap.';return;}
+ const eventMs=Number.isFinite(t.entryMs)?t.entryMs:t.lastMs;
+ const g=(a.groups||[]).find(x=>eventMs>=x.start&&eventMs<x.end)||null;
+ const astroState=g?g.state:'OUTSIDE',validAstro=astroState==='BUY'||astroState==='SELL',aligned=validAstro&&astroState===t.signal;
+ const decision=aligned?'ENTRY '+astroState:'WAIT';
+ $('comboAstro').textContent=astroState;$('comboAstro').className=astroState==='BUY'?'buy':astroState==='SELL'?'sell':'neutral';
+ $('comboWindow').textContent=g?(comboWib(g.start)+' – '+comboWib(g.end)):'Ora ana window Astrology ing event CB1';
+ $('comboTech').textContent=t.signal;$('comboTech').className=t.signal==='BUY'?'buy':t.signal==='SELL'?'sell':'neutral';
+ $('comboTechScore').textContent=t.direction+' · '+t.stage;
+ $('comboDecision').textContent=decision;$('comboDecision').className=aligned?(astroState==='BUY'?'buy':'sell'):'neutral';
+ $('comboStatus').textContent=aligned?'SELARAS':'WAIT';$('comboStatus').className='badge '+(aligned?(astroState==='BUY'?'buy':'sell'):'neutral');
+ $('comboReason').textContent=aligned?'Astrology searah + CB1 touch + MA20/MA50 M5 & M15 selaras → entry.':!validAstro?('Astrology '+astroState+' → ora entry.'):(t.signal==='WAIT'?'CB1 durung aktif, wis expired, utawa trend M5/M15 ora selaras.':'Arah beda: Astro '+astroState+' vs CB1 '+t.signal+'.');
+ $('comboEntry').textContent=aligned?comboFmt(t.entry):'—';$('comboSL').textContent=aligned?comboFmt(t.sl):'—';
+ $('comboTP1').textContent=aligned?comboFmt(t.tp1):'—';$('comboTP2').textContent=aligned?comboFmt(t.tp2):'—';$('comboTP3').textContent=aligned?comboFmt(t.tp3):'—';
+ $('comboRR1').textContent=aligned&&Number.isFinite(t.rr1)?'RR 1:'+comboFmt(t.rr1):'—';$('comboRR2').textContent=aligned&&Number.isFinite(t.rr2)?'RR 1:'+comboFmt(t.rr2):'—';$('comboRR3').textContent=aligned&&Number.isFinite(t.rr3)?'RR 1:'+comboFmt(t.rr3):'—';
+ $('comboEntryTime').textContent=aligned?comboWib(eventMs):'—';$('comboCandle').textContent=comboWib(eventMs);
+}
+window.addEventListener('cebonk-astro-update',renderCombined);
+window.addEventListener('cebonk-tech-update',renderCombined);
+$('techRefresh').addEventListener('click',refreshTech);
+$('techAuto').addEventListener('change',function(){if(autoTimer){clearInterval(autoTimer);autoTimer=null;}if(this.checked)autoTimer=setInterval(refreshTech,300000);});
+autoTimer=setInterval(()=>{if($('techAuto').checked&&!$('technicalView').hidden)refreshTech();},300000);
+})();
+</script>
+
 </body>
 </html>
