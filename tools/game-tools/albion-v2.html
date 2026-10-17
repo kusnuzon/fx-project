@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.3">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.4">
 </head>
 <body>
   <div class="app">
@@ -28,6 +28,12 @@
         <span class="dot" id="feedDot" aria-hidden="true"></span>
         <span class="pill" id="feedPill">SYNC</span>
         <button type="button" class="btn ghost" id="feedRefresh" style="min-height:40px;padding:6px 10px">↻</button>
+        <button type="button" class="btn ghost" id="setOpen" aria-label="Setting" style="min-height:40px;padding:6px 10px">
+          <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <circle cx="10" cy="10" r="2.6"/>
+            <path d="M10 2.4v2.2M10 15.4v2.2M2.4 10h2.2M15.4 10h2.2M4.6 4.6l1.6 1.6M13.8 13.8l1.6 1.6M15.4 4.6l-1.6 1.6M6.2 13.8l-1.6 1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
       </span>
     </header>
 
@@ -560,90 +566,148 @@
     </section>
 
     <!-- ===== parameter global ===== -->
-    <details class="form" style="margin-top:32px">
-      <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
-        Cost &amp; throughput settings
-      </summary>
+    <!-- ===== setting (bottom panel) ===== -->
+    <div class="sheet-back" id="setBack" style="display:none"></div>
+    <section class="sheet" id="setSheet" style="display:none" role="dialog" aria-modal="true" aria-label="Setting">
+      <div class="sheet-grab" aria-hidden="true"></div>
+      <header class="sheet-head">
+        <span class="sheet-t">Setting</span>
+        <span class="sheet-s">tersimpan otomatis di perangkat ini</span>
+        <button type="button" class="btn ghost" id="setClose" style="min-height:36px;padding:4px 12px">Tutup</button>
+      </header>
 
-      <p class="hint" style="margin-top:12px">
-        Semua angka mengikuti switch ini. Kalau game melakukan patch pada tax atau setup fee, ubah di sini.
-      </p>
-
-      <div class="f2">
-        <div>
-          <label class="lbl" for="cCity">Reference city</label>
-          <select id="cCity"></select>
-        </div>
-        <p class="hint" style="align-self:center">
-          Harga tiap region berbeda jauh. Ganti region di tombol paling atas kalau kamu main di
-          server lain — bukan cuma kota.
+      <div class="sheet-body">
+        <p class="hint">
+          Semua angka di aplikasi ini mengikuti switch di bawah. Berubah sekali, dipakai di semua
+          tab, dan tersimpan otomatis - reload atau tutup browser tidak menghapus.
         </p>
-      </div>
 
-      <div class="f2">
-        <label class="switch">Premium (tax 4%)
-          <input type="checkbox" id="cPremium">
-        </label>
-        <label class="switch">Black Market (tax 0%, setup 0%)
-          <input type="checkbox" id="cBM">
-        </label>
-      </div>
-
-      <div class="f2">
-        <label class="switch">Jual pakai sell order (setup fee)
-          <input type="checkbox" id="cSell">
-        </label>
-        <label class="switch">Beli pakai buy order (setup fee)
-          <input type="checkbox" id="cBuy">
-        </label>
-      </div>
-
-      <div class="f2">
-        <div>
-          <label class="lbl" for="cSetup">Setup fee (%)</label>
-          <input type="number" id="cSetup" step="any" inputmode="decimal">
+        <div class="sec"><span class="sec-h">Akun &amp; pasar</span></div>
+        <div class="f2">
+          <label class="switch">Premium / Gold (sales tax 4%)
+            <input type="checkbox" id="cPremium">
+          </label>
+          <label class="switch">Black Market (tax 0%, setup fee 0%)
+            <input type="checkbox" id="cBM">
+          </label>
         </div>
-        <div>
-          <label class="lbl" for="cYield">Yield bonus</label>
-          <select id="cYield">
-            <option value="58">Kota 58</option>
-            <option value="40">Island 40</option>
-            <option value="18">Royal 18</option>
-            <option value="15">Hideout BZ 15</option>
-            <option value="0">Nihil 0</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="f2">
-        <label class="switch">Pakai focus (+59)
-          <input type="checkbox" id="cFocus">
-        </label>
-        <div>
-          <label class="lbl" for="cThru">Throughput (units / hour)</label>
-          <input type="number" id="cThru" step="1" min="0" inputmode="numeric">
-        </div>
-      </div>
-
-      <div class="f2">
-        <div>
-          <label class="lbl" for="cTransport">Transport cost (✦ / unit)</label>
-          <input type="number" id="cTransport" step="any" min="0" value="0" inputmode="decimal">
-        </div>
-        <p class="hint" style="align-self:center">
-          Dipakai hanya di tab Arbitrase. Isi perkiraan ongkos + ambush risk jalan supaya
-          margin tidak terlihat untung padahal tidak selalu aman di perjalanan.
+        <p class="hint">
+          Tanpa Premium, sales tax naik jadi 8%. Black Market di Caerleon bebas tax dan setup fee
+          tapi hanya bisa dipakai di dalam Black Market. Pilih salah satu.
         </p>
+
+        <div class="sec"><span class="sec-h">Cara jual &amp; beli</span></div>
+        <div class="f2">
+          <label class="switch">Jual lewat sell order (ada setup fee)
+            <input type="checkbox" id="cSell">
+          </label>
+          <label class="switch">Beli lewat buy order (ada setup fee)
+            <input type="checkbox" id="cBuy">
+          </label>
+        </div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="cSetup">Setup fee (%)</label>
+            <input type="number" id="cSetup" step="any" inputmode="decimal">
+          </div>
+          <p class="hint" style="align-self:center">
+            Dikenakan tiap kali kamu memasang order, bukan tiap unit.
+          </p>
+        </div>
+
+        <div class="sec"><span class="sec-h">Crafting &amp; gathering</span></div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="cYield">Yield bonus lokasi</label>
+            <select id="cYield">
+              <option value="58">Kota 58</option>
+              <option value="40">Island 40</option>
+              <option value="18">Royal city 18</option>
+              <option value="15">Hideout (black zone) 15</option>
+              <option value="0">Nihil pool 0</option>
+            </select>
+          </div>
+          <p class="hint" style="align-self:center">
+            Seberapa banyak bahan kembali saat crafting. Yield + focus dipakai menghitung biaya
+            bahan sebenarnya (RRR), jadi angka untung ikut berubah.
+          </p>
+        </div>
+        <div class="f2">
+          <label class="switch">Pakai focus saat crafting (+59)
+            <input type="checkbox" id="cFocus">
+          </label>
+          <div>
+            <label class="lbl" for="cThru">Throughput (units / hour)</label>
+            <input type="number" id="cThru" step="1" min="0" inputmode="numeric">
+          </div>
+        </div>
+        <p class="hint">
+          Throughput = berapa unit bisa kamu proses satu jam. Dipakai mengubah untung per unit jadi
+          untung per jam. Kalau crafting manual, pakai angka realistis untuk kamu - throughput
+          terlalu besar membuat semua activity terlihat menguntungkan.
+        </p>
+
+        <div class="sec"><span class="sec-h">Lokasi &amp; transport</span></div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="cCity">Reference city</label>
+            <select id="cCity"></select>
+          </div>
+          <div>
+            <label class="lbl" for="cTransport">Transport cost (silver / unit)</label>
+            <input type="number" id="cTransport" step="any" min="0" value="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="setRegion">Region server</label>
+            <select id="setRegion"></select>
+          </div>
+          <p class="hint" style="align-self:center">
+            Harga tiap region berbeda jauh. Kalau kamu main di server lain, ganti region di sini.
+          </p>
+        </div>
+        <p class="hint">
+          Transport cost dipakai di semua perhitungan flip dan arbitrage: isi ongkos jalan plus
+          ambush risk supaya margin tidak terlihat untung padahal tidak selalu aman di perjalanan.
+        </p>
+
+        <div class="sec"><span class="sec-h">Data &amp; tampilan</span></div>
+        <div class="f2">
+          <label class="switch">Auto refresh harga
+            <input type="checkbox" id="cAuto">
+          </label>
+          <div>
+            <label class="lbl" for="cInterval">Refresh interval (detik)</label>
+            <input type="number" id="cInterval" step="5" min="15" max="600" inputmode="numeric">
+          </div>
+        </div>
+        <div class="f2">
+          <label class="switch">Sembunyikan baris rugi (hide negative)
+            <input type="checkbox" id="cHideNeg">
+          </label>
+          <label class="switch">Kota PK (Brecilien, Black Market) boleh dipakai
+            <input type="checkbox" id="cAllowPK">
+          </label>
+        </div>
+
+        <div class="btn-row" style="margin-top:16px">
+          <button type="button" class="btn" id="setReset">Reset ke default</button>
+          <button type="button" class="btn primary" id="setDone">Selesai</button>
+        </div>
+
+        <p class="hint" id="setStat" style="text-align:center;margin-top:12px"></p>
       </div>
-    </details>
+    </section>
+
 
     <footer class="ftr">
-      Silver Ops v3.3 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v3.4 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-crafting.js?v=3.3"></script>
-  <script src="../../data/js/albion-market.js?v=3.3"></script>
-  <script src="../../data/js/albion-v2.js?v=3.3"></script>
+  <script src="../../data/js/albion-crafting.js?v=3.4"></script>
+  <script src="../../data/js/albion-market.js?v=3.4"></script>
+  <script src="../../data/js/albion-v2.js?v=3.4"></script>
 </body>
 </html>

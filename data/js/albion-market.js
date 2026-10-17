@@ -477,8 +477,8 @@
     search: search,
     watchIds: watchIds,
     region: function () { return S.region; },
-    regionLabel: function () {
-      return (REGIONS[S.region] || REGIONS.west).label;
+    regionLabel: function (key) {
+      return (REGIONS[key || S.region] || REGIONS.west).label;
     },
     /* region yang benar-benar melayani data (bisa beda dari pilihan) */
     servingRegion: function () { return S.usedRegion; },

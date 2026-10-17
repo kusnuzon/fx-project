@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.3';
+  var BUILD = '3.4';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -16,11 +16,13 @@
   var TX_ENCH = { 4:[1800,3600,7200], 5:[1600,3200,6400],
                   6:[2400,4800,9600], 7:[3840,7680,15360], 8:[7680,15360,30720] };
 
-  var CFG = {
+  var CFG_DEFAULT = {
     premium: true, blackMarket: false, sellOrder: true, buyOrder: false,
     setupFee: 2.5, yieldBonus: 58, focus: false, throughput: 600,
-    region: 'west', city: 'Thetford', transport: 0
+    region: 'west', city: 'Thetford', transport: 0,
+    autoRefresh: true, interval: 60, hideNeg: true, allowPK: false
   };
+  var CFG = Object.assign({}, CFG_DEFAULT);
 
   var STATE = {
     view: 'scan', chain: 'ore', tier: 4,
@@ -318,12 +320,15 @@
      Kota PK sengaja dilewati: transport bolak-balik ke sana tidak
      masuk akal buat pemain modal 0 dan buy order di sana bukan
      tempat yang aman. */
-  var ZERO_SKIP = { 'Brecilien':1, 'Black Market':1 };
+  function pkSkip() {
+    return CFG.allowPK ? {} : { 'Brecilien':1, 'Black Market':1 };
+  }
+  var ZERO_SKIP = pkSkip();
 
   function bestCity(rows, field) {
     var best = null;
     for (var i = 0; i < rows.length; i++) {
-      if (rows[i][field] <= 0 || ZERO_SKIP[rows[i].city]) continue;
+      if (rows[i][field] <= 0 || pkSkip()[rows[i].city]) continue;
       var v = netSell(rows[i][field]);
       if (!best || v > best.v) best = { city:rows[i].city, v:v, px:rows[i][field] };
     }
@@ -343,7 +348,7 @@
     var refRows = M.byCity(refId);
     for (var i = 0; i < refRows.length; i++) {
       var e = refRows[i];
-      if (e.buy <= 0 || ZERO_SKIP[e.city]) continue;
+      if (e.buy <= 0 || pkSkip()[e.city]) continue;
       var r = M.at(rawId, e.city);
       var base = r ? (r.buy > 0 ? r.buy : r.sell) : 0;
       if (base <= 0) continue;
@@ -687,7 +692,7 @@
      ngapain, tanpa harus pilih kota dulu. */
   function cityList() {
     return M.ROYALS.concat(M.EXTRA_CITIES).filter(function (c) {
-      return !ZERO_SKIP[c];
+      return !pkSkip()[c];
     });
   }
 
@@ -751,7 +756,7 @@
       var m = list[i];
       var rows = M.byCity(m.id), bag = {};
       for (j = 0; j < rows.length; j++) {
-        if (ZERO_SKIP[rows[j].city]) continue;
+        if (pkSkip()[rows[j].city]) continue;
         bag[rows[j].city] = rows[j];
       }
       var thin = Object.keys(bag).length <= 2;
@@ -788,7 +793,7 @@
 
   /* analisis satu item untuk tab Search: instant sell, arbitrage, refine */
   function autoItem(m) {
-    var rows = M.byCity(m.id).filter(function (e) { return !ZERO_SKIP[e.city]; });
+    var rows = M.byCity(m.id).filter(function (e) { return !pkSkip()[e.city]; });
     if (!rows.length) return null;
     var bag = {};
     rows.forEach(function (e) { bag[e.city] = e; });
@@ -2021,7 +2026,24 @@
     $('cFocus').checked = CFG.focus;
     $('cThru').value = CFG.throughput;
     $('cTransport').value = CFG.transport;
+    $('cAuto').checked = CFG.autoRefresh !== false;
+    $('cInterval').value = CFG.interval || 60;
+    $('cHideNeg').checked = CFG.hideNeg !== false;
+    $('cAllowPK').checked = CFG.allowPK === true;
+    $('setRegion').value = CFG.region;
+    updateSettingStat();
   }
+
+  /* ringkasan singkat di bawah panel Setting */
+  function updateSettingStat() {
+    var el = $('setStat');
+    if (!el) return;
+    var tax = CFG.blackMarket ? 0 : (CFG.premium ? 4 : 8);
+    el.textContent = 'tax ' + tax + '% ' + chr_arrows() + ' ' +
+      'yield ' + silver(CFG.yieldBonus) + (CFG.focus ? ' +59 focus' : '') + chr_arrows() +
+      ' ' + silver(CFG.throughput) + ' unit/jam ' + chr_arrows() + ' ' + CFG.city;
+  }
+  function chr_arrows() { return ' \u00b7 '; }
 
   function saveCfg() { try { localStorage.setItem(LS_CFG, JSON.stringify(CFG)); } catch (e) {} }
 
@@ -2036,6 +2058,11 @@
     CFG.focus = $('cFocus').checked;
     CFG.throughput = num($('cThru').value);
     CFG.transport = num($('cTransport').value);
+    CFG.autoRefresh = $('cAuto').checked;
+    CFG.interval = Math.max(15, num($('cInterval').value) || 60);
+    CFG.hideNeg = $('cHideNeg').checked;
+    CFG.allowPK = $('cAllowPK').checked;
+    ZERO_SKIP = pkSkip();
     if (CFG.blackMarket) { CFG.sellOrder = false; CFG.buyOrder = false; }
     saveCfg();
     fillCfgInputs();
@@ -2075,6 +2102,15 @@
       var b = e.target.closest('button');
       if (b) setRegion(b.dataset.r);
     });
+
+    /* isi dropdown region di panel Setting */
+    var setReg = $('setRegion');
+    M.REGION_ORDER.forEach(function (k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = M.regionLabel(k);
+      setReg.appendChild(o);
+    });
+    setReg.value = CFG.region;
 
     /* isi dropdown kota */
     var citySel = $('cCity');
@@ -2481,13 +2517,53 @@
       }
     });
 
-    ['cCity', 'cPremium', 'cBM', 'cSell', 'cBuy', 'cFocus',
-     'cSetup', 'cYield', 'cThru', 'cTransport'].forEach(function (id) {
+    ['cCity', 'cPremium', 'cBM', 'cSell', 'cBuy', 'cFocus', 'cSetup', 'cYield',
+     'cThru', 'cTransport', 'cAuto', 'cInterval', 'cHideNeg', 'cAllowPK'
+    ].forEach(function (id) {
       $(id).addEventListener('change', readCfg);
     });
 
+    /* ---------- panel Setting ---------- */
+    function openSheet() {
+      $('setSheet').style.display = 'flex';
+      $('setBack').style.display = 'block';
+      document.body.classList.add('sheet-open');
+      STATE.left = CFG.interval || 60;
+      updateFeed();
+    }
+    function closeSheet() {
+      $('setSheet').style.display = 'none';
+      $('setBack').style.display = 'none';
+      document.body.classList.remove('sheet-open');
+      try { localStorage.setItem(LS_CFG, JSON.stringify(CFG)); } catch (e) {}
+    }
+    $('setOpen').addEventListener('click', openSheet);
+    $('setClose').addEventListener('click', closeSheet);
+    $('setDone').addEventListener('click', closeSheet);
+    $('setBack').addEventListener('click', closeSheet);
+    $('setReset').addEventListener('click', function () {
+      var reg = CFG.region;
+      CFG = Object.assign({}, CFG_DEFAULT, { region:reg });
+      sessions = [];
+      try {
+        localStorage.removeItem(LS_CFG);
+        localStorage.removeItem(LS_SESS);
+      } catch (e) {}
+      saveCfg();
+      fillCfgInputs();
+      renderAll();
+      closeSheet();
+    });
+    $('setRegion').addEventListener('change', function () {
+      setRegion(this.value);
+      this.value = CFG.region;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSheet();
+    });
+
     $('feedRefresh').addEventListener('click', function () {
-      STATE.left = Math.round(M.AUTO_REFRESH / 1000);
+      STATE.left = Math.max(15, CFG.interval || 60);
       M.load({ force: true });
     });
 
@@ -2496,10 +2572,11 @@
 
     setInterval(function () {
       if (document.hidden) return;
+      var gap = Math.max(15, CFG.interval || 60);
       STATE.left -= 1;
       if (STATE.left <= 0) {
-        STATE.left = Math.round(M.AUTO_REFRESH / 1000);
-        M.load({ force: true });
+        STATE.left = gap;
+        if (CFG.autoRefresh !== false) M.load({ force: true });
       }
       updateFeed();
     }, 1000);
