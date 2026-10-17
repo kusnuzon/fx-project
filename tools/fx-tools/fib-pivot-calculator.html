@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fib & Pivot Calc – CARTRIDGE VAULT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/retro-theme.css">
+  <style>
+    .fp-tabs { display:flex; gap:0; margin:0 auto 1.2rem; max-width:400px; border-bottom:2px solid #4b4b68; }
+    .fp-tabs button { flex:1; margin:0; border:none; border-radius:0; background:transparent; color:#7a7a95;
+      font-family:'Press Start 2P',cursive; font-size:0.6rem; padding:0.7rem 0.4rem; }
+    .fp-tabs button.active { color:#cfba8c; border-bottom:3px solid #cfba8c; background:rgba(207,186,140,0.08); }
+    .fp-panel { display:none; }
+    .fp-panel.active { display:block; }
+    .fp-row { display:flex; gap:0.6rem; max-width:400px; margin:0 auto; }
+    .fp-row > div { flex:1; }
+    .fp-note { text-align:center; font-size:0.7rem; color:#8e8ea0; max-width:420px; margin:0 auto 1rem; }
+    .lvl-r { color:#e07373; }
+    .lvl-s { color:#6c9; }
+    .lvl-p { color:#f0d0a0; font-weight:bold; }
+    .lvl-hit { background:rgba(207,186,140,0.18); }
+    .fp-actions { display:flex; gap:0.6rem; max-width:400px; margin:0 auto; }
+    .fp-actions button { margin-bottom:0; }
+    #fibCanvas { width:100%; max-width:520px; display:block; margin:1rem auto; border:2px solid #4e4e68;
+      background:#15151f; image-rendering:pixelated; }
+    .fp-copy { background:#2e4a2e; border-color:#4a7a4a; }
+    .fp-copy:hover { background:#3a5a3a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📐 FIB &amp; PIVOT</h1>
+    <p class="fp-note" style="margin-top:-8px;">Fibonacci retracement / extension + pivot points</p>
+
+    <div class="fp-tabs">
+      <button type="button" id="tabFib" class="active" onclick="switchTab('fib')">Fibonacci</button>
+      <button type="button" id="tabPivot" onclick="switchTab('pivot')">Pivot</button>
+    </div>
+
+    <div id="panelFib" class="fp-panel active">
+      <form>
+        <label>Arah Tren</label>
+        <select id="fibDir">
+          <option value="up">Bullish (Low → High)</option>
+          <option value="down">Bearish (High → Low)</option>
+        </select>
+
+        <div class="fp-row">
+          <div>
+            <label>Swing High</label>
+            <input type="number" id="fibHigh" step="any" placeholder="contoh: 2450.00" inputmode="decimal">
+          </div>
+          <div>
+            <label>Swing Low</label>
+            <input type="number" id="fibLow" step="any" placeholder="contoh: 2380.00" inputmode="decimal">
+          </div>
+        </div>
+
+        <div class="fp-row">
+          <div>
+            <label>Harga Saat Ini (opsional)</label>
+            <input type="number" id="fibPrice" step="any" placeholder="highlight level terdekat" inputmode="decimal">
+          </div>
+          <div>
+            <label>Presisi (desimal)</label>
+            <select id="fibDigits">
+              <option value="2">2 – XAUUSD</option>
+              <option value="3">3 – JPY pairs</option>
+              <option value="5" selected>5 – FX umum</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="button" onclick="calcFib()">HITUNG FIBONACCI</button>
+      </form>
+
+      <canvas id="fibCanvas" width="520" height="320" style="display:none;"></canvas>
+      <div id="fibResult" class="result-box" style="display:none; font-size:0.95rem;"></div>
+      <div class="fp-actions" id="fibActions" style="display:none;">
+        <button type="button" class="fp-copy" onclick="copyText(document.getElementById('fibResult').innerText)">SALIN HASIL</button>
+      </div>
+    </div>
+
+    <div id="panelPivot" class="fp-panel">
+      <form>
+        <label>Metode Pivot</label>
+        <select id="pivotMethod">
+          <option value="classic">Classic</option>
+          <option value="camarilla">Camarilla</option>
+          <option value="woodie">Woodie</option>
+          <option value="fibonacci">Fibonacci</option>
+        </select>
+
+        <div class="fp-row">
+          <div>
+            <label>High (H)</label>
+            <input type="number" id="pvHigh" step="any" placeholder="contoh: 2450.00" inputmode="decimal">
+          </div>
+          <div>
+            <label>Low (L)</label>
+            <input type="number" id="pvLow" step="any" placeholder="contoh: 2380.00" inputmode="decimal">
+          </div>
+        </div>
+
+        <div class="fp-row">
+          <div>
+            <label>Close (C)</label>
+            <input type="number" id="pvClose" step="any" placeholder="contoh: 2420.00" inputmode="decimal">
+          </div>
+          <div>
+            <label>Presisi (desimal)</label>
+            <select id="pvDigits">
+              <option value="2" selected>2 – XAUUSD</option>
+              <option value="3">3 – JPY pairs</option>
+              <option value="5">5 – FX umum</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="button" onclick="calcPivot()">HITUNG PIVOT</button>
+      </form>
+
+      <div id="pivotResult" class="result-box" style="display:none; font-size:0.95rem;"></div>
+      <div class="fp-actions" id="pivotActions" style="display:none;">
+        <button type="button" class="fp-copy" onclick="copyText(document.getElementById('pivotResult').innerText)">SALIN HASIL</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>🛠️ CARTRIDGE VAULT</footer>
+
+  <script>
+    const FIB_RETRACE = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+    const FIB_EXTEND  = [1.272, 1.618, 2, 2.618];
+
+    function switchTab(which) {
+      const isFib = which === 'fib';
+      document.getElementById('panelFib').classList.toggle('active', isFib);
+      document.getElementById('panelPivot').classList.toggle('active', !isFib);
+      document.getElementById('tabFib').classList.toggle('active', isFib);
+      document.getElementById('tabPivot').classList.toggle('active', !isFib);
+    }
+
+    function fmt(v, d) {
+      return v.toFixed(d);
+    }
+
+    function num(id) {
+      const v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? null : v;
+    }
+
+    function calcFib() {
+      const dir   = document.getElementById('fibDir').value;
+      const high  = num('fibHigh');
+      const low   = num('fibLow');
+      const price = num('fibPrice');
+      const digs  = parseInt(document.getElementById('fibDigits').value, 10);
+
+      if (high === null || low === null || high === low) {
+        alert('Isi Swing High dan Swing Low dengan nilai berbeda.');
+        return;
+      }
+
+      const hi = Math.max(high, low);
+      const lo = Math.min(high, low);
+      const range = hi - lo;
+
+      const levels = [];
+      FIB_RETRACE.forEach(r => {
+        const p = dir === 'up' ? hi - range * r : lo + range * r;
+        levels.push({ ratio: r, price: p, kind: 'retrace' });
+      });
+      FIB_EXTEND.forEach(r => {
+        const p = dir === 'up' ? hi + range * (r - 1) : lo - range * (r - 1);
+        levels.push({ ratio: r, price: p, kind: 'extend' });
+      });
+
+      let nearRatio = null;
+      if (price !== null) {
+        let best = Infinity;
+        levels.forEach(l => {
+          const dist = Math.abs(l.price - price);
+          if (dist < best) { best = dist; nearRatio = l.ratio; }
+        });
+      }
+
+      const rows = levels.map(l => {
+        const label = (l.ratio * 100).toFixed(1) + '%';
+        const hit = (nearRatio !== null && l.ratio === nearRatio) ? ' class="lvl-hit"' : '';
+        const cls = l.kind === 'extend' ? 'lvl-r' : '';
+        const tag = l.kind === 'extend' ? ' ↺' : '';
+        return `<tr${hit}><td class="${cls}">${label}${tag}</td><td class="${cls}">${fmt(l.price, digs)}</td></tr>`;
+      }).join('');
+
+      const box = document.getElementById('fibResult');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <table>
+          <thead><tr><th>Level</th><th>Harga</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <small>Range: ${fmt(range, digs)} · Tren: ${dir === 'up' ? 'Bullish' : 'Bearish'}</small>
+      `;
+      document.getElementById('fibActions').style.display = 'flex';
+
+      document.getElementById('fibCanvas').style.display = 'block';
+      drawFib(levels, dir, nearRatio, digs);
+    }
+
+    function drawFib(levels, dir, nearRatio, digs) {
+      const canvas = document.getElementById('fibCanvas');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      const pad = 46;
+      const prices = levels.map(l => l.price);
+      const max = Math.max(...prices), min = Math.min(...prices);
+      const span = (max - min) || 1;
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#15151f';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(120,120,150,0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+
+      const yOf = p => pad + (max - p) / span * (H - pad * 2);
+
+      levels.forEach(l => {
+        const y = yOf(l.price);
+        const isExt = l.kind === 'extend';
+        const isNear = nearRatio !== null && l.ratio === nearRatio;
+        ctx.strokeStyle = isNear ? '#fbbf24' : (isExt ? '#c86a6a' : '#6c9');
+        ctx.lineWidth = isNear ? 3 : 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(W - 8, y);
+        ctx.stroke();
+
+        ctx.fillStyle = isNear ? '#fbbf24' : '#9da5b4';
+        ctx.font = '10px "Courier New", monospace';
+        ctx.fillText((l.ratio * 100).toFixed(1) + '%', 4, y - 2);
+        ctx.fillText(fmt(l.price, digs), W - 78, y - 2);
+      });
+    }
+
+    function pivotClassic(H, L, C) {
+      const P = (H + L + C) / 3;
+      return {
+        P,
+        R1: 2 * P - L, R2: P + (H - L), R3: H + 2 * (P - L),
+        S1: 2 * P - H, S2: P - (H - L), S3: L - 2 * (H - P)
+      };
+    }
+    function pivotCamarilla(H, L, C) {
+      const r = H - L;
+      return {
+        P: (H + L + C) / 3,
+        R1: C + r * 1.1 / 12, R2: C + r * 1.1 / 6, R3: C + r * 1.1 / 4, R4: C + r * 1.1 / 2,
+        S1: C - r * 1.1 / 12, S2: C - r * 1.1 / 6, S3: C - r * 1.1 / 4, S4: C - r * 1.1 / 2
+      };
+    }
+    function pivotWoodie(H, L, C) {
+      const P = (H + L + 2 * C) / 4;
+      return {
+        P,
+        R1: 2 * P - L, R2: P + (H - L), R3: H + 2 * (P - L),
+        S1: 2 * P - H, S2: P - (H - L), S3: L - 2 * (H - P)
+      };
+    }
+    function pivotFibonacci(H, L, C) {
+      const P = (H + L + C) / 3, r = H - L;
+      return {
+        P,
+        R1: P + 0.382 * r, R2: P + 0.618 * r, R3: P + 1.0 * r,
+        S1: P - 0.382 * r, S2: P - 0.618 * r, S3: P - 1.0 * r
+      };
+    }
+
+    function calcPivot() {
+      const method = document.getElementById('pivotMethod').value;
+      const H = num('pvHigh'), L = num('pvLow'), C = num('pvClose');
+      const digs = parseInt(document.getElementById('pvDigits').value, 10);
+
+      if (H === null || L === null || C === null || H === L) {
+        alert('Isi High, Low, dan Close dengan benar.');
+        return;
+      }
+
+      const fn = { classic: pivotClassic, camarilla: pivotCamarilla, woodie: pivotWoodie, fibonacci: pivotFibonacci }[method];
+      const pv = fn(H, L, C);
+
+      const order = ['R4', 'R3', 'R2', 'R1', 'P', 'S1', 'S2', 'S3', 'S4'];
+      const rows = order.filter(k => pv[k] !== undefined).map(k => {
+        const cls = k === 'P' ? 'lvl-p' : (k[0] === 'R' ? 'lvl-r' : 'lvl-s');
+        return `<tr><td class="${cls}">${k}</td><td class="${cls}">${fmt(pv[k], digs)}</td></tr>`;
+      }).join('');
+
+      const box = document.getElementById('pivotResult');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <table>
+          <thead><tr><th>Level</th><th>Harga</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <small>Metode: ${method.charAt(0).toUpperCase() + method.slice(1)} · H ${fmt(H, digs)} / L ${fmt(L, digs)} / C ${fmt(C, digs)}</small>
+      `;
+      document.getElementById('pivotActions').style.display = 'flex';
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(
+        () => alert('Hasil disalin ke clipboard.'),
+        () => alert('Gagal menyalin. Salin manual ya.')
+      );
+    }
+  </script>
+</body>
+</html>
