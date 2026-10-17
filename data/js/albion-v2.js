@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '3.7';
+  var BUILD = '3.8';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -2106,15 +2106,15 @@
   }
 /* ---------- run: kalkulator gather di Red Zone / Black Zone ----------
      Tujuannya satu: berapa yang harus kamu bawa ke zona berbahaya, dan
-     berapa yang harusaal hasil per jalan supaya sekali mati menghapus
-     hasil seluruh run.
+     berapa yang harus dapat per jalan supaya sekali mati menghapus hasil
+     seluruh run.
 
      Asumsi yang dipakai (bisa diubah user):
      - Yield bonus zona berbahaya 15% (kota 58%), jadi unit per node naik
      - Harga jual diambil dari kota tujuan (BZ = Caerleon)
-     - Risiko=user input jumlah kematian per jam; tidak ada angka aman dari
+     - Risiko = user input jumlah kematian per jam; tidak ada angka aman dari
        game, jadi ini murni penilaian player
-     Semua biaya alat/armor/-mount bisa diisi manual atau disinkron dari
+     Semua biaya alat, armor, dan mount bisa diisi manual atau disinkron dari
      harga pasar. */
   var LS_RUN = 'so_run_v1';
   var RUN_DEFAULT = {
@@ -2138,10 +2138,6 @@
     try { localStorage.setItem(LS_RUN, JSON.stringify(RUN)); } catch (e) {}
   }
 
-  function runCities() {
-    return RUN.zone === 'bz' ? ['Caerleon'] : [CFG.city];
-  }
-
   /* daftar gear yang dipakai, id-nya mengikuti tier dan profesi */
   function runGear(tier, prof) {
     var t = tier;
@@ -2159,7 +2155,7 @@
       { k:'bag',    n:'Bag / saddle',   id:'T' + t + '_BAG', req:true },
       { k:'potion', n:'Energy potion',  id:'T' + t + '_POTION_ENERGY', req:false }
     ];
-    if (prof === 'fish') list[0] = { k:'rod', n:'Fishing rod', id:'T' + t + '_ROD_FISHING', req:true };
+    if (prof === 'fish') list[0] = { k:'rod', n:'Fishing rod', id:'T' + t + '_2H_TOOL_FISHINGROD', req:true };
     return list;
   }
 
@@ -2190,16 +2186,23 @@
 
   /* harga jual hasil gather di kota tujuan (BZ = Caerleon) */
   function runSell() {
-    var chain = M.CHAINS.filter(function (c) { return c.key === RUN.prof; })[0];
-    if (!chain) return null;
-    var rawId = M.rawId(RUN.tier, chain);
+    var rawId;
+    if (RUN.prof === 'fish') {
+      /* mancing: pakai ikan air tawar umum di tier yang dipilih */
+      rawId = 'T' + RUN.tier + '_FISH_FRESHWATER_ALL_COMMON';
+    } else {
+      var chain = M.CHAINS.filter(function (c) { return c.key === RUN.prof; })[0];
+      if (!chain) return null;
+      rawId = M.rawId(RUN.tier, chain);
+    }
     var city = RUN.zone === 'bz' ? 'Caerleon' : CFG.city;
     var rows = M.byCity(rawId), best = null, i;
+    if (!rows.length) return null;
     for (i = 0; i < rows.length; i++) {
       if (rows[i].city !== city) continue;
       if (rows[i].buy > 0 && (!best || rows[i].buy > best.px)) best = { city:city, px:rows[i].buy };
     }
-    /*BZ: kalau tidak ada buy order di Caerleon, cari kota terdekat sebagai fallback */
+    /* BZ: kalau tidak ada buy order di Caerleon, ambil kota lain sebagai fallback */
     if (!best && RUN.zone === 'bz') {
       var alt = null;
       for (i = 0; i < rows.length; i++) {
@@ -2245,24 +2248,44 @@
     };
   }
 
+  /* bagian mana yang paling besar risiko_loss, supaya sarannya konkret */
+  function runBigLever(c) {
+    var byGear = c.gearRisk >= c.capital;
+    var need = c.perNode > 0 ? Math.ceil(c.atRisk / c.perNode) : 0;
+    if (byGear) {
+      return 'Porsi terbesar: gear ' + money(c.gearRisk) +
+        '. Turunkan gear (mount atau armor lebih murah), atau matikan toggle "gear as capital berisiko" ' +
+        'kalau barangmu memang tidak dibawa ke zona.';
+    }
+    return 'Porsi terbesar: isi tas ' + money(c.capital) +
+      (need > c.nodes ? '. Kurangi nodes per run ke sekitar ' + silver(need) +
+        ' supaya untung per run menutup modal.'
+        : '. Turunkan modal yang dibawa atau cari kota jual dengan buy order lebih tinggi.');
+  }
+
   function runVerdictText(c) {
-    if (!c.sell) return { k:'No sell price', h:'Belum ada harga jual', s:'Belum ada buy order untuk hasil gather ini di kota tujuan.' };
+    if (!c.sell) {
+      return { k:'No sell price', h:'Belum ada harga jual',
+        s:'Belum ada buy order untuk hasil gather ini di kota tujuan. Coba tier atau profesi lain.' };
+    }
     if (c.verdict === 'safe') {
       return { k:'Go', h:'Sekali mati masih tertutup',
-        s:'Capital yang dibawa (' + money(c.atRisk) + ') di bawah untung per jalan (' + money(c.netTrip) + ').' };
+        s:'Capital ' + money(c.atRisk) + ' masih di bawah untung per jalan ' + money(c.netTrip) +
+          '. Satu kematian tidak menghapus hasil run.' };
     }
     if (c.verdict === 'ok') {
       return { k:'Go carefully', h:'Bawa lebih sedikit',
-        s:'Batas aman ' + money(c.ceiling) + '. Capital sekarang ' + money(c.atRisk) +
-          ' — turunkan isi tas supaya tidak rugi kalau mati.' };
+        s:'Batas aman ' + money(c.ceiling) + ', capital sekarang ' + money(c.atRisk) + '. ' + runBigLever(c) };
     }
     return { k:'Too risky', h:'Capital terlalu besar',
       s:'Capital ' + money(c.atRisk) + ' jauh di atas untung per jalan ' + money(c.netTrip) +
-        '. Satu kematian menghapus ' + Math.round(c.atRisk / Math.max(1, c.netTrip)) + 'Cx hasil run.' };
+        (c.netTrip > 0
+          ? '. Satu kematian menghapus ' + Math.round(c.atRisk / c.netTrip) + 'x hasil run.'
+          : '. Jalinan ini belum untung mesmo tanpa kematian.') +
+        ' ' + runBigLever(c) };
   }
 
-  /* helper kecil supaya string hero tetap ringkas */
-  function renderRun() {
+  function renderRun(skipGear) {
     var c = runCalc();
     var gear = runGear(RUN.tier, RUN.prof);
     var zoneName = RUN.zone === 'bz' ? 'Black Zone (Caerleon)' : 'Red Zone';
@@ -2297,25 +2320,27 @@
       '% · ' + silver(Math.round(c.trips * 10) / 10) + ' trip per jam</span>' +
       '<span class="hero-go">Isi biaya alat di bawah, atau pakai Sync price untuk mengambil harga pasar.</span>';
 
-    /* gear */
-    var gearHtml = gear.map(function (g) {
+    /* gear: skipGear dipakai saat user mengetik harga, supaya fokus tidak hilang */
+    var gearHtml = skipGear ? '' : gear.map(function (g) {
       var v2 = num(RUN.gear[g.k]);
       var mk = runMarketPrice(g.id);
-      return '<div class="row" style="grid-template-columns:none">' +
+      return '<div class="row gear-row">' +
         '<span class="r-main">' +
         '<span class="r-tag">' + (g.req ? 'WAJIB' : 'optional') + '</span>' +
         '<span class="r-name">' + esc(g.n) + '</span>' +
         '<span class="r-how">' + esc(g.id || 'manual') + '</span>' +
         (g.req ? '' : '<span class="badge deep">optional</span>') +
-        '</span><span class="r-right" style="align-items:center">' +
+        '</span><span class="r-right gear-input">' +
         '<input type="number" class="run-input" data-gear="' + esc(g.k) + '" value="' +
         (v2 || '') + '" placeholder="' + (mk || 0) + '" step="1" min="0" inputmode="numeric">' +
         '</span><span class="r-grid"><span class="r-cell">' +
         '<span class="r-cell-k">Market median</span><span class="r-cell-v">' +
         (mk ? money(mk) : '—') + '</span></span></span></div>';
     }).join('');
-    $('runGearList').innerHTML = gearHtml ||
-      '<div class="state">Pilih profesi dulu.</div>';
+    if (!skipGear) {
+      $('runGearList').innerHTML = gearHtml ||
+        '<div class="state">Pilih profesi dulu.</div>';
+    }
     $('runGearTotal').textContent = money(runGearTotal());
 
     /* breakdown */
@@ -2339,7 +2364,7 @@
       '<dt>Kerugian per jam</dt><dd class="no">−' + money(c.loss) + '</dd>' +
       '<dt>Net per jam (real)</dt><dd class="' + (c.real >= 0 ? 'ok' : 'no') + '">' + money(c.real) + '</dd>' +
       '<dt>Break-even 1 kematian</dt><dd class="wa">' + money(c.breakEven) + '</dd>' +
-      '<dt>Batas aman ' + silver(c.safeRuns) + '×</dt><dd class="ok">' + money(c.ceiling) + '</dd>' +
+      '<dt>Batas aman ' + silver(c.runs) + 'x</dt><dd class="ok">' + money(c.ceiling) + '</dd>' +
       '</dl>';
 
     /* langkah */
@@ -2600,7 +2625,7 @@
       $('runFoodCost').value = RUN.foodCost;
       $('runTrans').value = RUN.transportPerTrip;
       $('runDeaths').value = RUN.deathsPerHour;
-      $('runCapital').value = RUN.capitalAtRisk;
+      $('runCapital').value = RUN.capitalAtRisk || '';
       $('runSafe').value = RUN.safeRuns;
       $('runGearRisk').checked = !!RUN.gearAtRisk;
     }
@@ -2660,7 +2685,7 @@
       if (!i.dataset || !i.dataset.gear) return;
       RUN.gear[i.dataset.gear] = num(i.value);
       runSave();
-      renderRun();
+      renderRun(true);
     });
 
     $('runSync').addEventListener('click', function () {

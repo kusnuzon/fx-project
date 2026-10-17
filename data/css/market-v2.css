@@ -1016,3 +1016,17 @@ body.sheet-open { overflow: hidden; }
 }
 .run-input::placeholder { color: var(--dim); }
 .run-input:focus { border-color: var(--accent); outline: none; }
+
+/* ---------- run: baris gear ---------- */
+.gear-row .r-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.gear-row .r-grid { grid-column: auto; }
+@media (min-width: 720px) {
+  .gear-row { grid-template-columns: 92px minmax(160px, 1.4fr) 132px 116px; }
+  .gear-row .r-main { display: contents; }
+  .gear-row .r-grid { grid-column: 3; }
+  .gear-row .r-right { grid-column: 4; }
+}
