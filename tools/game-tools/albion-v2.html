@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Silver Ops v2 – live Albion Online market scanner</title>
+  <meta name="theme-color" content="#05070a">
+  <meta name="description" content="Scanner peluang silver Albion Online dari harga pasar live: flip, refine, transmute, ROI, modal, dan silver per jam.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../data/css/market-v2.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===== header ===== -->
+    <header class="hdr">
+      <svg class="hdr-mark" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false">
+        <path d="M10 1.6l7.2 4.2v8.4L10 18.4l-7.2-4.2V5.8L10 1.6z" stroke-linejoin="round"/>
+        <path d="M6 13.2l2.8-3.8 2 2 3.2-4.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="hdr-txt">
+        <span class="hdr-title">Silver Ops</span>
+        <span class="hdr-sub">live profit scanner · build dari nol</span>
+      </span>
+      <span class="hdr-feed">
+        <span class="dot" id="feedDot" aria-hidden="true"></span>
+        <span class="pill" id="feedPill">SYNC</span>
+        <button type="button" class="btn ghost" id="feedRefresh" style="min-height:40px;padding:6px 10px">↻</button>
+      </span>
+    </header>
+
+    <p class="hint" id="feedNote">menyambung ke market…</p>
+    <div class="state banner" id="offBanner" style="display:none">
+      Feed live tidak bisa diakses dari jaringan ini (CORS / DNS / blokir). Angka memakai cache terakhir
+      atau diisi manual — semua kalkulator tetap jalan.
+    </div>
+
+    <!-- ===== nav ===== -->
+    <nav class="nav" role="tablist" aria-label="Modul">
+      <button type="button" data-v="scan" role="tab" aria-controls="view-scan" aria-selected="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="10" cy="10" r="7.4"/><circle cx="10" cy="10" r="3"/>
+          <path d="M10 10l6.4-3.2" stroke-linecap="round"/>
+        </svg>Scan
+      </button>
+      <button type="button" data-v="refine" role="tab" aria-controls="view-refine" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M10 2.6l7.2 4-7.2 4-7.2-4 7.2-4z" stroke-linejoin="round"/>
+          <path d="M2.8 11.4l7.2 4 7.2-4" stroke-linejoin="round"/>
+        </svg>Refine
+      </button>
+      <button type="button" data-v="flip" role="tab" aria-controls="view-flip" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M3 7.5h12M12 4l3.4 3.5L12 11" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17 12.5H5M8 9l-3.4 3.5L8 16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>Flip
+      </button>
+      <button type="button" data-v="session" role="tab" aria-controls="view-session" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="10" cy="10" r="7.4"/><path d="M10 5.6V10l3 2" stroke-linecap="round"/>
+        </svg>Sesi
+      </button>
+      <button type="button" data-v="search" role="tab" aria-controls="view-search" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="8.8" cy="8.8" r="5.2"/><path d="M12.8 12.8l4 4" stroke-linecap="round"/>
+        </svg>Cari
+      </button>
+    </nav>
+
+    <!-- ===== 1 SCAN ===== -->
+    <section class="view on" id="view-scan" role="tabpanel" aria-label="Scanner">
+
+      <div class="stats">
+        <div class="stat pos"><span class="stat-k">ROI terbaik</span><span class="stat-v" id="stRoi">—</span><span class="stat-s" id="stRoiS">tunggu feed</span></div>
+        <div class="stat"><span class="stat-k">Profit terbaik</span><span class="stat-v" id="stProfit">—</span><span class="stat-s" id="stProfitS">unit</span></div>
+        <div class="stat"><span class="stat-k">Perkiraan / jam</span><span class="stat-v" id="stSph">—</span><span class="stat-s" id="stSphS">—</span></div>
+        <div class="stat"><span class="stat-k">Item dipantau</span><span class="stat-v" id="stItems">—</span><span class="stat-s" id="stItemsS">feed</span></div>
+      </div>
+
+      <div class="seg" id="scanSeg" role="tablist" aria-label="Strategi">
+        <button type="button" data-s="flip" role="tab" aria-selected="true">Flip</button>
+        <button type="button" data-s="refine" role="tab" aria-selected="false">Refine</button>
+        <button type="button" data-s="spread" role="tab" aria-selected="false">Transmute</button>
+      </div>
+
+      <div class="tools" id="chainChips" role="group" aria-label="Material">
+        <button type="button" class="chip" data-c="all" aria-pressed="true">Semua</button>
+        <button type="button" class="chip" data-c="ore" aria-pressed="false">Ore→Bar</button>
+        <button type="button" class="chip" data-c="fiber" aria-pressed="false">Fiber→Cloth</button>
+        <button type="button" class="chip" data-c="hide" aria-pressed="false">Hide→Leather</button>
+        <button type="button" class="chip" data-c="wood" aria-pressed="false">Wood→Plank</button>
+        <button type="button" class="chip" data-c="stone" aria-pressed="false">Stone→Block</button>
+      </div>
+
+      <div class="tools" id="sortChips" role="group" aria-label="Urutkan">
+        <button type="button" class="chip" data-s="roi" aria-pressed="true">Urut: ROI</button>
+        <button type="button" class="chip" data-s="profit" aria-pressed="false">Profit</button>
+        <button type="button" class="chip" data-s="sph" aria-pressed="false">Silver/jam</button>
+        <button type="button" class="chip" data-s="stock" aria-pressed="false">Stok</button>
+        <button type="button" class="chip" id="hideNeg" aria-pressed="true">Hide rugi</button>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Peluang</span>
+        <span class="sec-s" id="scanCount">—</span>
+      </div>
+
+      <div class="list" id="scanList"></div>
+
+      <div class="btn-row" id="scanPick" style="margin-top:12px;display:none">
+        <span class="hint" style="grid-column:1/-1">terpilih: <b id="scanPickName">—</b></span>
+        <button type="button" class="btn primary" id="scanToFlip">Isi ke Flip</button>
+        <button type="button" class="btn" id="scanToRefine">Isi ke Refine</button>
+      </div>
+
+      <p class="note">
+        Harga = rata-rata seluruh kota dari API market. <b>Jual</b> adalah order jual terendah (biaya saat kamu
+        beli instan), <b>Beli</b> adalah order beli tertinggi (pendapatan saat kamu jual instan). Sudah dipotong
+        tax + setup sesuai parameter di bawah. Baris dengan stok kecil ditandai <span class="badge thin">tipis</span> —
+        watch out, harga bisa hilang sebelum order kamu masuk. Peluang dibuang otomatis kalau ada harga bahan yang
+        belum ada di feed, supaya ROI murah palsu tidak pernah muncul.
+      </p>
+    </section>
+
+    <!-- ===== 2 REFINE ===== -->
+    <section class="view" id="view-refine" role="tabpanel" aria-label="Kalkulator refine">
+      <div class="sec"><span class="sec-h">Kalkulator refine</span><span class="sec-s">biaya bahan live + RRR</span></div>
+
+      <div class="form">
+        <div class="f2">
+          <div>
+            <label class="lbl" for="rfChain">Material</label>
+            <select id="rfChain">
+              <option value="ore">Ore → Bar</option>
+              <option value="fiber">Fiber → Cloth</option>
+              <option value="hide">Hide → Leather</option>
+              <option value="wood">Wood → Plank</option>
+              <option value="stone">Stone → Block</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="rfTier">Tier output</label>
+            <select id="rfTier">
+              <option value="3">T3</option>
+              <option value="4" selected>T4</option>
+              <option value="5">T5</option>
+              <option value="6">T6</option>
+              <option value="7">T7</option>
+              <option value="8">T8</option>
+            </select>
+          </div>
+        </div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="rfQty">Jumlah unit</label>
+            <input type="number" id="rfQty" value="100" min="1" step="1" inputmode="numeric">
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button type="button" class="btn" id="rfLive" style="width:100%">Cek harga live</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="read" id="rfOut"></div>
+      <p class="note">
+        Model memakai <b>RRR</b> sebagai penghematan bahan: biaya efektif = kebutuhan × (1 − RRR).
+        Resep: T3 butuh 2 raw, T4 2, T5 3, T6 4, T7/T8 5 — dan setiap refined di atas T2 butuh 1 refined tier di bawahnya.
+        Hasil RRR yang dikembalikan game dalam bentuk material tier lebih rendah, jadi harga tiap tier ikut masuk hitungan.
+      </p>
+    </section>
+
+    <!-- ===== 3 FLIP ===== -->
+    <section class="view" id="view-flip" role="tabpanel" aria-label="Kalkulator flip">
+      <div class="sec"><span class="sec-h">Kalkulator flip</span><span class="sec-s" id="flName">belum ada item</span></div>
+
+      <div class="form">
+        <div class="f2">
+          <div>
+            <label class="lbl" for="flBuy">Harga beli / unit</label>
+            <input type="number" id="flBuy" step="any" placeholder="contoh: 1.250" inputmode="decimal">
+          </div>
+          <div>
+            <label class="lbl" for="flSell">Harga jual / unit</label>
+            <input type="number" id="flSell" step="any" placeholder="contoh: 1.600" inputmode="decimal">
+          </div>
+        </div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="flQty">Jumlah unit</label>
+            <input type="number" id="flQty" value="100" min="1" step="1" inputmode="numeric">
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button type="button" class="btn" id="flFromSel" style="width:100%">Isi dari item terpilih</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="read" id="flOut"></div>
+      <p class="note">
+        Spread harus menutup <b>setup fee</b> di kedua sisi plus <b>sales tax</b>. Field
+        <b>break-even</b> memberi tahu harga jual minimum supaya tidak rugi — kalau sudahaut lebih besar dari
+        spread pasar, jangan eksekusi.
+      </p>
+    </section>
+
+    <!-- ===== 4 SESI ===== -->
+    <section class="view" id="view-session" role="tabpanel" aria-label="Pelacak sesi">
+      <div class="sec"><span class="sec-h">Pelacak sesi</span><span class="sec-s">silver nyata vs peluang</span></div>
+
+      <div class="form">
+        <div class="f2">
+          <div>
+            <label class="lbl" for="snAct">Aktivitas</label>
+            <input type="text" id="snAct" placeholder="contoh: refine ore T4 Thetford">
+          </div>
+          <div>
+            <label class="lbl" for="snSilver">Silver bersih</label>
+            <input type="number" id="snSilver" step="any" placeholder="boleh minus" inputmode="decimal">
+          </div>
+        </div>
+        <div class="f2">
+          <div>
+            <label class="lbl" for="snMin">Durasi (menit)</label>
+            <input type="number" id="snMin" value="60" min="1" step="1" inputmode="numeric">
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button type="button" class="btn primary" id="snAdd" style="flex:1">Tambah sesi</button>
+            <button type="button" class="btn danger" id="snClear">Hapus</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" id="snStats"></div>
+      <div class="list" id="snList"></div>
+    </section>
+
+    <!-- ===== 5 CARI ===== -->
+    <section class="view" id="view-search" role="tabpanel" aria-label="Cari item">
+      <div class="sec"><span class="sec-h">Cari item</span><span class="sec-s">senjata, armor, makanan, mount</span></div>
+
+      <div class="form">
+        <div>
+          <label class="lbl" for="seInput">Nama atau id item</label>
+          <input type="text" id="seInput" placeholder="bar, cloth, sword, bag, bread, T6BAR…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="list" id="seList"></div>
+      <p class="note">Ketuk hasil untuk mengirim harga beli &amp; jual ke tab <b>Flip</b>.</p>
+    </section>
+
+    <!-- ===== parameter global ===== -->
+    <details class="form" style="margin-top:32px">
+      <summary style="font-family:var(--f-mono);font-size:var(--fs-13);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer">
+        Parameter biaya &amp; throughput
+      </summary>
+
+      <p class="hint" style="margin-top:12px">
+        Semua angka mengikuti switch ini. Kalau game melakukan patch pada tax atau setup fee, ubah di sini.
+      </p>
+
+      <div class="f2">
+        <label class="switch">Premium (tax 4%)
+          <input type="checkbox" id="cPremium">
+        </label>
+        <label class="switch">Black Market (tax 0%, setup 0%)
+          <input type="checkbox" id="cBM">
+        </label>
+      </div>
+
+      <div class="f2">
+        <label class="switch">Jual pakai sell order (setup fee)
+          <input type="checkbox" id="cSell">
+        </label>
+        <label class="switch">Beli pakai buy order (setup fee)
+          <input type="checkbox" id="cBuy">
+        </label>
+      </div>
+
+      <div class="f2">
+        <div>
+          <label class="lbl" for="cSetup">Setup fee (%)</label>
+          <input type="number" id="cSetup" step="any" inputmode="decimal">
+        </div>
+        <div>
+          <label class="lbl" for="cYield">Yield bonus lokasi</label>
+          <select id="cYield">
+            <option value="58">Kota 58</option>
+            <option value="40">Island 40</option>
+            <option value="18">Royal 18</option>
+            <option value="15">Hideout BZ 15</option>
+            <option value="0">Nihil 0</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="f2">
+        <label class="switch">Pakai focus (+59)
+          <input type="checkbox" id="cFocus">
+        </label>
+        <div>
+          <label class="lbl" for="cThru">Throughput (unit / jam)</label>
+          <input type="number" id="cThru" step="1" min="0" inputmode="numeric">
+        </div>
+      </div>
+    </details>
+
+    <footer class="ftr">
+      Silver Ops v2 · data dari API market Albion · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+    </footer>
+  </div>
+
+  <script src="../../data/js/albion-market.js"></script>
+  <script src="../../data/js/albion-v2.js"></script>
+</body>
+</html>
