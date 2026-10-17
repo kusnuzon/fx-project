@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.3';
+  var BUILD = '2.4';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -26,7 +26,7 @@
     view: 'scan', mode: 'plan', strategy: 'flip', chain: 'ore', tier: 4,
     planFilter: 'all', planSort: 'sph',
     sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
-    selected: null, query: '', left: 60, searching: false
+    selected: null, query: '', left: 60, searching: false, zTier: 3
   };
 
   var sessions = [];
@@ -548,6 +548,218 @@
     }
   }
 
+  /* ---------- modal 0:-what to do when capital is 0 ----------
+     Modal 0 for everything here: goods come from nodes or rivers ourselves,
+     so what gets compared is the city with the highest INSTANT sell
+     (highest buy order). Bonus refine = refined instant - raw instant
+     in the same city. Negative means refining just wastes time. */
+  var ZERO_PROF = {
+    ore:   { prof:'Mining',           doWhat:'Mine ore' },
+    wood:  { prof:'Logging',          doWhat:'Chop wood' },
+    fiber: { prof:'Gather/Herbalist', doWhat:'Harvest fiber' },
+    hide:  { prof:'Skinning',         doWhat:'Skin animals' },
+    stone: { prof:'Stonecutting',     doWhat:'Mine stone' }
+  };
+  /* average units per node: 1-3 + lucky strike */
+  var NODE_YIELD = 2.6;
+
+  /* best city by a price field, already net of tax/setup */
+  function bestCity(rows, field) {
+    var best = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i][field] <= 0) continue;
+      var v = netSell(rows[i][field]);
+      if (!best || v > best.v) best = { city:rows[i].city, v:v, px:rows[i][field] };
+    }
+    return best;
+  }
+
+  function zeroChain(ch, t) {
+    var rawId = M.rawId(t, ch), refId = M.refId(t, ch);
+    var rawI = bestCity(M.byCity(rawId), 'buy');
+    var refI = bestCity(M.byCity(refId), 'buy');
+    if (!rawI && !refI) return null;
+
+    /* Bonus refine per kota. Raw jadi opportunity cost: pakai buy order kalau
+       ada, kalau tidak pakai sell order supaya premium tidak terlihat murah
+       palsu di kota yang buy order bahan mentahnya kosong. */
+    var prem = null;
+    var refRows = M.byCity(refId);
+    for (var i = 0; i < refRows.length; i++) {
+      var e = refRows[i];
+      if (e.buy <= 0) continue;
+      var r = M.at(rawId, e.city);
+      var base = r ? (r.buy > 0 ? r.buy : r.sell) : 0;
+      if (base <= 0) continue;
+      var v = netSell(e.buy) - netSell(base);
+      if (!prem || v > prem.v) prem = { city:e.city, v:v };
+    }
+
+    var prof = ZERO_PROF[ch.key] || { prof:'Gather', doWhat:'Gather' };
+    var rm = M.meta(refId);
+    var doRefine = !!(prem && prem.v > 0);
+    var city, net, how, cells, badges;
+
+    if (doRefine) {
+      city = prem.city;
+      net = netSell(M.at(refId, city).buy);
+      how = prof.doWhat + ' T' + t + ' → refine di ' + city + ', jual instan di sana';
+      badges = [{ cls:'thin', t:'refine untung' }];
+    } else if (rawI) {
+      city = rawI.city;
+      net = rawI.v;
+      how = prof.doWhat + ' T' + t + ' → jual MENTAH instan di ' + city + ', jangan refine';
+      badges = [{ cls:'risk', t:'jangan refine' }];
+    } else {
+      city = refI.city;
+      net = 0;
+      how = prof.doWhat + ' T' + t + ' → belum ada buy order di region ini, refined harus dipasang order dulu';
+      badges = [{ cls:'deep', t:'tidak ada buyer' }];
+    }
+
+    cells = [
+      ['Raw ' + (rawI ? rawI.city : '—'), money(rawI ? rawI.v : 0)],
+      ['Refined ' + (refI ? refI.city : '—'), refI ? money(refI.v) : '—'],
+      ['Bonus refine', prem ? signed(prem.v) : '—']
+    ];
+
+    return {
+      id:refId, kind:'zero', chain:ch.key, tier:t,
+      tag:city, name:rm.label + ' · ' + prof.prof, how:how,
+      profit:net, roi:0, capital:0, sph:net * num(CFG.throughput),
+      head:money(net) + ' /unit',
+      roiTxt:'≈ ' + money(net * NODE_YIELD) + ' /node',
+      badges:badges
+    };
+  }
+
+  /* fishing: needs food + bait, so flagged as not truly 0 capital */
+  function zeroFish(t) {
+    var ids = ['T' + t + '_FISH_FRESHWATER_ALL_COMMON',
+               'T' + t + '_FISH_SALTWATER_ALL_COMMON'];
+    var best = null, side = [];
+    for (var i = 0; i < ids.length; i++) {
+      var b = bestCity(M.byCity(ids[i]), 'buy');
+      side.push(b);
+      if (b && (!best || b.v > best.v)) best = { city:b.city, v:b.v, id:ids[i] };
+    }
+    if (!best) return null;
+    return {
+      id:best.id, kind:'zero-fish', chain:'', tier:t,
+      tag:best.city, name:M.meta(best.id).label + ' · Mancing',
+      how:'Pancing T' + t + ' di ' + best.city + ' → jual instan di sana (butuh makanan)',
+      profit:best.v, roi:0, capital:0, sph:best.v * num(CFG.throughput),
+      head:money(best.v) + ' /unit',
+      roiTxt:'≈ ' + money(best.v * 1.4) + ' /trip',
+      badges:[{ cls:'deep', t:'bukan 0 silver · butuh makanan' }],
+      cells:[
+        ['Air tawar', side[0] ? money(side[0].v) : '—'],
+        ['Air laut', side[1] ? money(side[1].v) : '—'],
+        ['Modal', 'makanan + umpan']
+      ]
+    };
+  }
+
+  function zeroRowHtml(o) {
+    var badges = (o.badges || []).map(function (b) {
+      return '<span class="badge ' + b.cls + '">' + esc(b.t) + '</span> ';
+    }).join('');
+    var cells = o.cells.map(function (c) {
+      return '<span class="r-cell"><span class="r-cell-k">' + esc(c[0]) +
+        '</span><span class="r-cell-v">' + esc(c[1]) + '</span></span>';
+    }).join('');
+    var inner =
+      '<span class="r-main"><span class="r-tag">' + esc(o.tag) + '</span>' +
+        '<span class="r-name">' + esc(o.name) + '</span>' +
+        '<span class="r-how">' + esc(o.how) + '</span>' + badges + '</span>' +
+      '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
+        esc(o.head) + '</span><span class="r-roi">' + esc(o.roiTxt) +
+        ' · ' + money(o.sph) + '/jam</span></span>' +
+      '<span class="r-grid">' + cells + '</span>';
+    return o.chain
+      ? '<button type="button" class="row" data-chain="' + esc(o.chain) +
+        '" data-tier="' + esc(o.tier) + '" data-city="' + esc(o.tag) + '">' + inner + '</button>'
+      : '<div class="row">' + inner + '</div>';
+  }
+
+  function statBox(k, v, s, cls) {
+    return '<div class="stat ' + (cls || '') + '"><span class="stat-k">' + esc(k) +
+      '</span><span class="stat-v">' + esc(v) + '</span><span class="stat-s">' +
+      esc(s) + '</span></div>';
+  }
+
+  function renderZero() {
+    var t = STATE.zTier;
+    var rows = [];
+    M.CHAINS.forEach(function (ch) {
+      var r = zeroChain(ch, t);
+      if (r) rows.push(r);
+    });
+    var fish = zeroFish(t);
+    if (fish) rows.push(fish);
+    rows.sort(function (a, b) { return b.profit - a.profit; });
+
+    var mats = rows.filter(function (r) { return r.kind === 'zero' && r.profit > 0; });
+    var best = mats[0];
+    var premTop = null;
+    mats.forEach(function (r) {
+      if (!r.badges || r.badges[0].cls !== 'thin') return;
+      if (!premTop || r.profit > premTop.profit) premTop = r;
+    });
+
+    var st = M.status();
+    $('zeroStats').innerHTML =
+      statBox('Kota acuan', best ? best.tag : '—', best ? 'tier T' + t : 'tunggu feed', 'pos') +
+      statBox('Per node', best ? money(best.profit * NODE_YIELD) : '—',
+        best ? '≈ ' + silver(NODE_YIELD) + ' unit/node' : 'tunggu feed') +
+      statBox('Refine untung', premTop ? premTop.tag : '—',
+        premTop ? 'premium paling tinggi T' + t : 'jangan refine dulu') +
+      statBox('Item dipantau', silver(st.rows), M.servingLabel());
+
+    var hero = $('zeroHero');
+    if (!best) {
+      hero.innerHTML =
+        '<span class="hero-k">Belum ada data tier ini</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Feed belum punya harga T' + t + ' di ' + esc(M.regionLabel()) +
+        '. Ganti region di atas atau pilih tier lain.</span>';
+    } else {
+      var gain = best.badges && best.badges[0].cls === 'thin' && best.profit > 0
+        ? ' · lebih untung dari jual mentah'
+        : ' · sama saja nilainya dengan jual mentah';
+      hero.innerHTML =
+        '<span class="hero-k">Lakukan pertama · modal 0</span>' +
+        '<span class="hero-h">' + esc(best.name) + '</span>' +
+        '<span class="hero-s">' + esc(best.how) + '</span>' +
+        '<span class="hero-money">' + money(best.profit * NODE_YIELD) + ' / node</span>' +
+        '<span class="hero-meta">' + money(best.profit) + '/unit' + gain +
+          ' · modal 0 ✦</span>' +
+        '<span class="hero-go">Ketuk baris material di bawah untuk buka kalkulator refine.</span>';
+    }
+
+    $('zCount').textContent = rows.length + ' opsi';
+    $('zList').innerHTML = rows.length
+      ? rows.map(zeroRowHtml).join('')
+      : '<div class="state">Belum ada harga T' + t + ' di region ini. Ganti region atau tier.</div>';
+
+    var cae = 'Caerleon';
+    var caeOk = rows.some(function (r) { return r.tag === cae; });
+    var steps = [
+      ['Ambil quest kota + system quest', 'silver dan item gratis — sumber terbaik saat modal 0'],
+      ['Ambil mount gratis Crypt of the Immortals',
+        'transport ke ' + cae + (caeOk ? ' jadi 0 silver, refine + jual di sana tanpa ongkos' : ' gratis')],
+      ['Gather sesuai alat yang dipakai',
+        best ? best.how : 'pilih tier di atas sesuai alatmu'],
+      ['Naik ke node T3 setelah modal sekitar 5.000',
+        premTop ? 'refine di ' + premTop.tag + ' = ' + money(premTop.profit) + '/unit, premium tertinggi di T' + t
+                : 'di T' + t + ' belum ada kota dengan premium refine positif — jual mentah dulu'],
+      ['Jangan', 'refine T1–T2 (premium negatif), flip tanpa modal, farming T4 di Caerleon sebelum gear 4.1']
+    ];
+    $('zSteps').innerHTML = steps.map(function (s, i) {
+      return '<li><b>' + (i + 1) + '</b> <b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
+    }).join('');
+  }
+
   function renderRefine() {
     var chain = M.CHAINS.filter(function (c) { return c.key === STATE.chain; })[0] || M.CHAINS[0];
     var tier = STATE.tier;
@@ -696,7 +908,7 @@
   }
 
   /* ---------- shell ---------- */
-  var VIEWS = ['scan', 'refine', 'flip', 'session', 'search'];
+  var VIEWS = ['scan', 'zero', 'refine', 'flip', 'session', 'search'];
 
   function setView(v) {
     STATE.view = v;
@@ -714,6 +926,7 @@
 
   function renderAll() {
     if (STATE.view === 'scan') renderScan();
+    else if (STATE.view === 'zero') renderZero();
     else if (STATE.view === 'refine') renderRefine();
     else if (STATE.view === 'flip') renderFlip();
     else if (STATE.view === 'session') renderSession();
@@ -869,6 +1082,32 @@
         x.setAttribute('aria-pressed', String(x === c));
       });
       renderPlan();
+    });
+
+    $('zTier').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.zTier = num(c.dataset.zt) || 3;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderZero();
+    });
+
+    $('zList').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      STATE.chain = b.dataset.chain;
+      STATE.tier = num(b.dataset.tier);
+      $('rfChain').value = STATE.chain;
+      $('rfTier').value = String(STATE.tier);
+      /* buka kalkulator di kota yang direkomendasikan baris itu */
+      if (b.dataset.city && M.ROYALS.indexOf(b.dataset.city) > -1 && b.dataset.city !== CFG.city) {
+        CFG.city = b.dataset.city;
+        saveCfg();
+        fillCfgInputs();
+      }
+      setView('refine');
     });
 
     $('scanSeg').addEventListener('click', function (e) {

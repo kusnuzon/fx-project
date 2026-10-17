@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.3">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.4">
 </head>
 <body>
   <div class="app">
@@ -48,6 +48,12 @@
           <circle cx="10" cy="10" r="7.4"/><circle cx="10" cy="10" r="3"/>
           <path d="M10 10l6.4-3.2" stroke-linecap="round"/>
         </svg>Scan
+      </button>
+      <button type="button" data-v="zero" role="tab" aria-controls="view-zero" aria-selected="false">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M10 2.6l7.2 4-7.2 4-7.2-4 7.2-4z" stroke-linejoin="round"/>
+          <path d="M6.4 8.8v2.4c0 1.2 1.6 2.2 3.6 2.2s3.6-1 3.6-2.2V8.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>Modal 0
       </button>
       <button type="button" data-v="refine" role="tab" aria-controls="view-refine" aria-selected="false">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -202,7 +208,45 @@
       </p>
     </section>
 
-    <!-- ===== 2 REFINE ===== -->
+    <!-- ===== 2 MODAL 0 ===== -->
+    <section class="view" id="view-zero" role="tabpanel" aria-label="Modal 0">
+      <div class="stats" id="zeroStats"></div>
+
+      <div class="hero" id="zeroHero"></div>
+
+      <div class="tools" id="zTier" role="group" aria-label="Tier hasil gather">
+        <button type="button" class="chip" data-zt="2" aria-pressed="false">Tier 2</button>
+        <button type="button" class="chip" data-zt="3" aria-pressed="true">Tier 3</button>
+        <button type="button" class="chip" data-zt="4" aria-pressed="false">Tier 4</button>
+        <button type="button" class="chip" data-zt="5" aria-pressed="false">Tier 5</button>
+        <button type="button" class="chip" data-zt="6" aria-pressed="false">Tier 6</button>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Per profesi · modal 0</span>
+        <span class="sec-s" id="zCount">—</span>
+      </div>
+
+      <p class="note" id="zNote">
+        Semua baris di sini modalnya <b>0</b> — barangnya kamu dapat sendiri dari node atau sungai,
+        jadi yang dibandingkan adalah kota dengan <b>jual instan</b> (buy order tertinggi) paling tinggi.
+        <b>Bonus refine</b> = selisih refined instan vs mentah instan di kota yang sama.
+        Kalau minus, refining cuma buang waktu — jual mentah.
+      </p>
+
+      <div class="list" id="zList"></div>
+
+      <div class="sec"><span class="sec-h">Urutan hari ini</span><span class="sec-s">modal 0</span></div>
+      <ol class="steps" id="zSteps"></ol>
+
+      <p class="note">
+        Angka per node memakai asumsi <b>2,6 unit</b> per node (1–3 unit + lucky strike). Refining T3 ke atas
+        memakai focus; T1–T2 gratis tapi premium-nya hampir selalu negatif. Tier 1 tidak dipantau
+        (watchlist mulai T2). Baris material bisa diketuk untuk membuka kalkulator refine yang sudah terisi.
+      </p>
+    </section>
+
+    <!-- ===== 3 REFINE ===== -->
     <section class="view" id="view-refine" role="tabpanel" aria-label="Kalkulator refine">
       <div class="sec"><span class="sec-h">Kalkulator refine</span><span class="sec-s">biaya bahan live + RRR</span></div>
 
@@ -221,6 +265,7 @@
           <div>
             <label class="lbl" for="rfTier">Tier output</label>
             <select id="rfTier">
+              <option value="2">T2</option>
               <option value="3">T3</option>
               <option value="4" selected>T4</option>
               <option value="5">T5</option>
@@ -408,11 +453,11 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.3 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2.4 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.3"></script>
-  <script src="../../data/js/albion-v2.js?v=2.3"></script>
+  <script src="../../data/js/albion-market.js?v=2.4"></script>
+  <script src="../../data/js/albion-v2.js?v=2.4"></script>
 </body>
 </html>
