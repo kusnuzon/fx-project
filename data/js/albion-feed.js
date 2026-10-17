@@ -1,177 +1,232 @@
 /* =============================================
-   AOFeed – Albion Online live market feed
-   Public Gameforge API, keyless, CORS-permissive.
-   Berisi fallback multi-host, cache localStorage,
-   dan status transparan supaya UI tetap jalan
-   saat feed tidak bisa diakses.
+   AOFeed – live market feed untuk halaman Albion (v1)
+   Sumber: Albion Online Data Project (keyless, CORS *)
+   Sumber lama game.albion-online.com sudah mati —
+   sertifikat TLS-nya invalid global, jadi tidak bisa dipakai.
+   API publik v3 dipakai ulang di sini, DI-flatten per item
+   supaya kontrak get()/item() milik halaman v1 tidak berubah.
    ============================================= */
 (function (global) {
   'use strict';
 
   var HOSTS = [
-    'https://game.albion-online.com/api/game/market/stats',
-    'https://west.albion-online.com/api/game/market/stats',
-    'https://east.albion-online.com/api/game/market/stats',
-    'https://south.albion-online.com/api/game/market/stats'
+    'https://west.albion-online-data.com/api/v2/stats/prices/',
+    'https://east.albion-online-data.com/api/v2/stats/prices/',
+    'https://europe.albion-online-data.com/api/v2/stats/prices/'
   ];
-
-  var CACHE_KEY = 'ao_market_v1';
-  var CACHE_TTL = 10 * 60 * 1000;
-  var TIMEOUT = 7000;
+  var TIMEOUT = 12000;
   var AUTO_REFRESH = 60 * 1000;
+  var CACHE_TTL = 10 * 60 * 1000;
+  var CACHE_KEY = 'ao_market_v3_flat';
+  var BATCH = 90;
 
-  var TYPES = {
-    ORE: 'Ore', FIBER: 'Fiber', HIDE: 'Hide', WOOD: 'Wood', STONE: 'Stone',
-    BAR: 'Bar', CLOTH: 'Cloth', LEATHER: 'Leather', PLANK: 'Plank', BLOCK: 'Block'
-  };
+  var CHAINS = [
+    { key:'ore',   raw:'ORE',   refs:['BARS', 'BAR'] },
+    { key:'fiber', raw:'FIBER', refs:['CLOTH'] },
+    { key:'hide',  raw:'HIDE',  refs:['LEATHER'] },
+    { key:'wood',  raw:'WOOD',  refs:['PLANKS'] },
+    { key:'stone', raw:'STONE', refs:['BLOCKS'] }
+  ];
 
   var RAW = ['ORE', 'FIBER', 'HIDE', 'WOOD', 'STONE'];
   var REF = ['BAR', 'CLOTH', 'LEATHER', 'PLANK', 'BLOCK'];
 
-  var state = { data: {}, updated: 0, source: '', state: 'idle', error: '' };
+  var TYPES = {
+    ORE:'Ore', FIBER:'Fiber', HIDE:'Hide', WOOD:'Wood', STONE:'Stone',
+    BAR:'Bar', BARS:'Bar', CLOTH:'Cloth', CLOTHS:'Cloth', LEATHER:'Leather',
+    LEATHERS:'Leather', PLANK:'Plank', PLANKS:'Plank', BLOCK:'Block', BLOCKS:'Block'
+  };
+
+  var S = { data:{}, updated:0, source:'', state:'idle', error:'' };
   var listeners = [];
   var inflight = null;
 
-  /* ---------- helpers ---------- */
-  function itemMeta(id) {
-    var m = /^T(\d)([A-Z]+)$/.exec(id);
-    if (!m) return { id: id, tier: 0, type: '', label: id, cat: 'other' };
-    var type = m[2];
-    var cat = RAW.indexOf(type) > -1 ? 'raw' : REF.indexOf(type) > -1 ? 'refined' : 'other';
-    return {
-      id: id, tier: parseInt(m[1], 10), type: type,
-      label: (TYPES[type] || type) + ' T' + m[1], cat: cat
-    };
-  }
-
-  function num(v) {
+  function clean(v) {
     var n = parseFloat(v);
-    return isFinite(n) && n > 0 ? n : 0;
+    if (!isFinite(n) || n <= 0 || n === 999999) return 0;
+    return n;
   }
 
-  /*_stats accepts {items:[…]} and {items:{ID:{…}}} */
-  function normalise(payload) {
-    var out = {};
-    if (!payload) return out;
-    var items = payload.items || payload.data || payload;
-    if (Array.isArray(items)) {
-      items.forEach(function (p) {
-        if (!p || !p.item_id) return;
-        out[p.item_id] = pick(p);
-      });
-    } else if (items && typeof items === 'object') {
-      Object.keys(items).forEach(function (id) {
-        var p = items[id] || {};
-        p.item_id = p.item_id || id;
-        out[p.item_id] = pick(p);
-      });
+  /* id yang diminta API + alias tanpa underscore yang dipakai halaman */
+  function watchIds() {
+    var pairs = [];
+    CHAINS.forEach(function (c) {
+      for (var t = 2; t <= 8; t++) {
+        pairs.push({ api:'T' + t + '_' + c.raw, alias:'T' + t + c.raw });
+        c.refs.forEach(function (r) {
+          pairs.push({ api:'T' + t + '_' + r, alias:'T' + t + t0(r) });
+        });
+      }
+    });
+    return pairs;
+  }
+
+  /* alias refined: BARS->BAR, CLOTH->CLOTH, PLANKS->PLANK, BLOCKS->BLOCK */
+  function t0(code) {
+    if (code === 'BARS') return 'BAR';
+    if (code === 'CLOTHS') return 'CLOTH';
+    if (code === 'LEATHERS') return 'LEATHER';
+    if (code === 'PLANKS') return 'PLANK';
+    if (code === 'BLOCKS') return 'BLOCK';
+    return code;
+  }
+
+  function absorb(rows) {
+    var n = 0, map = {};
+    watchIds().forEach(function (p) { map[p.api] = p.alias; });
+    if (!rows || !rows.length) return 0;
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r || !r.item_id || !r.city) continue;
+      var sell = clean(r.sell_price_min);
+      var buy  = clean(r.buy_price_max);
+      if (!sell && !buy) continue;
+
+      var apiId = r.item_id;
+      var key = map[apiId];
+      /* id tak dikenal tetap disimpan pakai id aslinya */
+      var store = key || apiId;
+      var prev = S.data[store];
+      /* pilih kota dengan spread paling masuk akal:sell > 0 */
+      if (prev && prev.sell > 0 && sell === 0) continue;
+      S.data[store] = {
+        id: store,
+        sell: sell,
+        buy: buy,
+        avg: (sell && buy) ? (sell + buy) / 2 : (sell || buy),
+        delta: 0,
+        stock: 0,
+        city: r.city
+      };
+      if (key) S.data[apiId] = S.data[store];
+      n++;
     }
-    return out;
-  }
-
-  function pick(p) {
-    return {
-      sell: num(p.price_max_sell || p.sell_price_min || p.sell),  // harga jual order terendah = beli instan
-      buy: num(p.price_min_buy || p.buy_price_max || p.buy),      // harga beli order tertinggi = jual instan
-      avg: num(p.avg_price),
-      delta: parseFloat(p.price_delta_24h_relative != null ? p.price_delta_24h_relative : 0) || 0,
-      stock: num(p.current_stock)
-    };
+    return n;
   }
 
   function readCache() {
     try {
-      var raw = localStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      var c = JSON.parse(raw);
-      if (!c || !c.data) return null;
-      return c;
+      var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      return c && c.data ? c : null;
     } catch (e) { return null; }
   }
 
-  function writeCache(d, source) {
+  function writeCache() {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({
-        data: d, updated: Date.now(), source: source
+        data:S.data, updated:S.updated, source:S.source
       }));
-    } catch (e) { /* storage penuh / private mode */ }
+    } catch (e) {}
   }
 
-  function emit() {
-    listeners.forEach(function (fn) { try { fn(api); } catch (e) {} });
-  }
-
-  function fetchFrom(url) {
+  function fetchOne(url) {
     return new Promise(function (resolve, reject) {
-      if (typeof AbortController === 'undefined') { return reject(new Error('no AbortController')); }
+      if (typeof AbortController === 'undefined') return reject(new Error('AbortController unsupported'));
       var ctl = new AbortController();
       var timer = setTimeout(function () { ctl.abort(); }, TIMEOUT);
-      fetch(url, { signal: ctl.signal, mode: 'cors', cache: 'no-store' })
+      fetch(url, { signal:ctl.signal, mode:'cors', cache:'no-store' })
         .then(function (r) {
           clearTimeout(timer);
-          if (!r.ok) { return reject(new Error('HTTP ' + r.status)); }
+          if (r.status === 429) return reject(new Error('throttle 429'));
+          if (!r.ok) return reject(new Error('HTTP ' + r.status));
           return r.json();
         })
-        .then(resolve)
-        .catch(function (e) { clearTimeout(timer); reject(e); });
+        .then(resolve, function (e) { clearTimeout(timer); reject(e); });
     });
   }
 
-  /* ---------- public API ---------- */
   function load(opts) {
     opts = opts || {};
-    if (inflight && !opts.force) { return inflight; }
+    if (inflight && !opts.force) return inflight;
 
-    var cached = readCache();
-    if (cached && !opts.force) {
-      state.data = cached.data;
-      state.updated = cached.updated;
-      state.source = cached.source;
-      var age = Date.now() - cached.updated;
-      state.state = age < CACHE_TTL ? 'cache' : 'stale';
-      state.error = '';
+    var c = opts.force ? null : readCache();
+    if (c) {
+      S.data = c.data; S.updated = c.updated; S.source = c.source || '';
+      var age = Date.now() - c.updated;
+      S.state = Object.keys(S.data).length ? (age < CACHE_TTL ? 'cache' : 'stale') : 'idle';
     }
-
-    state.state = (Object.keys(state.data).length) ? state.state : 'loading';
+    if (!Object.keys(S.data).length) S.state = 'loading';
     emit();
 
-    var i = 0;
-    function attempt() {
-      if (i >= HOSTS.length) {
-        if (!Object.keys(state.data).length) { state.state = 'offline'; }
-        state.error = state.error || 'Feed live tidak bisa diakses dari jaringan ini.';
-        emit();
-        return Promise.resolve(api);
-      }
-      var url = HOSTS[i++];
-      return fetchFrom(url)
-        .then(function (payload) {
-          var d = normalise(payload);
-          var n = Object.keys(d).length;
-          if (!n) { throw new Error('payload kosong'); }
-          state.data = d;
-          state.updated = Date.now();
-          state.source = url;
-          state.state = 'live';
-          state.error = '';
-          writeCache(d, url);
-          emit();
-          return api;
-        })
-        .catch(function (e) {
-          state.error = (state.error ? state.error + ' ' : '') + e.message;
-          return attempt();
+    var ids = watchIds().map(function (p) { return p.api; });
+    ids = ids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var batches = [];
+    for (var i = 0; i < ids.length; i += BATCH) batches.push(ids.slice(i, i + BATCH));
+
+    var hi = 0;
+    function next(acc) {
+      if (hi >= HOSTS.length) return Promise.resolve(acc);
+      var host = HOSTS[hi];
+      function run() {
+        return batches.reduce(function (ch, batch) {
+          return ch.then(function (a) {
+            return fetchOne(host + batch.join(',') + '.json?qualities=1')
+              .then(function (rows) { a.n += absorb(rows); return a; },
+                    function (e) { a.err = e.message; return a; });
+          });
+        }, Promise.resolve({ n:0, err:'' })).then(function (a) {
+          if (a.n > 0) return { n:a.n, host:host };
+          hi++;
+          return next({ n:0, err:a.err });
         });
+      }
+      return run().then(function (res) {
+        if (res.n > 0) { acc.n += res.n; acc.host = res.host; return acc; }
+        return acc;
+      });
     }
 
-    inflight = attempt().then(function (a) { inflight = null; return a; });
+    inflight = next({ n:0, host:'' }).then(function (acc) {
+      if (acc.n > 0) {
+        S.updated = Date.now();
+        S.source = acc.host;
+        S.state = 'live';
+        S.error = '';
+        writeCache();
+      } else {
+        if (!Object.keys(S.data).length) S.state = 'offline';
+        S.error = S.error || 'Feed tidak bisa diakses dari jaringan ini.';
+      }
+      emit();
+      inflight = null;
+      return api;
+    });
+
     return inflight;
   }
 
-  function get(id) { return state.data[id] || null; }
-  function item(id) { return state.data[id] ? Object.assign(itemMeta(id), state.data[id]) : null; }
-  function status() { return { state: state.state, updated: state.updated, source: state.source, error: state.error }; }
-  function subscribe(fn) { listeners.push(fn); fn(api); return function () { listeners = listeners.filter(function (f) { return f !== fn; }); }; }
+  function itemMeta(id) {
+    var m = /^T(\d)([A-Z]+)$/.exec(id || '');
+    if (!m) return { id:id, tier:0, type:'', label:id || '—', cat:'other' };
+    var type = m[2];
+    var cat = RAW.indexOf(type) > -1 ? 'raw' : REF.indexOf(type) > -1 ? 'refined' : 'other';
+    return {
+      id:id, tier:parseInt(m[1],10), type:type,
+      label:(TYPES[type] || type) + ' T' + m[1], cat:cat
+    };
+  }
+
+  function get(id) { return S.data[id] || null; }
+
+  function item(id) {
+    var p = S.data[id];
+    if (!p) return null;
+    var m = itemMeta(id);
+    m.sell = p.sell; m.buy = p.buy; m.avg = p.avg;
+    m.delta = p.delta; m.stock = p.stock; m.city = p.city;
+    return m;
+  }
+
+  function status() {
+    return { state:S.state, updated:S.updated, source:S.source, error:S.error };
+  }
+
+  function emit() { listeners.forEach(function (fn) { try { fn(api); } catch (e) {} }); }
+
+  function subscribe(fn) { listeners.push(fn); fn(api); return function () {
+    listeners = listeners.filter(function (f) { return f !== fn; });
+  }; }
 
   var api = {
     load: load,
@@ -185,13 +240,9 @@
     RAW: RAW,
     REF: REF,
     list: function () {
-      return Object.keys(state.data)
-        .map(item)
+      return Object.keys(S.data).map(item)
         .filter(function (x) { return x.cat !== 'other' && (x.sell > 0 || x.buy > 0); })
-        .sort(function (a, b) {
-          if (a.tier !== b.tier) return b.tier - a.tier;
-          return a.type.localeCompare(b.type);
-        });
+        .sort(function (a, b) { return b.tier - a.tier || (a.type < b.type ? -1 : 1); });
     }
   };
 

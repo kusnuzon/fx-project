@@ -82,7 +82,8 @@
       <div class="seg" id="scanSeg" role="tablist" aria-label="Strategi">
         <button type="button" data-s="flip" role="tab" aria-selected="true">Flip</button>
         <button type="button" data-s="refine" role="tab" aria-selected="false">Refine</button>
-        <button type="button" data-s="spread" role="tab" aria-selected="false">Transmute</button>
+        <button type="button" data-s="arb" role="tab" aria-controls="view-arb" aria-selected="false">Arbitrase</button>
+        <button type="button" data-s="spread" role="tab" aria-controls="view-spread" aria-selected="false">Transmute</button>
       </div>
 
       <div class="tools" id="chainChips" role="group" aria-label="Material">
@@ -106,6 +107,19 @@
         <span class="sec-h">Peluang</span>
         <span class="sec-s" id="scanCount">—</span>
       </div>
+
+      <p class="note" id="arbNote" style="display:none;color:var(--warn)">
+        Arbitrase = beli di kota termurah, jual di kota termahal, sudah dikurangi biaya transport yang kamu
+        isi di bawah. Pertimbangkan juga risiko ambush di jalan dan waktu tempuh — silver/jam di sini
+        mengasumsikan kamu bisa mengulang siklus secepat throughput.
+      </p>
+
+      <p class="note">
+        Catatan cakupan data: AODP itu crowd-sourced — order baru terkirim kalau ada player yang membuka
+        market item itu di dalam game. Karena itu <b>Bar</b> dan <b>Block</b> sering kosong, sehingga
+        tab Refine biasanya hanya menghasilkan Fiber→Cloth, Hide→Leather, dan Wood→Plank.
+        Item di luar watchlist bisa diambil on-demand lewat tab CARI.
+      </p>
 
       <div class="list" id="scanList"></div>
 
@@ -262,6 +276,21 @@
       </p>
 
       <div class="f2">
+        <div>
+          <label class="lbl" for="cRegion">Region server</label>
+          <select id="cRegion">
+            <option value="west">Americas (West)</option>
+            <option value="east">Asia (East)</option>
+            <option value="europe">Europe</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl" for="cCity">Kota acuan</label>
+          <select id="cCity"></select>
+        </div>
+      </div>
+
+      <div class="f2">
         <label class="switch">Premium (tax 4%)
           <input type="checkbox" id="cPremium">
         </label>
@@ -305,10 +334,21 @@
           <input type="number" id="cThru" step="1" min="0" inputmode="numeric">
         </div>
       </div>
+
+      <div class="f2">
+        <div>
+          <label class="lbl" for="cTransport">Biaya transport (✦ / unit)</label>
+          <input type="number" id="cTransport" step="any" min="0" value="0" inputmode="decimal">
+        </div>
+        <p class="hint" style="align-self:center">
+          Dipakai hanya di tab Arbitrase. Isi perkiraan ongkos + risiko ambush jalan supaya
+          margin tidak terlihat untung padahal tidak selalu aman di perjalanan.
+        </p>
+      </div>
     </details>
 
     <footer class="ftr">
-      Silver Ops v2 · data dari API market Albion · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 

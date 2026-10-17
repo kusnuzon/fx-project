@@ -1,123 +1,127 @@
 /* =============================================
-   AlbionMarket – data layer untuk Silver Ops v2
-   Public Gameforge API, keyless.
-   Tanggung jawab: ambil data, normalisasi, cache,
-   status. Tidak ada kalkulasi bisnis di sini.
+   AlbionMarket v3 — data layer (Albion Online Data Project)
+   ------------------------------------------------------------
+   Endpoint : /api/v2/stats/prices/{ids}.json?qualities=1
+   CORS     : access-control-allow-origin: *  (aman dari browser)
+   Auth     : tidak perlu key
+   Rate     : 180 req/menit, 300 per 5 menit, URL < 4096 char
+              → satu request berisi ~70 id, refresh 60 detik
+   Sentinel : 0 = tidak ada order, 999999 = tidak ada order
+              → keduanya dinormalkan jadi 0 supaya tidak
+                ikut terhitung sebagai harga
+   Data     : PER KOTA (city), jadi arbitrage antar kota
+              bisa dihitung dari sumber yang sama
    ============================================= */
 (function (global) {
   'use strict';
 
-  var HOSTS = [
-    'https://game.albion-online.com/api/game/market/stats',
-    'https://west.albion-online.com/api/game/market/stats',
-    'https://east.albion-online.com/api/game/market/stats',
-    'https://south.albion-online.com/api/game/market/stats'
-  ];
+  var REGIONS = {
+    west:   { host: 'west.albion-online-data.com',   label: 'Americas (West)' },
+    east:   { host: 'east.albion-online-data.com',   label: 'Asia (East)' },
+    europe: { host: 'europe.albion-online-data.com', label: 'Europe' }
+  };
 
-  var CACHE_KEY = 'albion_market_v2';
-  var CACHE_TTL = 10 * 60 * 1000;
-  var TIMEOUT = 7000;
-  var AUTO_REFRESH = 60 * 1000;
+  var ROYALS = ['Caerleon', 'Thetford', 'Lymhurst', 'Fort Sterling',
+                'Martlock', 'Bridgewatch', 'Breitworth'];
+  var EXTRA_CITIES = ['Black Market', 'Brecilien'];
 
   var TIER_MIN = 2, TIER_MAX = 8;
 
-  /* material codes: raw -> refined */
+  /* nama id di AODP tidak seragam: CLOTH/LEATHER tunggal,
+     PLANKS jamak. Raw_material selalu bentuk jamak tunggal. */
   var CHAINS = [
-    { key:'ore',      raw:'ORE',      ref:'BAR',     label:'Ore → Bar' },
-    { key:'fiber',    raw:'FIBER',    ref:'CLOTH',   label:'Fiber → Cloth' },
-    { key:'hide',     raw:'HIDE',     ref:'LEATHER', label:'Hide → Leather' },
-    { key:'wood',     raw:'WOOD',     ref:'PLANK',   label:'Wood → Plank' },
-    { key:'stone',    raw:'STONE',    ref:'BLOCK',   label:'Stone → Block' }
+    { key:'ore',   raw:'ORE',   ref:'BAR',     refA:'BAR',     refB:'BARS',    label:'Ore → Bar' },
+    { key:'fiber', raw:'FIBER', ref:'CLOTH',   refA:'CLOTH',   refB:'CLOTHS',  label:'Fiber → Cloth' },
+    { key:'hide',  raw:'HIDE',  ref:'LEATHER', refA:'LEATHER', refB:'LEATHERS',label:'Hide → Leather' },
+    { key:'wood',  raw:'WOOD',  ref:'PLANK',   refA:'PLANK',   refB:'PLANKS',  label:'Wood → Plank' },
+    { key:'stone', raw:'STONE', ref:'BLOCK',   refA:'BLOCK',   refB:'BLOCKS',  label:'Stone → Block' }
   ];
 
-  var PRETTY = {
-    ORE:'Ore', FIBER:'Fiber', HIDE:'Hide', WOOD:'Wood', STONE:'Stone',
-    BAR:'Bar', CLOTH:'Cloth', LEATHER:'Leather', PLANK:'Plank', BLOCK:'Block',
-    REAGENT:'Reagent', ARCANE:'Arcane', RUNE:'Rune', SOUL:'Soul', RELIC:'Relic'
-  };
+  var CACHE_KEY = 'albion_market_v3';
+  var CACHE_TTL = 10 * 60 * 1000;
+  var TIMEOUT = 12000;
+  var AUTO_REFRESH = 60 * 1000;
+  var BATCH = 90;
 
   /* ---------- state ---------- */
-  var S = { data:{}, updated:0, source:'', status:'idle', error:'' };
+  var S = {
+    region: 'west',
+    data: {},          /* id -> { city -> {buy, sell, buyMax, sellMax} } */
+    fetched: 0,        /* epoch ms */
+    status: 'idle',
+    error: '',
+    lastHost: ''
+  };
   var listeners = [];
   var inflight = null;
 
-  function notify() {
-    for (var i=0;i<listeners.length;i++) {
-      try { listeners[i](api); } catch (e) {}
-    }
+  function notify() { listeners.forEach(function (fn) { try { fn(api); } catch (e) {} }); }
+
+  /* ---------- id ---------- */
+  function rawId(tier, chain) { return 'T' + tier + '_' + chain.raw; }
+  function refId(tier, chain) { return 'T' + tier + '_' + chain.ref; }
+  function refCandidates(tier, chain) {
+    var a = 'T' + tier + '_' + chain.refA, b = 'T' + tier + '_' + chain.refB;
+    return a === b ? [a] : [a, b];
   }
 
-  /* ---------- meta item ---------- */
-  function meta(id) {
-    var m = /^T(\d)_?([A-Z]+)$/.exec(id || '');
-    if (m) {
-      var tier = parseInt(m[1], 10);
-      var code = m[2];
-      var kind = 'other';
-      for (var i=0;i<CHAINS.length;i++) {
-        if (CHAINS[i].raw === code) kind = 'raw';
-        else if (CHAINS[i].ref === code) kind = 'refined';
-      }
-      return {
-        id:id, tier:tier, code:code, kind:kind,
-        label:(PRETTY[code] || prettify(code)) + ' T' + tier,
-        sort:(kind === 'refined' ? 1 : 0)
-      };
-    }
-    var m2 = /^T(\d)_(.+)$/.exec(id || '');
-    if (m2) {
-      return {
-        id:id, tier:parseInt(m2[1],10), code:m2[2], kind:'gear',
-        label:'T' + m2[1] + ' ' + prettify(m2[2]), sort:2
-      };
-    }
-    return { id:id, tier:0, code:id || '', kind:'other', label:prettify(id || '—'), sort:3 };
-  }
-
-  function prettify(s) {
-    return String(s || '')
-      .replace(/^T\d_?/, '')
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
-  }
-
-  /* ---------- normalisasi ---------- */
-  function num(v) {
-    var n = parseFloat(v);
-    return isFinite(n) && n > 0 ? n : 0;
-  }
-
-  function shape(p, id) {
-    return {
-      id: id || p.item_id,
-      sell: num(p.price_max_sell || p.sell_price_min),  // order jual terendah = beli instan
-      buy:  num(p.price_min_buy || p.buy_price_max),   // order beli tertinggi = jual instan
-      avg:  num(p.avg_price),
-      delta: parseFloat(p.price_delta_24h_relative) || 0,
-      stock: num(p.current_stock)
-    };
-  }
-
-  function normalise(payload) {
-    var out = {};
-    if (!payload) return out;
-    var items = payload.items || payload.data || payload;
-    if (Object.prototype.toString.call(items) === '[object Array]') {
-      for (var i=0;i<items.length;i++) {
-        if (items[i] && items[i].item_id) out[items[i].item_id] = shape(items[i]);
-      }
-    } else if (items && typeof items === 'object') {
-      var keys = Object.keys(items);
-      for (var k=0;k<keys.length;k++) {
-        var id = keys[k], p = items[id] || {};
-        out[id] = shape(p, id);
+  /* watchlist: 5 material x 7 tier x (raw + refined) */
+  function watchIds() {
+    var ids = [], t, c;
+    for (c = 0; c < CHAINS.length; c++) {
+      for (t = TIER_MIN; t <= TIER_MAX; t++) {
+        ids.push(rawId(t, CHAINS[c]));
+        ids = ids.concat(refCandidates(t, CHAINS[c]));
       }
     }
+    return ids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+  }
+
+  function splitIds(ids) {
+    var out = [];
+    for (var i = 0; i < ids.length; i += BATCH) out.push(ids.slice(i, i + BATCH));
     return out;
   }
 
+  /* ---------- normalisasi ---------- */
+  function clean(v) {
+    var n = parseFloat(v);
+    if (!isFinite(n) || n <= 0 || n === 999999) return 0;
+    return n;
+  }
+
+  function absorb(rows, into) {
+    if (!rows || !rows.length) return 0;
+    var n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r || !r.item_id || !r.city) continue;
+      var sell = clean(r.sell_price_min);   /* order jual terendah -> biaya beli instan */
+      var buy  = clean(r.buy_price_max);   /* order beli tertinggi ->|jual instan */
+      var sellMax = clean(r.sell_price_max);
+      var buyMin  = clean(r.buy_price_min);
+      if (!sell && !buy) continue;
+      var bag = into[r.item_id] || (into[r.item_id] = {});
+      bag[r.city] = {
+        buy: buy, sell: sell,
+        buyMin: buyMin, sellMax: sellMax,
+        when: r.buy_price_max_date && r.buy_price_max_date > '2000'
+          ? r.buy_price_max_date : (r.sell_price_min_date || '')
+      };
+      n++;
+    }
+    return n;
+  }
+
   /* ---------- cache ---------- */
+  function writeCache() {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        region: S.region, data: S.data, fetched: S.fetched
+      }));
+    } catch (e) {}
+  }
+
   function readCache() {
     try {
       var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
@@ -125,23 +129,16 @@
     } catch (e) { return null; }
   }
 
-  function writeCache() {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        data:S.data, updated:S.updated, source:S.source
-      }));
-    } catch (e) {}
-  }
-
   /* ---------- network ---------- */
-  function fetchOne(url) {
+  function request(url) {
     return new Promise(function (resolve, reject) {
       if (typeof AbortController === 'undefined') return reject(new Error('AbortController unsupported'));
       var ctl = new AbortController();
       var timer = setTimeout(function () { ctl.abort(); }, TIMEOUT);
-      fetch(url, { signal:ctl.signal, mode:'cors', cache:'no-store' })
+      fetch(url, { signal: ctl.signal, mode: 'cors', cache: 'no-store' })
         .then(function (r) {
           clearTimeout(timer);
+          if (r.status === 429) return reject(new Error('throttle 429'));
           if (!r.ok) return reject(new Error('HTTP ' + r.status));
           return r.json();
         })
@@ -151,61 +148,137 @@
 
   function load(opts) {
     opts = opts || {};
+    if (opts.region && opts.region !== S.region) {
+      S.region = opts.region;
+      S.data = {};
+      S.fetched = 0;
+    }
     if (inflight && !opts.force) return inflight;
 
-    var cached = readCache();
-    if (cached && !opts.force) {
-      S.data = cached.data;
-      S.updated = cached.updated;
-      S.source = cached.source || '';
-      var age = Date.now() - cached.updated;
-      S.status = Object.keys(S.data).length ? (age < CACHE_TTL ? 'cache' : 'stale') : 'idle';
+    var c = readCache();
+    if (c && c.region === S.region && !opts.force) {
+      S.data = c.data;
+      S.fetched = c.fetched;
+      var age = Date.now() - c.fetched;
+      S.status = hasAny() ? (age < CACHE_TTL ? 'cache' : 'stale') : 'idle';
     }
-    if (!Object.keys(S.data).length) S.status = 'loading';
+    if (!hasAny()) S.status = 'loading';
     notify();
 
-    var i = 0;
-    function next() {
-      if (i >= HOSTS.length) {
-        if (!Object.keys(S.data).length) S.status = 'offline';
-        S.error = S.error || 'Feed tidak bisa diakses dari jaringan ini.';
-        notify();
-        return Promise.resolve(api);
-      }
-      var url = HOSTS[i++];
-      return fetchOne(url)
-        .then(function (payload) {
-          var d = normalise(payload);
-          if (!Object.keys(d).length) throw new Error('payload kosong');
-          S.data = d;
-          S.updated = Date.now();
-          S.source = url;
-          S.status = 'live';
-          S.error = '';
-          writeCache();
-          notify();
-          return api;
-        })
-        .catch(function (e) {
-          S.error = (S.error ? S.error + ' ' : '') + e.message;
-          return next();
-        });
-    }
+    var host = REGIONS[S.region].host;
+    var batches = splitIds(watchIds());
 
-    inflight = next().then(function (a) { inflight = null; return a; });
+    inflight = batches.reduce(function (chain, batch) {
+      return chain.then(function (acc) {
+        var url = 'https://' + host + '/api/v2/stats/prices/' +
+          encodeURIComponent(batch.join(',')) + '.json?qualities=1';
+        return request(url).then(function (rows) {
+          acc.n += absorb(rows, S.data);
+          return acc;
+        }, function (e) { acc.err = e.message; return acc; });
+      });
+    }, Promise.resolve({ n: 0, err: '' })).then(function (acc) {
+      var n = acc.n;
+      if (n > 0) {
+        S.fetched = Date.now();
+        S.status = 'live';
+        S.error = '';
+        S.lastHost = host;
+        writeCache();
+      } else {
+        if (!hasAny()) S.status = 'offline';
+        S.error = acc.err || S.error || 'tidak ada data di region ini';
+      }
+      notify();
+      inflight = null;
+      return api;
+    });
+
     return inflight;
   }
 
+  /* on-demand: satu item bebas (untuk tab Cari) */
+  function fetchIds(ids) {
+    var host = REGIONS[S.region].host;
+    var uniq = ids.filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+    if (!uniq.length) return Promise.resolve(0);
+    return request('https://' + host + '/api/v2/stats/prices/' +
+      encodeURIComponent(uniq.join(',')) + '.json?qualities=1')
+      .then(function (rows) {
+        var n = absorb(rows, S.data);
+        if (n) writeCache();
+        notify();
+        return n;
+      }, function () { return 0; });
+  }
+
+  function hasAny() {
+    for (var k in S.data) { if (Object.keys(S.data[k]).length) return true; }
+    return false;
+  }
+
   /* ---------- query ---------- */
-  function rows(kindFilter) {
+  function chainOf(code) {
+    for (var i = 0; i < CHAINS.length; i++) {
+      if (CHAINS[i].raw === code || CHAINS[i].ref === code) return CHAINS[i];
+    }
+    return null;
+  }
+
+  /* meta untuk id apa pun, tanpa network */
+  function meta(id) {
+    var m = /^T(\d)_?([A-Z]+)$/.exec(id || '');
+    if (!m) return { id:id, tier:0, code:id, kind:'other', label:String(id || '—') };
+    var tier = parseInt(m[1], 10), code = m[2];
+    var ch = chainOf(code);
+    var kind = !ch ? 'other' : (ch.raw === code ? 'raw' : 'refined');
+    var name = ch
+      ? (ch.raw === code ? ch.raw.charAt(0) + ch.raw.slice(1).toLowerCase()
+                         : ch.ref.charAt(0) + ch.ref.slice(1).toLowerCase())
+      : code.charAt(0) + code.slice(1).toLowerCase();
+    return { id:id, tier:tier, code:code, kind:kind, chain:ch ? ch.key : '',
+             label:name + ' T' + tier };
+  }
+
+  function citiesOf(id) {
+    return Object.keys(S.data[id] || {}).sort();
+  }
+
+  /* ambil entri kota; fallback: kota apa pun yang punya harga */
+  function at(id, city) {
+    var bag = S.data[id];
+    if (!bag) return null;
+    if (city && bag[city]) return Object.assign({ city:city }, bag[city]);
+    var names = Object.keys(bag);
+    for (var i = 0; i < names.length; i++) {
+      if (bag[names[i]].sell || bag[names[i]].buy) {
+        return Object.assign({ city:names[i] }, bag[names[i]]);
+      }
+    }
+    return null;
+  }
+
+  /* id refined mana yang benar-benar punya data (nama id beda-beda) */
+  function refLive(tier, chain, city) {
+    var cands = refCandidates(tier, chain);
+    for (var i = 0; i < cands.length; i++) {
+      var e = at(cands[i], city);
+      if (e && (e.sell || e.buy)) return { id:cands[i], entry:e };
+    }
+    return null;
+  }
+
+  /* daftar item unik yang punya harga, untuk tab Cari */
+  function tracked() {
     var out = [];
     for (var id in S.data) {
-      var p = S.data[id];
-      if (!p.sell && !p.buy) continue;
+      var bag = S.data[id];
+      var cities = Object.keys(bag).filter(function (c) {
+        return bag[c].sell > 0 || bag[c].buy > 0;
+      });
+      if (!cities.length) continue;
       var m = meta(id);
-      if (kindFilter && m.kind !== kindFilter) continue;
-      m.sell = p.sell; m.buy = p.buy; m.avg = p.avg;
-      m.delta = p.delta; m.stock = p.stock;
+      m.cities = cities.sort();
       out.push(m);
     }
     out.sort(function (a, b) {
@@ -215,16 +288,20 @@
     return out;
   }
 
-  function search(q) {
-    q = String(q || '').trim().toLowerCase();
+  function search(q, city) {
+    q = String(q || '').trim().toUpperCase();
     if (q.length < 2) return [];
-    return rows().filter(function (m) {
-      return m.id.toLowerCase().indexOf(q) > -1 || m.label.toLowerCase().indexOf(q) > -1;
-    }).slice(0, 60);
+    return tracked().filter(function (m) {
+      if (m.id.indexOf(q) === 0 || m.label.toUpperCase().indexOf(q) > -1) return true;
+      return false;
+    }).slice(0, 50);
   }
 
   /* ---------- api ---------- */
   var api = {
+    REGIONS: REGIONS,
+    ROYALS: ROYALS,
+    EXTRA_CITIES: EXTRA_CITIES,
     CHAINS: CHAINS,
     TIER_MIN: TIER_MIN,
     TIER_MAX: TIER_MAX,
@@ -232,23 +309,28 @@
     CACHE_TTL: CACHE_TTL,
 
     load: load,
+    fetchIds: fetchIds,
     meta: meta,
+    rawId: rawId,
+    refId: refId,
+    refLive: refLive,
+    at: at,
+    citiesOf: citiesOf,
+    tracked: tracked,
     search: search,
-    rows: rows,
-    get: function (id) {
-      var p = S.data[id];
-      if (!p) return null;
-      var m = meta(id);
-      m.sell = p.sell; m.buy = p.buy; m.avg = p.avg;
-      m.delta = p.delta; m.stock = p.stock;
-      return m;
+    watchIds: watchIds,
+    region: function () { return S.region; },
+    regionLabel: function () {
+      return (REGIONS[S.region] || REGIONS.west).label;
     },
-    id: function (tier, code) { return 'T' + tier + code; },
+    hasAny: hasAny,
 
     status: function () {
+      var n = 0;
+      for (var id in S.data) n += Object.keys(S.data[id]).length;
       return {
-        state:S.status, updated:S.updated, source:S.source,
-        error:S.error, count:Object.keys(S.data).length
+        state:S.status, fetched:S.fetched, error:S.error,
+        host:S.lastHost, rows:n, region:S.region
       };
     },
     subscribe: function (fn) {
