@@ -37,6 +37,10 @@
       atau diisi manual — semua kalkulator tetap jalan.
     </div>
 
+    <!-- ===== region ===== -->
+    <div class="seg" id="regionSeg" role="group" aria-label="Region server" style="margin:12px 0 4px"></div>
+    <p class="hint" id="regionNote" style="text-align:center;margin:0 0 8px"></p>
+
     <!-- ===== nav ===== -->
     <nav class="nav" role="tablist" aria-label="Modul">
       <button type="button" data-v="scan" role="tab" aria-controls="view-scan" aria-selected="true">
@@ -277,17 +281,13 @@
 
       <div class="f2">
         <div>
-          <label class="lbl" for="cRegion">Region server</label>
-          <select id="cRegion">
-            <option value="west">Americas (West)</option>
-            <option value="east">Asia (East)</option>
-            <option value="europe">Europe</option>
-          </select>
-        </div>
-        <div>
           <label class="lbl" for="cCity">Kota acuan</label>
           <select id="cCity"></select>
         </div>
+        <p class="hint" style="align-self:center">
+          Harga tiap region berbeda jauh. Ganti region di tombol paling atas kalau kamu main di
+          server lain — bukan cuma kota.
+        </p>
       </div>
 
       <div class="f2">

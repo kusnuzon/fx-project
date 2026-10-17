@@ -16,10 +16,11 @@
   'use strict';
 
   var REGIONS = {
-    west:   { host: 'west.albion-online-data.com',   label: 'Americas (West)' },
-    east:   { host: 'east.albion-online-data.com',   label: 'Asia (East)' },
-    europe: { host: 'europe.albion-online-data.com', label: 'Europe' }
+    west:   { host: 'west.albion-online-data.com',   label: 'US / Americas (West)', short: 'West (US)' },
+    east:   { host: 'east.albion-online-data.com',   label: 'Asia (East)',         short: 'East (Asia)' },
+    europe: { host: 'europe.albion-online-data.com', label: 'Europe',              short: 'Europe' }
   };
+  var REGION_ORDER = ['west', 'east', 'europe'];
 
   var ROYALS = ['Caerleon', 'Thetford', 'Lymhurst', 'Fort Sterling',
                 'Martlock', 'Bridgewatch', 'Breitworth'];
@@ -46,11 +47,12 @@
   /* ---------- state ---------- */
   var S = {
     region: 'west',
-    data: {},          /* id -> { city -> {buy, sell, buyMax, sellMax} } */
+    data: {},          /* id -> { city -> {buy, sell, buyMin, sellMax} } */
     fetched: 0,        /* epoch ms */
     status: 'idle',
     error: '',
-    lastHost: ''
+    lastHost: '',
+    usedRegion: 'west' /* region yang benar-benar melayani data */
   };
   var listeners = [];
   var inflight = null;
@@ -117,7 +119,8 @@
   function writeCache() {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({
-        region: S.region, data: S.data, fetched: S.fetched
+        region: S.region, usedRegion: S.usedRegion,
+        data: S.data, fetched: S.fetched
       }));
     } catch (e) {}
   }
@@ -155,9 +158,10 @@
     }
     if (inflight && !opts.force) return inflight;
 
-    var c = readCache();
-    if (c && c.region === S.region && !opts.force) {
+    var c = opts.force ? null : readCache();
+    if (c && c.region === S.region) {
       S.data = c.data;
+      S.usedRegion = c.usedRegion || c.region;
       S.fetched = c.fetched;
       var age = Date.now() - c.fetched;
       S.status = hasAny() ? (age < CACHE_TTL ? 'cache' : 'stale') : 'idle';
@@ -165,29 +169,53 @@
     if (!hasAny()) S.status = 'loading';
     notify();
 
-    var host = REGIONS[S.region].host;
-    var batches = splitIds(watchIds());
+    /* region terpilih dulu, sisanya sebagai cadangan supaya
+       halaman tidak pernah kosong hanya karena satu region sepi */
+    var order = [S.region].concat(REGION_ORDER.filter(function (r) { return r !== S.region; }));
+    var ids = watchIds();
+    var batches = splitIds(ids);
+    var note = '';
 
-    inflight = batches.reduce(function (chain, batch) {
-      return chain.then(function (acc) {
-        var url = 'https://' + host + '/api/v2/stats/prices/' +
-          encodeURIComponent(batch.join(',')) + '.json?qualities=1';
-        return request(url).then(function (rows) {
-          acc.n += absorb(rows, S.data);
-          return acc;
-        }, function (e) { acc.err = e.message; return acc; });
+    function attemptRegion(region) {
+      var host = REGIONS[region].host;
+      return batches.reduce(function (chain, batch) {
+        return chain.then(function (acc) {
+          var url = 'https://' + host + '/api/v2/stats/prices/' +
+            encodeURIComponent(batch.join(',')) + '.json?qualities=1';
+          return request(url).then(function (rows) {
+            acc.n += absorb(rows, S.data);
+            return acc;
+          }, function (e) { acc.err = e.message; return acc; });
+        });
+      }, Promise.resolve({ n: 0, err: '' })).then(function (acc) {
+        return { n: acc.n, err: acc.err, region: region, host: host };
       });
-    }, Promise.resolve({ n: 0, err: '' })).then(function (acc) {
-      var n = acc.n;
+    }
+
+    var i = 0;
+    function walk() {
+      if (i >= order.length) return Promise.resolve({ n: 0, err: note });
+      var region = order[i++];
+      return attemptRegion(region).then(function (res) {
+        if (res.n > 0) return res;
+        note = (note ? note + ' · ' : '') + res.region + ' kosong';
+        S.data = {};
+        return walk();
+      });
+    }
+
+    inflight = walk().then(function (res) {
+      var n = res.n;
       if (n > 0) {
         S.fetched = Date.now();
+        S.usedRegion = res.region;
         S.status = 'live';
-        S.error = '';
-        S.lastHost = host;
+        S.error = res.region === S.region ? '' : ('data ' + S.region + ' kosong, pakai ' + res.region);
+        S.lastHost = res.host;
         writeCache();
       } else {
         if (!hasAny()) S.status = 'offline';
-        S.error = acc.err || S.error || 'tidak ada data di region ini';
+        S.error = note || S.error || 'tidak ada data di region ini';
       }
       notify();
       inflight = null;
@@ -300,6 +328,7 @@
   /* ---------- api ---------- */
   var api = {
     REGIONS: REGIONS,
+    REGION_ORDER: REGION_ORDER,
     ROYALS: ROYALS,
     EXTRA_CITIES: EXTRA_CITIES,
     CHAINS: CHAINS,
@@ -323,6 +352,15 @@
     regionLabel: function () {
       return (REGIONS[S.region] || REGIONS.west).label;
     },
+    /* region yang benar-benar melayani data (bisa beda dari pilihan) */
+    servingRegion: function () { return S.usedRegion; },
+    servingLabel: function () {
+      return (REGIONS[S.usedRegion] || REGIONS.west).label;
+    },
+    isFallback: function () { return S.usedRegion !== S.region; },
+    regionShort: function (key) {
+      return ((REGIONS[key || S.region]) || REGIONS.west).short;
+    },
     hasAny: hasAny,
 
     status: function () {
@@ -330,7 +368,8 @@
       for (var id in S.data) n += Object.keys(S.data[id]).length;
       return {
         state:S.status, fetched:S.fetched, error:S.error,
-        host:S.lastHost, rows:n, region:S.region
+        host:S.lastHost, rows:n, region:S.region, serving:S.usedRegion,
+        fallback:S.usedRegion !== S.region
       };
     },
     subscribe: function (fn) {

@@ -260,7 +260,7 @@
     $('stSph').textContent = best ? money(best.sph) : '—';
     $('stSphS').textContent = silver(CFG.throughput) + ' unit/jam';
     $('stItems').textContent = silver(st.rows);
-    $('stItemsS').textContent = M.regionLabel() + ' · ' + CFG.city;
+    $('stItemsS').textContent = M.servingLabel() + ' · ' + CFG.city;
 
     if (!data.length) {
       box.innerHTML = '<div class="state">Belum ada peluang untuk ' + esc(CFG.city) + ' di ' +
@@ -469,13 +469,30 @@
       : '—';
     $('feedNote').textContent =
       (s.state === 'live' ? 'live' : s.state === 'offline' ? 'gagal' : 'cache') +
-      ' · ' + M.regionLabel() + ' · update ' + when + ' · next ' + STATE.left + 's · ' +
-      silver(s.rows) + ' baris harga' + (s.error ? ' · ' + s.error : '');
-    $('offBanner').style.display = s.state === 'offline' ? 'block' : 'none';
+      ' · ' + M.servingLabel() + ' · ' + CFG.city + ' · update ' + when +
+      ' · next ' + STATE.left + 's · ' + silver(s.rows) + ' baris harga';
+
+    var rn = $('regionNote');
+    if (rn) {
+      rn.textContent = s.fallback && s.state === 'live'
+        ? '⚠ ' + M.regionLabel() + ' sedang kosong di feed — harga di bawah memakai data ' + M.servingLabel() + '.'
+        : M.regionLabel() + ' · ' + CFG.city;
+      rn.style.color = (s.fallback && s.state === 'live') ? 'var(--warn)' : 'var(--dim)';
+    }
+    var banner = $('offBanner');
+    banner.style.display = s.state === 'offline' ? 'block' : 'none';
+  }
+
+  function syncRegionSeg() {
+    var seg = $('regionSeg');
+    if (!seg) return;
+    seg.querySelectorAll('button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.r === CFG.region));
+    });
   }
 
   function fillCfgInputs() {
-    $('cRegion').value = CFG.region;
+    syncRegionSeg();
     $('cCity').value = CFG.city;
     $('cPremium').checked = CFG.premium;
     $('cBM').checked = CFG.blackMarket;
@@ -491,8 +508,6 @@
   function saveCfg() { try { localStorage.setItem(LS_CFG, JSON.stringify(CFG)); } catch (e) {} }
 
   function readCfg() {
-    CFG.region = $('cRegion').value;
-    var changedRegion = CFG.region !== M.region();
     CFG.city = $('cCity').value;
     CFG.premium = $('cPremium').checked;
     CFG.blackMarket = $('cBM').checked;
@@ -507,7 +522,16 @@
     saveCfg();
     fillCfgInputs();
     renderAll();
-    if (changedRegion) M.load({ region: CFG.region, force: true });
+  }
+
+  function setRegion(key) {
+    if (!key || key === CFG.region) return;
+    CFG.region = key;
+    STATE.selected = null;
+    saveCfg();
+    syncRegionSeg();
+    renderAll();
+    M.load({ region: key, force: true });
   }
 
   /* ---------- init ---------- */
@@ -518,6 +542,21 @@
     if (VIEWS.indexOf(STATE.view) < 0) STATE.view = 'scan';
 
     fillCfgInputs();
+
+    /* tombol region: west / east / europe */
+    var rseg = $('regionSeg');
+    M.REGION_ORDER.forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.r = k;
+      b.textContent = M.regionShort(k);
+      b.setAttribute('aria-selected', String(k === CFG.region));
+      rseg.appendChild(b);
+    });
+    rseg.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (b) setRegion(b.dataset.r);
+    });
 
     /* isi dropdown kota */
     var citySel = $('cCity');
@@ -667,7 +706,7 @@
       }
     });
 
-    ['cRegion', 'cCity', 'cPremium', 'cBM', 'cSell', 'cBuy', 'cFocus',
+    ['cCity', 'cPremium', 'cBM', 'cSell', 'cBuy', 'cFocus',
      'cSetup', 'cYield', 'cThru', 'cTransport'].forEach(function (id) {
       $(id).addEventListener('change', readCfg);
     });
