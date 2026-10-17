@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.9">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=3.0">
 </head>
 <body>
   <div class="app">
@@ -319,22 +319,56 @@
 
       <div class="list" id="cfList"></div>
 
+      <div class="sec">
+        <span class="sec-h">Mau craft berapa?</span>
+        <span class="sec-s">ubah jumlah, semua angka ikut berubah</span>
+      </div>
+
+      <div class="tools" id="cfPreset" role="group" aria-label="Preset jumlah craft">
+        <button type="button" class="chip" data-cp="1" aria-pressed="false">1×</button>
+        <button type="button" class="chip" data-cp="10" aria-pressed="true">10×</button>
+        <button type="button" class="chip" data-cp="50" aria-pressed="false">50×</button>
+        <button type="button" class="chip" data-cp="100" aria-pressed="false">100×</button>
+        <button type="button" class="chip" data-cp="500" aria-pressed="false">500×</button>
+      </div>
+
       <div class="form">
-        <div class="f2">
-          <div>
-            <label class="lbl" for="cfQty">Jumlah craft</label>
-            <input type="number" id="cfQty" value="10" min="1" step="1" inputmode="numeric">
-          </div>
-          <p class="hint" style="align-self:center">
-            Semua hitungan memakai jumlah ini: biaya bahan, modal, untung total, dan urutan daftar.
-          </p>
+        <div>
+          <label class="lbl" for="cfQty">Jumlah craft</label>
+          <input type="number" id="cfQty" value="10" min="1" step="1" inputmode="numeric">
         </div>
       </div>
 
       <div class="sec">
-        <span class="sec-h">Rincian bahan &amp; untung</span>
+        <span class="sec-h">Rencana crafting</span>
         <span class="sec-s" id="cfDetName">ketuk item di atas</span>
       </div>
+
+      <ol class="steps" id="cfPlanSteps"></ol>
+
+      <div class="sec">
+        <span class="sec-h">Daftar belanja bahan</span>
+        <span class="sec-s" id="cfShopHead">—</span>
+      </div>
+
+      <div class="btn-row" style="margin-bottom:8px">
+        <button type="button" class="btn primary" id="cfCopy">Copy daftar</button>
+        <button type="button" class="btn" id="cfShopReset">Reset centang</button>
+      </div>
+
+      <div class="list" id="cfShop"></div>
+
+      <div class="read" id="cfShopTotal"></div>
+
+      <p class="note" style="margin-top:8px">
+        Jumlah bahan sudah dikurangi RRR, jadi lebih sedikit dari resep aslinya — sebagian bahan
+        kembali sebagai material tier bawah. Baris diurut dari bahan termahal. Ketuk baris untuk
+        menandai bahan yang sudah dibeli, ketuk lagi untuk membatalkan. Label
+        <span class="badge">lebih murah di X</span> muncul kalau bahan itu lebih murah di kota lain,
+        tapi ongkos transport bolak-balik juga tetap uang.
+      </p>
+
+      <div class="sec"><span class="sec-h">Rincian angka</span><span class="sec-s">biaya bahan, focus, harga jual</span></div>
 
       <div class="read" id="cfDetail"></div>
 
@@ -638,12 +672,12 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.9 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
+      Silver Ops v3.0 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-crafting.js?v=2.9"></script>
-  <script src="../../data/js/albion-market.js?v=2.9"></script>
-  <script src="../../data/js/albion-v2.js?v=2.9"></script>
+  <script src="../../data/js/albion-crafting.js?v=3.0"></script>
+  <script src="../../data/js/albion-market.js?v=3.0"></script>
+  <script src="../../data/js/albion-v2.js?v=3.0"></script>
 </body>
 </html>

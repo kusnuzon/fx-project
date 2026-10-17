@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.9';
+  var BUILD = '3.0';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -28,7 +28,7 @@
     sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
     selected: null, query: '', left: 60, searching: false, zTier: 3, zProf: 'ore', aSortRefine: 'profit', aSortFlip: 'roi', seFocus: null,
     craftProf: 'Smithing', craftTier: 4, craftItem: null, craftEnch: 0,
-    craftCity: '', craftQty: 10, craftSort: 'profit'
+    craftCity: '', craftQty: 10, craftSort: 'profit', craftBought: {}, craftPreset: 10, craftDepth: 0
   };
 
   var sessions = [];
@@ -1490,6 +1490,8 @@
      angka ikut berubah tiap refresh. */
   var C = window.AlbionCrafting || { items:[], prof:[], cities:[], watch:[] };
   var CRAFT_TIERS = [1, 2, 3, 4, 5, 6, 7, 8];
+  var CRAFT_MAX_MULT = C.maxMult || 25;   /* batas atas harga jual vs biaya bahan */
+  var CRAFT_MED_MULT = C.medMult || 3;   /* batas harga vs median kota lain */
 
   function craftItems(prof, tier) {
     return C.items.filter(function (it) {
@@ -1525,6 +1527,16 @@
     return vals[Math.floor(vals.length / 2)];
   }
 
+  /* berapa kota yang punya harga untuk hasil craft; 1-2 kota = pasar tipis */
+  function craftDepth(item, v) {
+    var id = craftPriceId(item, v), n = 0, i;
+    for (i = 0; i < C.cities.length; i++) {
+      var e = M.at(id, C.cities[i]);
+      if (craftPx(e, 'sell') > 0 || craftPx(e, 'buy') > 0) n++;
+    }
+    return n;
+  }
+
   /* biaya bahan + harga jual di satu kota. missing = bahan tanpa harga */
   function craftEval(item, v, city, qty) {
     qty = qty > 0 ? qty : 1;
@@ -1540,9 +1552,11 @@
     var pe = M.at(pid, city);
     var sell = netSell(craftPx(pe, 'sell'));
     var buy = netSell(craftPx(pe, 'buy'));
-    /* harga 8x di atas median kota lain = data anomaly, abaikan */
+    /* harga di atas median kota lain = data anomaly, abaikan */
     var med = craftMedian(item, v);
-    if (med > 0 && Math.max(sell, buy) > med * 8) sell = 0, buy = 0;
+    if (med > 0 && Math.max(sell, buy) > med * CRAFT_MED_MULT) sell = 0, buy = 0;
+    /* harga jual lebih dari maxMult x biaya bahan juga tidak masuk akal */
+    if (cost > 0 && Math.max(sell, buy) > cost * CRAFT_MAX_MULT) sell = 0, buy = 0;
     var rev = Math.max(sell, buy);
     var profit = (missing.length || rev <= 0) ? 0 : rev - cost;
     return {
@@ -1578,7 +1592,8 @@
       head:money(best.profit) + ' /unit',
       roiTxt:pct(best.roi) + ' ROI · modal ' + money(best.capital),
       how:'Bahan di ' + best.city + ' → craft di ' + best.city + ', jual di ' + best.city +
-         ' · focus ' + silver(bv.focus) + (bv.silver ? ' + silver ' + money(bv.silver) : '')
+         ' · focus ' + silver(bv.focus) + (bv.silver ? ' + silver ' + money(bv.silver) : ''),
+      thin:craftDepth(item, bv) <= 2
     };
   }
 
@@ -1743,6 +1758,7 @@
             '<span class="r-main"><span class="r-tag">' + esc(o.city) + '</span>' +
             '<span class="r-name">' + esc(o.name) + (o.v.ench ? ' .' + o.v.ench : '') + '</span>' +
             '<span class="r-how">' + esc(o.prof) + ' T' + o.tier + ' · modal ' + money(o.capital) + '</span>' +
+            (o.thin ? '<span class="badge thin">harga tipis</span>' : '') +
             '</span><span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
             esc(o.head) + '</span><span class="r-roi">' + esc(o.roiTxt) + '</span></span>' +
             '<span class="r-grid">' +
@@ -1759,6 +1775,7 @@
 
     renderCraftDetail();
     renderCraftCities();
+    renderCraftShop();
   }
 
   /* perbandingan kota untuk item yang sedang dipilih */
@@ -1772,6 +1789,7 @@
     }
     var v = stateCraftVariant(it), qty = Math.max(1, STATE.craftQty);
     var rows = [], i;
+    STATE.craftDepth = craftDepth(it, v);
     for (i = 0; i < C.cities.length; i++) {
       var ev = craftEval(it, v, C.cities[i], qty);
       if (ev.missing.length) continue;
@@ -1789,7 +1807,9 @@
             '" data-craft-city="' + esc(r.city) + '">' +
             '<span class="r-main"><span class="r-tag">' + esc(r.city) + '</span>' +
             '<span class="r-name">' + esc(it.name) + (v.ench ? ' .' + v.ench : '') + '</span>' +
-            (r.instant ? '<span class="badge thin">jual instan</span>' : '') + '</span>' +
+            (r.instant ? '<span class="badge thin">jual instan</span>' : '') +
+            (STATE.craftDepth <= 2 ? '<span class="badge risk">hanya ' + STATE.craftDepth + ' kota</span>' : '') +
+            '</span>' +
             '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
             signed(r.profit) + '</span><span class="r-roi">' + pct(r.roi) + ' ROI</span></span>' +
             '<span class="r-grid">' +
@@ -1802,6 +1822,133 @@
             '</span></button>';
         }).join('')
       : '<div class="state">Belum ada kota yang punya harga bahan lengkap untuk item ini.</div>';
+  }
+/* ---------- crafting: daftar belanja bahan ----------
+     Dipisah dari kalkulator untung supaya dua pertanyaan terpisah:
+     "berapa untung" (angka) dan "apa yang harus dibeli" (lista belanja). */
+  function craftBestBuy(id) {
+    var best = null, i, p, e;
+    for (i = 0; i < C.cities.length; i++) {
+      p = craftPx(M.at(id, C.cities[i]), 'sell');
+      if (p > 0 && (!best || p < best.price)) best = { city:C.cities[i], price:p };
+    }
+    return best;
+  }
+
+  function craftBuyList(item, v, city, qty) {
+    var keep = 1 - rrr(), rows = [], cost = 0, missing = 0, i;
+    for (i = 0; i < v.res.length; i++) {
+      var rid = v.res[i][0], n = v.res[i][1];
+      var e = M.at(rid, city);
+      var px = craftPx(e, 'sell');
+      var need = n * keep * qty;
+      var done = num(STATE.craftBought[rid]);
+      var left = Math.max(0, need - done);
+      var c = px > 0 ? px * need : 0;
+      var best = px > 0 ? craftBestBuy(rid) : null;
+      cost += c;
+      if (px <= 0) missing++;
+      rows.push({
+        id:rid, name:M.meta(rid).label, raw:n, need:need, left:left, price:px,
+        cost:c, share:0, missing:px <= 0,
+        done:need > 0 && done >= need,
+        cheaper:!!(best && px > 0 && best.city !== city && best.price < px * 0.95),
+        cheapest:best
+      });
+    }
+    rows.sort(function (a, b) { return b.cost - a.cost; });
+    for (i = 0; i < rows.length; i++) {
+      rows[i].share = cost > 0 ? (rows[i].cost / cost) * 100 : 0;
+    }
+    return { rows:rows, cost:cost, missing:missing };
+  }
+
+  function craftShopHtml(d, city) {
+    return d.rows.map(function (r) {
+      var priceTxt = r.missing
+        ? '<span style="color:var(--warn)">belum ada harga di ' + esc(city) + '</span>'
+        : money(r.price) + ' <span style="color:var(--dim)">/unit</span>';
+      var qtyTxt = r.done
+        ? '<span style="color:var(--pos)">sudah lengkap</span>'
+        : '<b>' + silver(Math.ceil(r.left)) + '</b>' +
+          (r.left !== r.need ? '<span style="color:var(--dim)"> dari ' + silver(Math.ceil(r.need)) + '</span>' : '');
+      return '<button type="button" class="row' + (r.done ? ' sel' : '') +
+        '" data-buy="' + esc(r.id) + '">' +
+        '<span class="r-main"><span class="r-tag">' + (r.done ? '✓' : Math.round(r.share) + '%') + '</span>' +
+        '<span class="r-name">' + esc(r.name) + '</span>' +
+        '<span class="r-how">' + esc(r.id) + ' · resep ×' + silver(r.raw) +
+        (r.cheaper ? ' · <span style="color:var(--warn)">lebih murah di ' + esc(r.cheapest.city) +
+          ' ' + money(r.cheapest.price) + '</span>' : '') + '</span></span>' +
+        '<span class="r-right"><span class="r-profit" style="color:' +
+          (r.missing ? 'var(--warn)' : 'var(--pos)') + '">' + qtyTxt + '</span>' +
+        '<span class="r-roi">' + (r.missing ? '—' : money(r.cost)) + '</span></span>' +
+        '<span class="r-grid">' +
+        '<span class="r-cell"><span class="r-cell-k">Harga</span><span class="r-cell-v">' + priceTxt + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Sisa</span><span class="r-cell-v">' +
+          silver(Math.ceil(r.left)) + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Total</span><span class="r-cell-v">' +
+          (r.missing ? '—' : money(r.cost)) + '</span></span>' +
+        '</span></button>';
+    }).join('');
+  }
+
+  function craftShopText(d, item, v, city, qty) {
+    var lines = ['Belanja untuk ' + item.name + (v.ench ? ' .' + v.ench : '') +
+      ' ×' + silver(qty) + ' di ' + city];
+    d.rows.forEach(function (r) {
+      lines.push('- ' + r.id + ' x' + silver(Math.ceil(r.need)) +
+        ' (' + r.name + ')' + (r.price > 0 ? ' @ ' + silver(r.price) : ' [harga belum ada]'));
+    });
+    lines.push('Total bahan: ' + silver(Math.round(d.cost)) + ' silver');
+    lines.push('Fokus total: ' + silver(Math.round(v.focus * qty)));
+    return lines.join('\n');
+  }
+
+  function renderCraftShop() {
+    var it = stateCraftItem();
+    var box = $('cfShop'), head = $('cfShopHead');
+    if (!it) {
+      head.textContent = '';
+      box.innerHTML = '<div class="state">Pilih dulu item di daftar atas — daftar belanjanya muncul di sini.</div>';
+      return;
+    }
+    var v = stateCraftVariant(it);
+    var city = STATE.craftCity || CFG.city;
+    if (C.cities.indexOf(city) < 0) city = C.cities[0] || CFG.city;
+    var qty = Math.max(1, STATE.craftQty);
+    var d = craftBuyList(it, v, city, qty);
+    var done = d.rows.filter(function (r) { return r.done; }).length;
+    var ev = craftEval(it, v, city, qty);
+
+    head.textContent = d.rows.length + ' bahan · ' + done + '/' + d.rows.length + ' siap';
+    box.innerHTML = craftShopHtml(d, city);
+
+    $('cfShopTotal').innerHTML =
+      '<div class="read big ' + (ev.total >= 0 && !d.missing ? 'ok' : 'no') + '">' +
+      (d.missing ? 'Bahan belum lengkap'
+        : ev.total >= 0 ? '▲ Bersih ' + signed(ev.total)
+        : '▼ Rugi ' + signed(ev.total)) + '</div>' +
+      '<dl class="kv">' +
+      '<dt>Total bahan (' + silver(qty) + ' craft)</dt><dd>' + money(d.cost) + '</dd>' +
+      '<dt>Harga jual hasil</dt><dd>' + (ev.rev > 0 ? money(ev.rev) + ' /unit' : '—') + '</dd>' +
+      '<dt>Pendapatan total</dt><dd>' + (ev.rev > 0 ? money(ev.rev * qty) : '—') + '</dd>' +
+      '<dt>Untung bersih</dt><dd class="' + (ev.total >= 0 ? 'ok' : 'no') + '">' +
+        signed(d.missing ? 0 : ev.total) + '</dd>' +
+      '<dt>ROI</dt><dd class="' + (ev.roi >= 100 ? 'ok' : 'wa') + '">' + pct(ev.roi) + '</dd>' +
+      '<dt>Fokus total</dt><dd class="wa">' + silver(Math.round(v.focus * qty)) + '</dd>' +
+      '<dt>Waktu craft total</dt><dd>' + (v.time * qty / 60).toFixed(1) + ' menit</dd>' +
+      '</dl>';
+
+    $('cfPlanSteps').innerHTML =
+      '<li><b>1</b> Beli <b>' + silver(d.rows.length) + ' bahan</b> di ' + esc(city) +
+        ' — total <b>' + money(d.cost) + '</b>' +
+        (d.missing ? ' (' + d.missing + ' bahan belum ada harga)' : '') + '</li>' +
+      '<li><b>2</b> Craft <b>' + silver(qty) + '×</b> ' + esc(it.name) +
+        (v.ench ? ' .' + v.ench : '') + ' — fokus ' + silver(Math.round(v.focus * qty)) +
+        ', waktu ' + (v.time * qty / 60).toFixed(1) + ' menit</li>' +
+      '<li><b>3</b> Jual di <b>' + esc(city) + '</b> — ' +
+        (ev.rev > 0 ? money(ev.rev) + ' /unit, terima ' + money(ev.rev * qty) : 'belum ada harga jual') +
+        (ev.rev > 0 ? ', bersih ' + signed(d.missing ? 0 : ev.total) : '') + '</li>';
   }
   /* ---------- shell ---------- */
   var VIEWS = ['scan', 'zero', 'craft', 'refine', 'flip', 'session', 'search'];
@@ -2137,6 +2284,68 @@
 
     /* cari: id di luar watchlist diambil on-demand (1 request) */
     var t = null;
+    /* ketuk baris bahan -> tandai sudah dibeli (bisa di-undo) */
+    $('cfShop').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      var it = stateCraftItem();
+      if (!it) return;
+      var v = stateCraftVariant(it);
+      var city = STATE.craftCity || CFG.city;
+      if (C.cities.indexOf(city) < 0) city = C.cities[0] || CFG.city;
+      var id = b.dataset.buy;
+      var need = 0;
+      for (var i = 0; i < v.res.length; i++) {
+        if (v.res[i][0] === id) need = v.res[i][1] * (1 - rrr()) * Math.max(1, STATE.craftQty);
+      }
+      if (STATE.craftBought[id] >= need) delete STATE.craftBought[id];
+      else STATE.craftBought[id] = need;
+      renderCraftShop();
+    });
+
+    $('cfPreset').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.craftPreset = num(c.dataset.cp);
+      STATE.craftQty = STATE.craftPreset;
+      $('cfQty').value = STATE.craftQty;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderCraft();
+    });
+
+    $('cfCopy').addEventListener('click', function () {
+      var it = stateCraftItem();
+      if (!it) return;
+      var v = stateCraftVariant(it);
+      var city = STATE.craftCity || CFG.city;
+      if (C.cities.indexOf(city) < 0) city = C.cities[0] || CFG.city;
+      var qty = Math.max(1, STATE.craftQty);
+      var txt = craftShopText(craftBuyList(it, v, city, qty), it, v, city, qty);
+      var done = function () {
+        var btn = this;
+        var old = btn.textContent;
+        btn.textContent = 'Tersalin';
+        setTimeout(function () { btn.textContent = old; }, 1400);
+      }.bind(this);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, function () {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+
+    $('cfShopReset').addEventListener('click', function () {
+      STATE.craftBought = {};
+      renderCraftShop();
+    });
+
     $('cfProf').addEventListener('click', function (e) {
       var c = e.target.closest('.chip');
       if (!c) return;
@@ -2179,6 +2388,7 @@
       STATE.craftItem = b.dataset.craft;
       STATE.craftEnch = num(b.dataset.ench);
       renderCraft();
+      renderCraftCities();
     });
 
     /* ketuk kota -> pakai kota itu untuk rincian */
