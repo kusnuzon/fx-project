@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Albion Online – CARTRIDGE VAULT</title>
   <meta name="theme-color" content="#000000">
   <meta name="description" content="11 tool ekonomi, crafting dan progression Albion Online dengan antarmuka cyberpunk HUD.">
@@ -11,61 +11,96 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../data/css/cyberpunk-theme.css">
   <style>
-    .ao-sub { max-width:580px; margin:0 auto 1.4rem; text-align:center; font-size:0.8rem; color:#9bb3a7; }
+    .ao-sub { max-width:640px; margin:0 auto var(--sp-5); text-align:center;
+      font-size:0.92rem; line-height:1.65; color:var(--cp-fg-muted); }
 
-    /* HUD tab strip */
-    .ao-tabs { display:flex; flex-wrap:wrap; gap:0.4rem; justify-content:center; margin:0 auto 1.4rem; }
-    .ao-tabs button { width:auto; margin:0; padding:0.5rem 0.75rem; font-size:0.5rem; min-height:44px;
-      color:#9bb3a7; background:#060d08; border-color:rgba(0,255,65,0.18); }
-    .ao-tabs button:hover { color:#00ff41; }
-    .ao-tabs button.active { color:#04140a; background:#00ff41; border-color:#00ff41;
-      box-shadow:0 0 18px rgba(0,255,65,0.45); }
+    /* ---- HUD tab rail: swipeable on mobile, grid on desktop ---- */
+    .ao-tabs {
+      display:flex; gap:var(--sp-2); overflow-x:auto; overscroll-behavior-x:contain;
+      scroll-snap-type:x proximity; scroll-padding-inline:var(--sp-2);
+      margin:0 calc(-1 * var(--sp-4)) var(--sp-4);
+      padding:var(--sp-1) var(--sp-4) var(--sp-3);
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);
+    }
+    .ao-tabs::-webkit-scrollbar { display:none; }
+    .ao-tabs button {
+      flex:0 0 auto; width:auto; min-width:118px; min-height:var(--tap);
+      margin:0; padding:0.7rem 0.85rem; font-size:0.78rem; letter-spacing:0.04em;
+      scroll-snap-align:center; color:var(--cp-fg-muted);
+      background:var(--cp-field); border-color:var(--cp-border-soft);
+    }
+    .ao-tabs button:hover { color:var(--cp-primary); }
+    .ao-tabs button.active { color:var(--cp-on-primary); background:var(--cp-primary);
+      border-color:var(--cp-primary); box-shadow:0 0 22px rgba(0,255,65,0.5); }
 
     .ao-panel { display:none; }
-    .ao-panel.active { display:block; animation:cpFadeIn 0.22s ease; }
+    .ao-panel.active { display:block; animation:cpFadeIn 0.24s ease; counter-reset:sect; }
 
-    /* briefing block */
-    .guide { margin-bottom:1.2rem; padding:0.9rem 1rem; font-size:0.78rem; line-height:1.6; color:#9bb3a7;
-      background:#0a120c; border:1px solid rgba(0,255,65,0.18); border-left:3px solid #00e5ff;
-      clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
-    .guide h3 { margin:0 0 0.5rem; font-size:0.62rem; letter-spacing:0.12em; text-align:left;
-      color:#00e5ff; text-shadow:0 0 10px rgba(0,229,255,0.35); }
-    .guide ul { margin:0.4rem 0 0 1.1rem; }
-    .guide li { margin-bottom:0.25rem; }
-    .guide b { color:#e6f2ea; font-weight:700; }
-    .guide code { padding:0.05rem 0.3rem; color:#ffb300; background:rgba(255,179,0,0.1);
-      border:1px solid rgba(255,179,0,0.25); font-size:0.72rem; }
+    /* ---- briefing block ---- */
+    .guide { position:relative; margin-bottom:var(--sp-4); padding:var(--sp-4);
+      font-size:0.92rem; line-height:1.7; color:var(--cp-fg-muted);
+      background:var(--cp-surface); border:1px solid var(--cp-border-soft); border-left:3px solid var(--cp-cyan); }
+    .guide h3 { display:flex; align-items:center; gap:var(--sp-2); margin:0 0 var(--sp-3);
+      font-size:0.95rem; letter-spacing:0.06em; text-align:left;
+      color:var(--cp-cyan); text-shadow:0 0 12px rgba(0,229,255,0.4); }
+    .guide h3::before {
+      counter-increment:sect; content:counter(sect,decimal-leading-zero);
+      flex:none; padding:0.2rem 0.4rem; font-size:0.85rem; letter-spacing:0.02em;
+      color:var(--cp-on-primary); background:var(--cp-primary); text-shadow:none;
+      box-shadow:0 0 14px var(--cp-primary-glow);
+    }
+    .guide ul { margin:var(--sp-2) 0 0 1.15rem; }
+    .guide li { margin-bottom:var(--sp-2); }
+    .guide li::marker { color:var(--cp-primary); }
+    .guide b { color:var(--cp-fg); font-weight:700; }
+    .guide code { padding:0.1rem 0.35rem; color:var(--cp-warn); font-size:0.88em;
+      background:rgba(255,179,0,0.1); border:1px solid rgba(255,179,0,0.28); }
 
-    /* input grids */
-    .ao-grid { display:flex; flex-wrap:wrap; gap:0.6rem; max-width:none; margin:0; }
-    .ao-grid > div { flex:1; min-width:130px; }
-    .ao-grid label { font-size:0.66rem; }
+    /* ---- input grids: single column on phone, 2-up from 480px ---- */
+    .ao-grid { display:grid; grid-template-columns:1fr; gap:var(--sp-3); margin:0; }
+    .ao-grid label { font-size:0.78rem; }
     form input, form select { margin-bottom:0; }
 
-    .chk { display:flex; align-items:center; gap:0.5rem; margin:0.7rem 0 1rem; font-size:0.74rem; color:#9bb3a7; }
+    .chk { display:flex; align-items:center; gap:var(--sp-3); min-height:var(--tap);
+      margin:var(--sp-2) 0 var(--sp-4); font-size:0.92rem; color:var(--cp-fg-muted); cursor:pointer; }
 
-    /* session rows (fame / silver-per-hour) */
-    .ao-list { list-style:none; margin:1rem 0 0; }
-    .ao-list li { display:flex; align-items:center; justify-content:space-between; gap:0.6rem;
-      margin-bottom:0.5rem; padding:0.7rem 0.8rem; font-size:0.75rem;
-      background:#0a120c; border:1px solid rgba(0,255,65,0.18); border-left:3px solid #2a7d4f; }
-    .del { flex:none; width:auto; min-height:36px; margin:0; padding:0.2rem 0.6rem; font-size:0.55rem;
-      color:#ff3b3b; background:rgba(255,59,59,0.12); border-color:rgba(255,59,59,0.4);
-      clip-path:none; }
-    .del:hover { color:#fff; background:#ff3b3b; border-color:#ff3b3b; box-shadow:0 0 14px rgba(255,59,59,0.35); }
+    /* ---- session rows (fame / silver-per-hour) ---- */
+    .ao-list { list-style:none; margin:var(--sp-4) 0 0; }
+    .ao-list li { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3);
+      margin-bottom:var(--sp-2); padding:var(--sp-3); font-size:0.9rem; line-height:1.55;
+      background:var(--cp-surface); border:1px solid var(--cp-border-soft); border-left:3px solid var(--cp-border); }
+    .del { flex:none; width:auto; min-width:var(--tap); min-height:var(--tap); margin:0;
+      padding:0 var(--sp-3); font-size:0.72rem; color:var(--cp-accent);
+      background:rgba(255,59,59,0.12); border-color:rgba(255,59,59,0.45); }
+    .del:hover { color:#fff; background:var(--cp-accent); border-color:var(--cp-accent);
+      box-shadow:0 0 16px rgba(255,59,59,0.4); }
 
-    @media (max-width: 700px) {
-      .ao-tabs { display:grid; grid-template-columns:repeat(3,1fr); }
-      .ao-tabs button { padding:0.5rem 0.3rem; font-size:0.44rem; letter-spacing:0.04em; }
-      .ao-grid > div { min-width:100%; }
+    /* ---- breakpoints ---- */
+    @media (min-width: 480px) {
+      .ao-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
-    @media (max-width: 420px) {
-      .ao-tabs { grid-template-columns:repeat(2,1fr); }
+    @media (min-width: 900px) {
+      .ao-tabs { flex-wrap:wrap; justify-content:center; overflow:visible; margin:0 0 var(--sp-5);
+        padding:0 0 var(--sp-4);
+        -webkit-mask-image:none; mask-image:none; }
+      .ao-tabs button { min-width:132px; }
+      .ao-grid { grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+      .ao-sub { font-size:0.95rem; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="hud-bar">
+      <span class="hud-dot" aria-hidden="true"></span>
+      <span class="hud-label">CARTRIDGE VAULT // ALBION</span>
+      <span class="hud-spacer"></span>
+      <span class="hud-idx" id="hudIdx">01/11</span>
+    </div>
+
     <h1>
       <svg class="cp-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false">
         <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/>
@@ -81,7 +116,7 @@
     <!-- 1 REFINING -->
     <section class="ao-panel active" data-tab="refining">
       <div class="guide">
-        <h3>1 · Refining Calculator</h3>
+        <h3>Refining Calculator</h3>
         Menghitung biaya &amp; profit menapis (refine) resource dengan memperhitungkan <b>Resource Return Rate (RRR)</b> dan resep per tier.
         <ul>
           <li>Resep: T2 butuh <code>1</code> raw · T3/T4 <code>2</code> · T5 <code>3</code> · T6 <code>4</code> · T7/T8 <code>5</code> raw (T3+ juga butuh 1 refined tier bawah).</li>
@@ -135,7 +170,7 @@
     <!-- 2 FLIP -->
     <section class="ao-panel" data-tab="flip">
       <div class="guide">
-        <h3>2 · Market Tax &amp; Flip Calculator</h3>
+        <h3>Market Tax &amp; Flip Calculator</h3>
         Hitung profit flip / jual di Marketplace setelah <b>setup fee 2.5%</b> + <b>sales tax</b> (4% premium / 8% non-premium).
         <ul>
           <li>Setup fee 2.5% dikenakan tiap bikin order (beli maupun jual). Instant buy / instant sell tanpa setup.</li>
@@ -169,7 +204,7 @@
     <!-- 3 CRAFT -->
     <section class="ao-panel" data-tab="craft">
       <div class="guide">
-        <h3>3 · Crafting Profit Calculator</h3>
+        <h3>Crafting Profit Calculator</h3>
         Kalkulator generik: masukkan total biaya bahan per item, biaya station/craft, harga jual, dan opsi RRR.
         <ul>
           <li>RRR menghemat bahan: biaya bahan efektif = <code>biayaML × (1 − RRR/100)</code>.</li>
@@ -197,7 +232,7 @@
     <!-- 4 TRANSMUTE -->
     <section class="ao-panel" data-tab="tx">
       <div class="guide">
-        <h3>4 · Transmutation Calculator</h3>
+        <h3>Transmutation Calculator</h3>
         Bandingkan <b>beli langsung</b> vs <b>transmute</b> naik tier / enchant (Artifact Foundry). Resource T4–T8 bisa di-transmute 1 tingkat (kecuali stone).
         <ul>
           <li>Naik tier (silver/unit): T5 e0:1.070 · T6:1.600 · T7:2.560 · T8:5.120 (kali enchant ×2/×4/×8).</li>
@@ -231,7 +266,7 @@
     <!-- 5 ENCHANT -->
     <section class="ao-panel" data-tab="ench">
       <div class="guide">
-        <h3>5 · Enchantment Planner</h3>
+        <h3>Enchantment Planner</h3>
         Berapa rune/soul/relic dibutuhkan untuk menaikkan enchant gear, dan total biayanya.
         <ul>
           <li>Rune → .1 · Soul → .2 · Relic → .3 (tier material harus sama dengan tier gear).</li>
@@ -272,7 +307,7 @@
     <!-- 6 FAME -->
     <section class="ao-panel" data-tab="fame">
       <div class="guide">
-        <h3>6 · Fame &amp; Progress Tracker</h3>
+        <h3>Fame &amp; Progress Tracker</h3>
         Catat sesi fame kamu, lihat laju fame/jam, dan estimasi waktu mencapai target (misal grind ke spesialisasi berikutnya).
         <ul>
           <li>Isi fame yang didapat &amp; durasi sesi (menit) → fame/jam.</li>
@@ -298,7 +333,7 @@
     <!-- 7 BUILD -->
     <section class="ao-panel" data-tab="build">
       <div class="guide">
-        <h3>7 · Build Cost Estimator</h3>
+        <h3>Build Cost Estimator</h3>
         Estimasi total biaya 1 set build (gear + mount + consumables). Isi harga tiap slot.
         <ul>
           <li>Isi harga per slot; total dihitung otomatis.</li>
@@ -312,7 +347,7 @@
     <!-- 8 FARM -->
     <section class="ao-panel" data-tab="farm">
       <div class="guide">
-        <h3>8 · Farming &amp; Animal Planner</h3>
+        <h3>Farming &amp; Animal Planner</h3>
         Estimasi profit kebun (crop) &amp; peternakan (animal).
         <ul>
           <li>Semua tanaman tumbuh <b>22 jam</b>, hasil 3–6 crop (6–12 premium). 1 plot = 9 seed.</li>
@@ -342,7 +377,7 @@
     <!-- 9 LABORER -->
     <section class="ao-panel" data-tab="lab">
       <div class="guide">
-        <h3>9 · Laborer / Journal Calculator</h3>
+        <h3>Laborer / Journal Calculator</h3>
         Profit mengisi journal laborer.
         <ul>
           <li><code>Profit = (nilai output + harga journal kosong) × (1 − tax) − harga journal penuh</code>.</li>
@@ -370,7 +405,7 @@
     <!-- 10 SILVER HOUR -->
     <section class="ao-panel" data-tab="sph">
       <div class="guide">
-        <h3>10 · Silver-per-Hour Tracker</h3>
+        <h3>Silver-per-Hour Tracker</h3>
         Catat sesi farming/refine/jual: lihat total silver bersih, silver/jam, dan rata-rata.
         <ul>
           <li>Isi pendapatan (boleh minus kalau rugi) &amp; durasi.</li>
@@ -394,7 +429,7 @@
     <!-- 11 TRANSPORT -->
     <section class="ao-panel" data-tab="tp">
       <div class="guide">
-        <h3>11 · Transport Weight &amp; Route</h3>
+        <h3>Transport Weight &amp; Route</h3>
         Hitung berapa trip untuk memindahkan resource &amp; profit per trip (misal beli murah di satu kota, jual mahal di kota lain).
         <ul>
           <li>Kapasitas mount (ox/faction) dikurangi berat bawaan = muatan bersih.</li>
@@ -462,10 +497,8 @@
       });
       wrap.addEventListener('keydown', onTabKeys);
       const saved = localStorage.getItem('ao_tab');
-      if(saved){
-        const idx = TABS.findIndex(t=>t[0]===saved);
-        if(idx>=0) showTab(saved, wrap.children[idx]);
-      }
+      const idx = saved ? TABS.findIndex(t=>t[0]===saved) : -1;
+      showTab(idx>=0 ? saved : TABS[0][0], wrap.children[idx>=0 ? idx : 0]);
     }
     function onTabKeys(e){
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
@@ -483,6 +516,7 @@
       btns[next].focus();
     }
     function showTab(key, btn){
+      const wrap = el('aoTabs');
       document.querySelectorAll('.ao-panel').forEach(p=>p.classList.toggle('active', p.dataset.tab===key));
       document.querySelectorAll('.ao-tabs button').forEach(b=>{
         const on = (b === btn);
@@ -490,7 +524,27 @@
         b.setAttribute('aria-selected', on ? 'true' : 'false');
         b.tabIndex = on ? 0 : -1;
       });
+      const i = TABS.findIndex(t=>t[0]===key);
+      const readout = el('hudIdx');
+      if(readout && i>=0){
+        readout.textContent = String(i+1).padStart(2,'0') + '/' + String(TABS.length).padStart(2,'0');
+      }
+      if(btn){
+        const left = btn.offsetLeft - (wrap.clientWidth - btn.clientWidth) / 2;
+        wrap.scrollTo({ left: Math.max(0,left), behavior:'smooth' });
+      }
       localStorage.setItem('ao_tab', key);
+    }
+
+    /* mobile: whole checkbox row becomes the tap target */
+    function initTappableRows(){
+      document.querySelectorAll('.chk').forEach(row=>{
+        if(row.tagName !== 'DIV') return;
+        const lab = document.createElement('label');
+        lab.className = row.className;
+        lab.innerHTML = row.innerHTML;
+        row.replaceWith(lab);
+      });
     }
 
     function rrr(loc, focus){
@@ -862,6 +916,7 @@
     buildRawGrid();
     txSync();
     initBuild();
+    initTappableRows();
     renderFame();
     renderSph();
   </script>
