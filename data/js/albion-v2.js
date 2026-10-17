@@ -8,7 +8,8 @@
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
   var diagLast = '-';
-  var BUILD = '3.9';
+  var diagLastResults = null;
+  var BUILD = '3.10';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -2288,11 +2289,15 @@
 
   function renderRun(skipGear) {
     var c = runCalc();
+    dSyncGroups(document.getElementById('view-run'));
     var gear = runGear(RUN.tier, RUN.prof);
     var zoneName = RUN.zone === 'bz' ? 'Black Zone (Caerleon)' : 'Red Zone';
 
+    /* .seg diwarnai dari aria-selected, jadi keduanya harus diisi */
     $('runZone').querySelectorAll('button').forEach(function (x) {
-      x.setAttribute('aria-pressed', String(x.dataset.rz === RUN.zone));
+      var on = x.dataset.rz === RUN.zone;
+      x.setAttribute('aria-selected', String(on));
+      x.setAttribute('aria-pressed', String(on));
     });
     $('runProf').querySelectorAll('.chip').forEach(function (x) {
       x.setAttribute('aria-pressed', String(x.dataset.rp === RUN.prof));
@@ -2426,9 +2431,75 @@
     var b = $('errBadge');
     if (!b) return;
     var n = D.err.length + D.warn.length;
+    if (diagLastResults) {
+      for (var i = 0; i < diagLastResults.length; i++) {
+        if (diagLastResults[i].err.length) n += diagLastResults[i].err.length;
+        n += diagLastResults[i].bad.length;
+      }
+    }
     b.style.display = n ? '' : 'none';
     b.textContent = n ? '! ' + n : '!';
     b.title = n + ' error/warning tercatat - buka Setting untuk lihat log';
+  }
+
+  /* isi ulang status aktif pada .seg (aria-selected) dan .chip (aria-pressed) */
+  function dSyncGroups(root) {
+    var segs = (root || document).querySelectorAll('.seg');
+    for (var i = 0; i < segs.length; i++) {
+      var btns = segs[i].querySelectorAll('button');
+      var active = 0;
+      for (var j = 0; j < btns.length; j++) {
+        if (btns[j].getAttribute('aria-selected') === 'true' ||
+            btns[j].classList.contains('on')) active++;
+      }
+      segs[i].dataset.diagActive = active;
+    }
+    var chips = (root || document).querySelectorAll('.tools .chip');
+    for (var k = 0; k < chips.length; k++) {
+      if (chips[k].getAttribute('aria-pressed') === 'true' || chips[k].classList.contains('on')) {
+        chips[k].dataset.diagActive = '1';
+      }
+    }
+  }
+
+  /* nama grup tombol dari aria-label atau isi chip pertama */
+  function dSegName(el) {
+    var al = el.getAttribute('aria-label');
+    if (al) return al;
+    var t = el.textContent.replace(/\s+/g, ' ').trim();
+    return t.slice(0, 28) || el.id || '(tanpa nama)';
+  }
+
+  /* ringkasan status aktif tombol di seluruh halaman */
+  function diagGroups() {
+    var out = [], segs = document.querySelectorAll('.seg');
+    for (var i = 0; i < segs.length; i++) {
+      var btns = segs[i].querySelectorAll('button'), act = 0, names = [];
+      for (var j = 0; j < btns.length; j++) {
+        var on = btns[j].getAttribute('aria-selected') === 'true' || btns[j].classList.contains('on');
+        if (on) { act++; names.push(btns[j].textContent.trim()); }
+      }
+      out.push('seg "' + dSegName(segs[i]) + '": ' + act + '/' + btns.length +
+        ' aktif' + (names.length ? ' -> ' + names.join(', ') : '') +
+        (act === 1 ? '' : '   <-- PERIKSA'));
+    }
+    var chips = document.querySelectorAll('.tools');
+    for (var k = 0; k < chips.length; k++) {
+      var cb = chips[k].querySelectorAll('.chip');
+      if (!cb.length) continue;
+      var cact = 0, cname = '';
+      for (var m = 0; m < cb.length; m++) {
+        if (cb[m].getAttribute('aria-pressed') === 'true' || cb[m].classList.contains('on')) {
+          cact++; cname = cb[m].textContent.trim();
+        }
+      }
+      out.push('chip "' + dSegName(chips[k]) + '": ' + cact + '/' + cb.length +
+        ' aktif' + (cname ? ' -> ' + cname : '') + (cact ? '' : '   <-- TIDAK ADA AKTIF'));
+    }
+    var view = document.querySelector('.view.on');
+    out.push('view aktif: ' + (view ? view.id : 'tidak ada') +
+      ' | nav cocok: ' + (document.querySelector('.nav button[aria-selected="true"]') ? 'ya' : 'TIDAK'));
+    return out;
   }
 
   /* padding tanpa padEnd, biar aman di WebView lama */
@@ -2479,6 +2550,51 @@
         out.rowBad++;
         out.bad.push('baris tanpa kolom lengkap: ' + dTag(r) +
           (r.querySelector('.row') ? ' (ada .row di dalam .row)' : ''));
+      }
+    }
+
+    /* status aktif tiap grup tombol: Exactly-one-active harus berlaku,
+       kalau tidak berarti user menekan tombol tapi warnanya tidak pindah */
+    var segs = node.querySelectorAll('.seg'), si;
+    for (si = 0; si < segs.length; si++) {
+      var sb = segs[0].querySelectorAll ? segs[si].querySelectorAll('button') : [];
+      var act = 0;
+      for (var sbi = 0; sbi < sb.length; sbi++) {
+        if (sb[sbi].getAttribute('aria-selected') === 'true' ||
+            sb[sbi].classList.contains('on')) act++;
+      }
+      if (sb.length && act !== 1) {
+        out.bad.push('grup tombol "' + dSegName(segs[si]) + '": ' + act +
+          ' tombol aktif (harus tepat 1)');
+      }
+    }
+    var chipGrp = node.querySelectorAll('.tools'), ci;
+    for (ci = 0; ci < chipGrp.length; ci++) {
+      var cb = chipGrp[ci].querySelectorAll('.chip');
+      if (!cb.length) continue;
+      var cact = 0;
+      for (var cbi = 0; cbi < cb.length; cbi++) {
+        if (cb[cbi].getAttribute('aria-pressed') === 'true' ||
+            cb[cbi].classList.contains('on')) cact++;
+      }
+      if (cact === 0) out.bad.push('grup chip "' + dSegName(chipGrp[ci]) + '": tidak ada chip aktif');
+    }
+
+    /* kontainer daftar yang kosong padahal tab-nya aktif */
+    var lists = node.querySelectorAll('.list'), li;
+    for (li = 0; li < lists.length; li++) {
+      var el = lists[li];
+      if (!el.id) continue;
+      if (el.children.length === 0 && el.textContent.trim() === '') {
+        out.bad.push('daftar kosong: #' + el.id);
+      }
+    }
+
+    /* teks yang terpotong (scrollHeight lebih besar dari tinggi tampil) */
+    var clipped = node.querySelectorAll('.kv dd, .stat-v, .hero-h, .r-name');
+    for (var k2 = 0; k2 < clipped.length && out.over.length < 6; k2++) {
+      if (clipped[k2].scrollHeight > clipped[k2].clientHeight + 6) {
+        out.over.push('teks terpotong: ' + dTag(clipped[k2]));
       }
     }
 
@@ -2584,21 +2700,31 @@
 
     L.push('');
     L.push('--- CEK PER TAB ---');
-    var prev = STATE.view;
-    VIEWS.forEach(function (v) {
-      var r;
-      try { r = diagTab(v); } catch (e) {
-        L.push(dPad(v, 8) + ' GAGAL: ' + e.message);
-        return;
-      }
+    var list = diagLastResults;
+    if (!list) {
+      var prev = STATE.view;
+      list = VIEWS.map(function (v) {
+        try { return diagTab(v); } catch (e) {
+          return { view:v, err:['cek gagal: ' + e.message], bad:[], over:[], ms:0, rows:0 };
+        }
+      });
+      try { setView(prev); } catch (e) {}
+    } else {
+      L.push('(hasil Run full check terakhir)');
+    }
+    list.forEach(function (r) {
       var tag = r.err.length ? 'RENDER ERROR' : (r.bad.length ? 'ADA MASALAH' : 'OK');
-      L.push(dPad(v, 8) + ' ' + tag + ' | ' + r.ms + 'ms | ' + r.rows + ' baris |' +
-        ' overflow ' + (r.over.length || 0) + ' | teks rusak ' + (r.bad.length || 0));
+      L.push(dPad(r.view, 8) + ' ' + tag + ' | ' + r.ms + 'ms | ' + r.rows + ' baris |' +
+        ' meluber ' + (r.over.length || 0) + ' | masalah ' + (r.bad.length || 0));
       r.err.forEach(function (x) { L.push('         ! ' + x); });
       r.bad.forEach(function (x) { L.push('         ! ' + x); });
-      r.over.forEach(function (x) { L.push('         ! meluber: ' + x); });
+      r.over.forEach(function (x) { L.push('         ! ' + x); });
     });
-    try { setView(prev); } catch (e) {}
+
+    /* status aktif tombol di seluruh halaman */
+    L.push('');
+    L.push('--- STATUS AKTIF TOMBOL ---');
+    L.push(diagGroups());
 
     L.push('');
     L.push('--- STRUKTUR HALAMAN ---');
@@ -2957,19 +3083,42 @@
     });
 
     /* ---------- diagnostics ---------- */
+    /* cek tab satu per satu dengan jeda, supaya render selesai dan UI tidak beku */
+    function diagRunAll(done) {
+      var results = [], i = 0;
+      var prev = STATE.view;
+      function step() {
+        if (i < VIEWS.length) {
+          var v = VIEWS[i++];
+          try {
+            results.push(diagTab(v));
+          } catch (e) {
+            results.push({ view:v, err:['cek gagal: ' + e.message], bad:[], over:[], ms:0, rows:0 });
+          }
+          $('diagRun').textContent = 'Cek ' + v + ' (' + i + '/' + VIEWS.length + ')';
+          setTimeout(step, 60);
+          return;
+        }
+        try { setView(prev); } catch (e) {}
+        done(results);
+      }
+      step();
+    }
     $('diagRun').addEventListener('click', function () {
       var b = this;
       b.textContent = 'Memeriksa...';
-      setTimeout(function () {
-        diagLast = new Date().toLocaleTimeString('id-ID');
+      diagLast = new Date().toLocaleTimeString('id-ID');
+      diagRunAll(function (results) {
+        diagLastResults = results;
         renderDiag();
         diagBadge();
         b.textContent = 'Run full check';
-      }, 30);
+      });
     });
     $('diagCopy').addEventListener('click', diagCopy);
     $('diagClear').addEventListener('click', function () {
       D.err = []; D.warn = []; D.log = [];
+      diagLastResults = null;
       diagLast = '-';
       renderDiag();
       diagBadge();
