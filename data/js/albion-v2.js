@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.4';
+  var BUILD = '2.5';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -26,7 +26,7 @@
     view: 'scan', mode: 'plan', strategy: 'flip', chain: 'ore', tier: 4,
     planFilter: 'all', planSort: 'sph',
     sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
-    selected: null, query: '', left: 60, searching: false, zTier: 3
+    selected: null, query: '', left: 60, searching: false, zTier: 3, zProf: 'ore'
   };
 
   var sessions = [];
@@ -548,11 +548,12 @@
     }
   }
 
-  /* ---------- modal 0:-what to do when capital is 0 ----------
-     Modal 0 for everything here: goods come from nodes or rivers ourselves,
-     so what gets compared is the city with the highest INSTANT sell
-     (highest buy order). Bonus refine = refined instant - raw instant
-     in the same city. Negative means refining just wastes time. */
+  /* ---------- modal 0: apa yang dilakukan saat modal 0 ----------
+     Semua baris di sini modalnya 0: barang datang dari node atau sungai
+     sendiri, jadi yang dibandingkan adalah kota dengan jual INSTAN
+     (buy order tertinggi) paling tinggi. Bonus refine = refined instan
+     - mentah instan di kota yang sama. Kalau minus, refining hanya
+     membuang waktu. */
   var ZERO_PROF = {
     ore:   { prof:'Mining',           doWhat:'Mine ore' },
     wood:  { prof:'Logging',          doWhat:'Chop wood' },
@@ -626,6 +627,10 @@
     return {
       id:refId, kind:'zero', chain:ch.key, tier:t,
       tag:city, name:rm.label + ' · ' + prof.prof, how:how,
+      prof:prof.prof, doWhat:prof.doWhat,
+      rawLabel:M.meta(rawId).label, refLabel:rm.label,
+      mode:doRefine ? 'refine' : (rawI ? 'raw' : 'none'),
+      prem:prem ? prem.v : 0,
       profit:net, roi:0, capital:0, sph:net * num(CFG.throughput),
       head:money(net) + ' /unit',
       roiTxt:'≈ ' + money(net * NODE_YIELD) + ' /node',
@@ -648,6 +653,9 @@
       id:best.id, kind:'zero-fish', chain:'', tier:t,
       tag:best.city, name:M.meta(best.id).label + ' · Mancing',
       how:'Pancing T' + t + ' di ' + best.city + ' → jual instan di sana (butuh makanan)',
+      prof:'Mancing', doWhat:'Pancing T' + t,
+      rawLabel:'Ikan ' + M.meta(best.id).label, refLabel:M.meta(best.id).label,
+      mode:'fish', prem:0,
       profit:best.v, roi:0, capital:0, sph:best.v * num(CFG.throughput),
       head:money(best.v) + ' /unit',
       roiTxt:'≈ ' + money(best.v * 1.4) + ' /trip',
@@ -658,6 +666,25 @@
         ['Modal', 'makanan + umpan']
       ]
     };
+  }
+
+  /* ---------- baris untuk profesi pilihan + cari tier paling murah ---------- */
+  var ZERO_TIERS = [2, 3, 4, 5, 6];
+
+  function zeroRowFor(prof, t) {
+    if (prof === 'fish') return zeroFish(t);
+    var ch = M.CHAINS.filter(function (c) { return c.key === prof; })[0];
+    return ch ? zeroChain(ch, t) : null;
+  }
+
+  /* tier paling rendah yang masih ada pembelinya — ini yang direkomendasikan
+     ke pemain yang alatnya masih kecil */
+  function zeroFirstLive(prof) {
+    for (var i = 0; i < ZERO_TIERS.length; i++) {
+      var r = zeroRowFor(prof, ZERO_TIERS[i]);
+      if (r && r.profit > 0) return { tier:ZERO_TIERS[i], row:r };
+    }
+    return null;
   }
 
   function zeroRowHtml(o) {
@@ -688,6 +715,120 @@
       esc(s) + '</span></div>';
   }
 
+/* baris pembanding: aksi global terbaik + tier pertama yang ada buyer */
+  function zeroAltHtml(o) {
+    var inner =
+      '<span class="r-main"><span class="r-tag">' + esc(o.tag) + '</span>' +
+        '<span class="r-name">' + esc(o.name) + '</span>' +
+        '<span class="r-how">' + esc(o.how) + '</span>' +
+        '<span class="badge deep">' + esc(o.cta) + '</span></span>' +
+      '<span class="r-right"><span class="r-profit" style="color:var(--muted)">' +
+        esc(o.head) + '</span><span class="r-roi">' + esc(o.roiTxt) + '</span></span>';
+    return '<button type="button" class="row" data-zp="' + esc(o.zp) +
+      '" data-zt="' + esc(o.zt) + '">' + inner + '</button>';
+  }
+
+  function altRow(zp, zt, tag, name, how, cta, r) {
+    return {
+      zp:zp, zt:zt, tag:tag, name:name, how:how, cta:cta,
+      head:money(r.profit) + ' /unit',
+      roiTxt:'≈ ' + money(r.mode === 'fish' ? r.profit * 1.4 : r.profit * NODE_YIELD) +
+        (r.mode === 'fish' ? ' per trip' : ' per node')
+    };
+  }
+
+  function zeroAltRows(you, globalBest) {
+    var out = [], prof = STATE.zProf;
+
+    if (globalBest && (!you || globalBest.id !== you.id)) {
+      out.push(altRow(
+        globalBest.chain, globalBest.tier, globalBest.tag, globalBest.name,
+        'Paling untung hari ini · ' + globalBest.how, 'pilih ' + globalBest.prof, globalBest));
+    }
+
+    /* kalau tier sekarang sepi: arahkan ke tier pertama yang ada buyer.
+       kalau sudah untung: tunjukkan satu tingkat di atas yang lebih<'_thick' */
+    var first = zeroFirstLive(prof);
+    var t = STATE.zTier;
+    if (!you || you.profit <= 0) {
+      if (first && (!you || first.tier !== t)) {
+        out.push(altRow(
+          prof, first.tier, first.row.tag, first.row.name,
+          'Tier pertama untuk ' + first.row.prof + ' yang ada buyer-nya · ' + first.row.how,
+          'pakai ini', first.row));
+      }
+      return out;
+    }
+    for (var i = 0; i < ZERO_TIERS.length; i++) {
+      var up = ZERO_TIERS[i];
+      if (up <= t) continue;
+      var r = zeroRowFor(prof, up);
+      if (r && r.profit > you.profit) {
+        out.push(altRow(
+          prof, up, r.tag, r.name,
+          'Satu tingkat lebih tinggi · ' + r.how, 'naik ke sini', r));
+        break;
+      }
+    }
+    return out;
+  }
+
+  /* tier berapa saja yang punya buyer untuk profesi ini */
+  function zeroLiveTiers(prof) {
+    return ZERO_TIERS.filter(function (t) {
+      var r = zeroRowFor(prof, t);
+      return r && r.profit > 0;
+    });
+  }
+
+  /* langkah konkret, disusun dari baris rekomendasi milik user */
+  function zeroSteps(you, globalBest, cae) {
+    var steps = [
+      ['Ambil quest kota + system quest',
+        'silver dan item gratis — sumber terbaik saat modal 0'],
+      ['Ambil mount gratis Crypt of the Immortals',
+        'transport ke ' + cae + ' gratis, jadi refine + jual di sana tanpa ongkos']
+    ];
+
+    if (you && you.profit > 0 && you.mode === 'fish') {
+      steps.push(['Siapkan makanan + umpan',
+        'craft umpan dari fiber; mancing bukan modal 0 karena makanannya dimethyl — ' +
+        money(you.profit) + '/ikan instan di ' + you.tag]);
+      steps.push(['Pancing ' + you.doWhat + ', jual di ' + you.tag,
+        money(you.profit) + '/ikan ≈ ' + money(you.profit * 1.4) + ' per trip']);
+    } else if (you && you.profit > 0 && you.mode === 'refine') {
+      steps.push([you.doWhat + ' T' + you.tier + ', jangan beli bahannya',
+        'bahan mentah gratis dari node']);
+      steps.push(['Refine ' + you.refLabel + ' di ' + you.tag,
+        'premium ' + signed(you.prem) + '/unit dibanding jual mentah; refine T3+ memakai focus']);
+      steps.push(['Jual refined ke buy order di ' + you.tag,
+        money(you.profit) + '/unit instan ≈ ' + money(you.profit * NODE_YIELD) + ' per node']);
+    } else if (you && you.profit > 0) {
+      steps.push([you.doWhat + ' T' + you.tier + ', jangan beli bahannya',
+        'bahan mentah gratis dari node']);
+      steps.push(['Jual MENTAH ke buy order di ' + you.tag,
+        money(you.profit) + '/unit instan ≈ ' + money(you.profit * NODE_YIELD) + ' per node']);
+      steps.push(['Jangan refine di tier ini',
+        'refined di ' + you.tag + ' lebih murah daripada bahan mentahnya']);
+    } else {
+      steps.push(['Profesi ini belum bisa dijual di T' + STATE.zTier,
+        'pilih tier lain atau profesi lain — daftar di bawah menunjukkan mana yang ada buyer-nya']);
+    }
+
+    if (globalBest) {
+      steps.push(['Bandingkan dengan aksi terbaik hari ini',
+        globalBest.doWhat + ' T' + globalBest.tier + ' di ' + globalBest.tag + ' = ' +
+        money(globalBest.profit) + '/unit ≈ ' + money(globalBest.profit * NODE_YIELD) + ' per node']);
+    }
+    steps.push(['Naik ke node T3 setelah modal sekitar 5.000',
+      'premium refine T1–T2 sering minus, di T3 ke atas barulah konsisten']);
+    steps.push(['Jangan',
+      'flip tanpa modal, farming T4 di Caerleon sebelum gear 4.1, refine T1–T2']);
+    return steps.map(function (s, i) {
+      return '<li><b>' + (i + 1) + '</b> <b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
+    }).join('');
+  }
+
   function renderZero() {
     var t = STATE.zTier;
     var rows = [];
@@ -699,67 +840,81 @@
     if (fish) rows.push(fish);
     rows.sort(function (a, b) { return b.profit - a.profit; });
 
+    var you = zeroRowFor(STATE.zProf, t);
     var mats = rows.filter(function (r) { return r.kind === 'zero' && r.profit > 0; });
-    var best = mats[0];
-    var premTop = null;
-    mats.forEach(function (r) {
-      if (!r.badges || r.badges[0].cls !== 'thin') return;
-      if (!premTop || r.profit > premTop.profit) premTop = r;
-    });
-
+    var globalBest = mats[0] || null;
+    var first = zeroFirstLive(STATE.zProf);
     var st = M.status();
-    $('zeroStats').innerHTML =
-      statBox('Kota acuan', best ? best.tag : '—', best ? 'tier T' + t : 'tunggu feed', 'pos') +
-      statBox('Per node', best ? money(best.profit * NODE_YIELD) : '—',
-        best ? '≈ ' + silver(NODE_YIELD) + ' unit/node' : 'tunggu feed') +
-      statBox('Refine untung', premTop ? premTop.tag : '—',
-        premTop ? 'premium paling tinggi T' + t : 'jangan refine dulu') +
-      statBox('Item dipantau', silver(st.rows), M.servingLabel());
+    var cae = 'Caerleon';
 
+    $('zeroStats').innerHTML =
+      statBox('Kota untukmu', you ? you.tag : '—',
+        you ? you.prof + ' · T' + t : 'tunggu feed', 'pos') +
+      statBox('Per node',
+        you ? money(you.mode === 'fish' ? you.profit * 1.4 : you.profit * NODE_YIELD) : '—',
+        you ? (you.mode === 'fish' ? 'per trip' : silver(NODE_YIELD) + ' unit/node') : 'tunggu feed') +
+      statBox('Bonus refine',
+        you && you.mode === 'refine' ? signed(you.prem)
+          : (you && you.mode === 'fish' ? 'butuh makan' : (you ? 'jangan' : '—')),
+        you && you.mode === 'refine' ? 'vs jual mentah' : 'di tier ini',
+        you && you.mode === 'refine' ? 'pos' : (you && you.mode === 'raw' ? 'neg' : '')) +
+      statBox('Tier siap pakai', first ? 'T' + first.tier : '—',
+        first ? (first.tier === t ? 'sudah di tier ini' : 'pertama yang ada buyer')
+              : 'belum ada di feed');
+
+    /* hero = rekomendasi untuk profesi + tier milik user */
     var hero = $('zeroHero');
-    if (!best) {
+    if (!you) {
       hero.innerHTML =
-        '<span class="hero-k">Belum ada data tier ini</span>' +
+        '<span class="hero-k">Belum ada data</span>' +
         '<span class="hero-h">—</span>' +
-        '<span class="hero-s">Feed belum punya harga T' + t + ' di ' + esc(M.regionLabel()) +
-        '. Ganti region di atas atau pilih tier lain.</span>';
-    } else {
-      var gain = best.badges && best.badges[0].cls === 'thin' && best.profit > 0
-        ? ' · lebih untung dari jual mentah'
-        : ' · sama saja nilainya dengan jual mentah';
+        '<span class="hero-s">Feed belum punya harga T' + t + ' untuk profesi ini di ' +
+        esc(M.regionLabel()) + '. Ganti region di atas atau pilih tier lain.</span>';
+    } else if (you.profit <= 0) {
       hero.innerHTML =
-        '<span class="hero-k">Lakukan pertama · modal 0</span>' +
-        '<span class="hero-h">' + esc(best.name) + '</span>' +
-        '<span class="hero-s">' + esc(best.how) + '</span>' +
-        '<span class="hero-money">' + money(best.profit * NODE_YIELD) + ' / node</span>' +
-        '<span class="hero-meta">' + money(best.profit) + '/unit' + gain +
-          ' · modal 0 ✦</span>' +
-        '<span class="hero-go">Ketuk baris material di bawah untuk buka kalkulator refine.</span>';
+        '<span class="hero-k">Belum bisa dijual · ' + esc(you.prof) + ' T' + t + '</span>' +
+        '<span class="hero-h">Tidak ada buy order</span>' +
+        '<span class="hero-s">' + esc(you.how) +
+        (first
+          ? '. Untuk ' + esc(you.prof) + ' yang paling cepat buat duit: T' + first.tier +
+            ' di ' + esc(first.row.tag) + ' (' + money(first.row.profit) + '/unit).'
+          : '. Feed belum punya harga di tier mana pun untuk profesi ini.') +
+        '</span>';
+    } else {
+      var what = you.mode === 'refine'
+        ? 'Refine ' + you.refLabel + ' di ' + you.tag
+        : (you.mode === 'fish'
+            ? 'Pancing ' + you.refLabel + ', jual di ' + you.tag
+            : 'Jual ' + you.rawLabel + ' di ' + you.tag);
+      hero.innerHTML =
+        '<span class="hero-k">Rekomendasi · ' + esc(you.prof) + ' T' + t + ' · modal 0</span>' +
+        '<span class="hero-h">' + esc(what) + '</span>' +
+        '<span class="hero-s">' + esc(you.how) + '</span>' +
+        '<span class="hero-money">' +
+          money(you.mode === 'fish' ? you.profit * 1.4 : you.profit * NODE_YIELD) +
+          (you.mode === 'fish' ? ' per trip' : ' per node') + '</span>' +
+        '<span class="hero-meta">' + money(you.profit) + '/unit' +
+          (you.mode === 'refine' ? ' · refine ' + signed(you.prem) + ' vs mentah' : '') +
+          (you.mode === 'fish' ? ' · bukan modal 0, butuh makanan' : ' · modal 0 ✦') +
+          '</span>' +
+        '<span class="hero-go">Ketuk baris material di bawah untuk buka kalkulator refine di kota ini.</span>';
     }
+
+    var alts = zeroAltRows(you, globalBest);
+    var live = zeroLiveTiers(STATE.zProf);
+    $('zYouSub').textContent = live.length
+      ? 'buy order ada di T' + live.join(' · T')
+      : 'belum ada buy order di tier mana pun';
+    $('zAltCount').textContent = alts.length ? alts.length + ' alternatif' : '';
+    $('zAltList').innerHTML = alts.map(zeroAltHtml).join('');
 
     $('zCount').textContent = rows.length + ' opsi';
     $('zList').innerHTML = rows.length
       ? rows.map(zeroRowHtml).join('')
       : '<div class="state">Belum ada harga T' + t + ' di region ini. Ganti region atau tier.</div>';
 
-    var cae = 'Caerleon';
-    var caeOk = rows.some(function (r) { return r.tag === cae; });
-    var steps = [
-      ['Ambil quest kota + system quest', 'silver dan item gratis — sumber terbaik saat modal 0'],
-      ['Ambil mount gratis Crypt of the Immortals',
-        'transport ke ' + cae + (caeOk ? ' jadi 0 silver, refine + jual di sana tanpa ongkos' : ' gratis')],
-      ['Gather sesuai alat yang dipakai',
-        best ? best.how : 'pilih tier di atas sesuai alatmu'],
-      ['Naik ke node T3 setelah modal sekitar 5.000',
-        premTop ? 'refine di ' + premTop.tag + ' = ' + money(premTop.profit) + '/unit, premium tertinggi di T' + t
-                : 'di T' + t + ' belum ada kota dengan premium refine positif — jual mentah dulu'],
-      ['Jangan', 'refine T1–T2 (premium negatif), flip tanpa modal, farming T4 di Caerleon sebelum gear 4.1']
-    ];
-    $('zSteps').innerHTML = steps.map(function (s, i) {
-      return '<li><b>' + (i + 1) + '</b> <b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</li>';
-    }).join('');
+    $('zSteps').innerHTML = zeroSteps(you, globalBest, cae);
   }
-
   function renderRefine() {
     var chain = M.CHAINS.filter(function (c) { return c.key === STATE.chain; })[0] || M.CHAINS[0];
     var tier = STATE.tier;
@@ -1082,6 +1237,30 @@
         x.setAttribute('aria-pressed', String(x === c));
       });
       renderPlan();
+    });
+
+    $('zProf').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.zProf = c.dataset.zp;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderZero();
+    });
+
+    $('zAltList').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      STATE.zProf = b.dataset.zp;
+      STATE.zTier = num(b.dataset.zt) || STATE.zTier;
+      $('zProf').querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x.dataset.zp === STATE.zProf));
+      });
+      $('zTier').querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(num(x.dataset.zt) === STATE.zTier));
+      });
+      renderZero();
     });
 
     $('zTier').addEventListener('click', function (e) {

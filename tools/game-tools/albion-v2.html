@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.4">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.5">
 </head>
 <body>
   <div class="app">
@@ -212,9 +212,21 @@
     <section class="view" id="view-zero" role="tabpanel" aria-label="Modal 0">
       <div class="stats" id="zeroStats"></div>
 
-      <div class="hero" id="zeroHero"></div>
+      <div class="sec">
+        <span class="sec-h">Profesi &amp; tier kamu</span>
+        <span class="sec-s" id="zYouSub">—</span>
+      </div>
 
-      <div class="tools" id="zTier" role="group" aria-label="Tier hasil gather">
+      <div class="tools" id="zProf" role="group" aria-label="Profesi kamu">
+        <button type="button" class="chip" data-zp="ore" aria-pressed="true">Mining</button>
+        <button type="button" class="chip" data-zp="wood" aria-pressed="false">Logging</button>
+        <button type="button" class="chip" data-zp="fiber" aria-pressed="false">Gather</button>
+        <button type="button" class="chip" data-zp="hide" aria-pressed="false">Skinning</button>
+        <button type="button" class="chip" data-zp="stone" aria-pressed="false">Stonecutting</button>
+        <button type="button" class="chip" data-zp="fish" aria-pressed="false">Mancing</button>
+      </div>
+
+      <div class="tools" id="zTier" role="group" aria-label="Tier alat/node">
         <button type="button" class="chip" data-zt="2" aria-pressed="false">Tier 2</button>
         <button type="button" class="chip" data-zt="3" aria-pressed="true">Tier 3</button>
         <button type="button" class="chip" data-zt="4" aria-pressed="false">Tier 4</button>
@@ -222,16 +234,25 @@
         <button type="button" class="chip" data-zt="6" aria-pressed="false">Tier 6</button>
       </div>
 
+      <div class="hero" id="zeroHero"></div>
+
+      <div class="sec">
+        <span class="sec-h">Alternatif lain</span>
+        <span class="sec-s" id="zAltCount">—</span>
+      </div>
+      <div class="list" id="zAltList"></div>
+
       <div class="sec">
         <span class="sec-h">Per profesi · modal 0</span>
         <span class="sec-s" id="zCount">—</span>
       </div>
 
       <p class="note" id="zNote">
-        Semua baris di sini modalnya <b>0</b> — barangnya kamu dapat sendiri dari node atau sungai,
-        jadi yang dibandingkan adalah kota dengan <b>jual instan</b> (buy order tertinggi) paling tinggi.
-        <b>Bonus refine</b> = selisih refined instan vs mentah instan di kota yang sama.
-        Kalau minus, refining cuma buang waktu — jual mentah.
+        Pilih profesi dan tier sesuai alat yang kamu pakai — rekomendasi di atas ikut berubah.
+        Semua baris di sini modalnya <b>0</b>: barangnya dari node atau sungai sendiri, jadi yang
+        dibandingkan adalah kota dengan <b>jual instan</b> (buy order tertinggi) paling tinggi.
+        <b>Bonus refine</b> = refined instan vs mentah instan di kota yang sama; kalau minus,
+        refining cuma buang waktu — jual mentah. Tier 1 tidak dipantau (watchlist mulai T2).
       </p>
 
       <div class="list" id="zList"></div>
@@ -453,11 +474,11 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.4 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2.5 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.4"></script>
-  <script src="../../data/js/albion-v2.js?v=2.4"></script>
+  <script src="../../data/js/albion-market.js?v=2.5"></script>
+  <script src="../../data/js/albion-v2.js?v=2.5"></script>
 </body>
 </html>
