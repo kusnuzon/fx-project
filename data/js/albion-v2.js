@@ -7,7 +7,7 @@
 
   var M = window.AlbionMarket;
   var LS_CFG = 'so_cfg_v2', LS_SESS = 'so_sess_v2', LS_VIEW = 'so_view_v2';
-  var BUILD = '2.6';
+  var BUILD = '2.7';
   var LIMIT = 60;
 
   var RAW_PER = { 2:1, 3:2, 4:2, 5:3, 6:4, 7:5, 8:5 };
@@ -26,7 +26,7 @@
     view: 'scan', mode: 'plan', strategy: 'flip', chain: 'ore', tier: 4,
     planFilter: 'all', planSort: 'sph',
     sort: 'roi', hideNeg: true, qtyRefine: 100, qtyFlip: 100,
-    selected: null, query: '', left: 60, searching: false, zTier: 3, zProf: 'ore'
+    selected: null, query: '', left: 60, searching: false, zTier: 3, zProf: 'ore', aSortRefine: 'profit', aSortFlip: 'roi', seFocus: null
   };
 
   var sessions = [];
@@ -920,7 +920,323 @@
 
     $('zSteps').innerHTML = zeroSteps(you, globalBest, cae);
   }
+/* ---------- auto: perbandingan otomatis ----------
+     Semua dihitung dari harga live yang sudah ada di memori, jadi tidak menambah
+     request sama sekali. Tujuannya: user sekali lihat langsung tahu harus
+     ngapain, tanpa harus pilih kota dulu. */
+  function cityList() {
+    return M.ROYALS.concat(M.EXTRA_CITIES).filter(function (c) {
+      return !ZERO_SKIP[c];
+    });
+  }
+
+  /* refine di satu kota: bahan dibeli di pasar kota itu */
+  function refineOppAt(chain, tier, city) {
+    var rl = M.refLive(tier, chain, city);
+    if (!rl || !rl.entry.sell) return null;
+    var keep = 1 - rrr(), total = 0, missing = 0;
+    for (var t = 2; t <= tier; t++) {
+      var e = M.at(M.rawId(t, chain), city);
+      var px = e ? e.sell : 0;
+      if (px <= 0) { missing++; continue; }
+      total += (RAW_PER[t] || 0) * keep * px;
+    }
+    if (missing > 0) return null;
+    var revenue = netSell(rl.entry.sell);
+    var rawTop = M.at(M.rawId(tier, chain), city);
+    var prem = (rawTop && rawTop.buy > 0 && rl.entry.buy > 0)
+      ? netSell(rl.entry.buy) - netSell(rawTop.buy) : 0;
+    return {
+      kind:'refine', id:rl.id, name:M.meta(rl.id).label,
+      tag:chain.label + ' T' + tier, city:city, chain:chain.key, tier:tier,
+      prem:prem, inst:rl.entry.buy > 0,
+      profit:revenue - total,
+      roi:total > 0 ? (revenue - total) / total * 100 : 0,
+      capital:total, sph:(revenue - total) * num(CFG.throughput),
+      cells:[
+        ['Bahan/unit', money(total)],
+        ['Jual/unit', money(revenue)],
+        ['Modal', money(total)]
+      ]
+    };
+  }
+
+  function autoRefine() {
+    var out = [], cs = cityList(), t, i;
+    M.CHAINS.forEach(function (ch) {
+      for (t = M.TIER_MIN; t <= M.TIER_MAX; t++) {
+        for (i = 0; i < cs.length; i++) {
+          var o = refineOppAt(ch, t, cs[i]);
+          if (o && o.profit > 0) {
+            o.head = money(o.profit) + ' /unit';
+            o.roiTxt = pct(o.roi) + ' ROI · modal ' + money(o.capital);
+            o.badges = o.inst ? [] : [{ cls:'thin', t:'tanpa buy order' }];
+            out.push(o);
+          }
+        }
+      }
+    });
+    out.sort(STATE.aSortRefine === 'roi'
+      ? function (a, b) { return b.roi - a.roi; }
+      : function (a, b) { return b.profit - a.profit; });
+    return out;
+  }
+
+  /* flip: arbitrage antar kota + flip satu kota di kota acuan */
+  function autoFlip() {
+    var out = [], list = M.tracked(), i, j;
+    for (i = 0; i < list.length; i++) {
+      var m = list[i];
+      var rows = M.byCity(m.id), bag = {};
+      for (j = 0; j < rows.length; j++) {
+        if (ZERO_SKIP[rows[j].city]) continue;
+        bag[rows[j].city] = rows[j];
+      }
+      var thin = Object.keys(bag).length <= 2;
+      var a = arbOpp(m, bag);
+      if (a && a.profit > 0) {
+        a.city = a.tag.split(' → ')[1];
+        a.how = 'Beli di ' + a.tag.split(' → ')[0] +
+          ', jual ke buy order di ' + a.city;
+        a.badges = riskBadges('arb', thin, a.profit);
+        a.buyPx = Math.round(M.at(m.id, a.tag.split(' → ')[0]).sell || 0);
+        a.sellPx = Math.round(M.at(m.id, a.city).buy || 0);
+        a.head = money(a.profit) + ' /unit';
+        a.roiTxt = pct(a.roi) + ' ROI · modal ' + money(a.capital);
+        out.push(a);
+      }
+      var f = flipOpp(m, M.at(m.id, CFG.city));
+      if (f && f.profit > 0) {
+        f.how = 'Beli dan jual di ' + CFG.city + ', tanpa transport';
+        f.badges = riskBadges('flip', false, f.profit);
+        var fe = M.at(m.id, CFG.city);
+        f.buyPx = Math.round(fe ? fe.sell : 0);
+        f.sellPx = Math.round(fe ? fe.buy : 0);
+        f.head = money(f.profit) + ' /unit';
+        f.roiTxt = pct(f.roi) + ' ROI · modal ' + money(f.capital);
+        out.push(f);
+      }
+    }
+    var k = STATE.aSortFlip;
+    out.sort(k === 'profit' ? function (a, b) { return b.profit - a.profit; }
+      : k === 'sph' ? function (a, b) { return b.sph - a.sph; }
+      : function (a, b) { return b.roi - a.roi; });
+    return out;
+  }
+
+  /* analisis satu item untuk tab Cari: jual instan, arbitrage, refine */
+  function autoItem(m) {
+    var rows = M.byCity(m.id).filter(function (e) { return !ZERO_SKIP[e.city]; });
+    if (!rows.length) return null;
+    var bag = {};
+    rows.forEach(function (e) { bag[e.city] = e; });
+    var inst = bestCity(rows, 'buy');
+    var ord = bestCity(rows, 'sell');
+    var arb = arbOpp(m, bag);
+    if (arb && arb.profit <= 0) arb = null;
+
+    var ref = null;
+    if (m.kind === 'raw' && m.chain) {
+      var ch = M.CHAINS.filter(function (c) { return c.key === m.chain; })[0];
+      var cs = cityList(), i;
+      for (i = 0; i < cs.length; i++) {
+        var o = refineOppAt(ch, m.tier, cs[i]);
+        if (o && o.profit > 0 && (!ref || o.profit > ref.profit)) ref = o;
+      }
+    }
+    return { inst:inst, ord:ord, arb:arb, ref:ref, thin:Object.keys(bag).length <= 2 };
+  }
+
+  /* kalimat verdict: aksi paling menguntungkan untuk item ini */
+  function autoVerdict(m, a) {
+    if (a.arb && (!a.inst || a.arb.profit > a.inst.v)) {
+      var p = a.arb.tag.split(' → ');
+      return {
+        head:'Beli di ' + p[0] + ', jual instan di ' + p[1],
+        money:a.arb.profit, city:a.arb.city,
+        meta:pct(a.arb.roi) + ' ROI · modal ' + money(a.arb.capital),
+        buy:Math.round(M.at(m.id, p[0]).sell || 0),
+        sell:Math.round(M.at(m.id, p[1]).buy || 0)
+      };
+    }
+    if (a.inst) {
+      return {
+        head:'Jual instan di ' + a.inst.city,
+        money:a.inst.v, city:a.inst.city,
+        meta:'tanpa transport · ' + (a.ord
+          ? 'pasang order di ' + a.ord.city + ' = ' + money(a.ord.v)
+          : 'tidak ada kota lain yang punya order'),
+        buy:Math.round(M.at(m.id, CFG.city).sell || 0),
+        sell:Math.round(a.inst.px)
+      };
+    }
+    return {
+      head:'Belum ada buy order di region ini',
+      money:0, city:'—',
+      meta:a.ord ? 'sell order termurah ' + a.ord.city + ' ' + money(a.ord.v) : 'tidak ada harga sama sekali',
+      buy:a.ord ? Math.round(a.ord.px) : 0, sell:0
+    };
+  }
+
+  /* renderer baris auto; mode refine mengisi chain/tier/kota,
+     mode flip mengisi harga beli/jual supaya kalkulator langsung jadi */
+  function autoRowHtml(o, mode) {
+    var badges = (o.badges || []).map(function (b) {
+      return '<span class="badge ' + b.cls + '">' + esc(b.t) + '</span> ';
+    }).join('');
+    var cells = o.cells.map(function (c) {
+      return '<span class="r-cell"><span class="r-cell-k">' + esc(c[0]) +
+        '</span><span class="r-cell-v">' + esc(c[1]) + '</span></span>';
+    }).join('');
+    var attr = mode === 'refine'
+      ? ' data-chain="' + esc(o.chain) + '" data-tier="' + esc(o.tier) +
+        '" data-city="' + esc(o.city) + '"'
+      : ' data-id="' + esc(o.id) + '" data-buy="' + (o.buyPx || 0) +
+        '" data-sell="' + (o.sellPx || 0) + '"';
+    return '<button type="button" class="row' +
+      (STATE.selected === o.id ? ' sel' : '') + '"' + attr + '>' +
+      '<span class="r-main"><span class="r-tag">' + esc(o.tag) + '</span>' +
+        '<span class="r-name">' + esc(o.name) + '</span>' +
+        (o.how ? '<span class="r-how">' + esc(o.how) + '</span>' : '') + badges + '</span>' +
+      '<span class="r-right"><span class="r-profit" style="color:var(--pos)">' +
+        esc(o.head) + '</span><span class="r-roi">' + esc(o.roiTxt) +
+        ' · ' + money(o.sph) + '/jam</span></span>' +
+      '<span class="r-grid">' + cells + '</span></button>';
+  }
+
+  function autoHiddenNote(n) {
+    return n > LIMIT
+      ? '<p class="hint" style="text-align:center;padding:8px 0">' +
+        silver(n - LIMIT) + ' peluang lain disembunyikan.</p>'
+      : '';
+  }
+
+  function renderRefineAuto() {
+    var data = autoRefine();
+    var best = data[0];
+    var cheap = null;
+    data.forEach(function (o) {
+      if (o.capital > 0 && (!cheap || o.capital < cheap.capital)) cheap = o;
+    });
+    $('rfAutoCount').textContent = data.length + ' kombinasi untung';
+    $('rfStats').innerHTML =
+      statBox('Paling untung', best ? money(best.profit) : '—',
+        best ? best.name : 'tunggu feed', 'pos') +
+      statBox('Kota', best ? best.city : '—', best ? best.tag : '—') +
+      statBox('Modal terkecil', cheap ? money(cheap.capital) : '—',
+        cheap ? cheap.name : '—') +
+      statBox('Kombinasi', silver(data.length),
+        'T' + M.TIER_MIN + '–T' + M.TIER_MAX + ' × ' + cityList().length + ' kota');
+
+    var hero = $('rfAutoHero');
+    if (!best) {
+      hero.innerHTML =
+        '<span class="hero-k">Belum ada kombinasi refine untung</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Feed belum punya harga bahan + refined yang lengkap. ' +
+        'Tunggu sinkron atau ganti region.</span>';
+      $('rfAutoList').innerHTML = '';
+      return;
+    }
+    hero.innerHTML =
+      '<span class="hero-k">Lakukan dulu · refine otomatis</span>' +
+      '<span class="hero-h">' + esc(best.name) + ' di ' + esc(best.city) + '</span>' +
+      '<span class="hero-s">Beli bahan di ' + esc(best.city) + ', refine, jual refined. ' +
+      (best.inst
+        ? 'Kalau bahannya kamu gather sendiri, premium di kota itu ' + signed(best.prem) + '/unit.'
+        : 'Refined di kota itu belum ada buy order — harus dipasang sell order dan menunggu buyer.') +
+      '</span>' +
+      '<span class="hero-money">' + money(best.profit) + ' / unit</span>' +
+      '<span class="hero-meta">' + pct(best.roi) + ' ROI · modal ' + money(best.capital) +
+      ' · ' + money(best.sph) + '/jam</span>' +
+      '<span class="hero-go">Ketuk baris di bawah untuk isi kalkulator refine.</span>';
+    $('rfAutoList').innerHTML = data.slice(0, LIMIT).map(function (o) {
+      return autoRowHtml(o, 'refine');
+    }).join('') + autoHiddenNote(data.length);
+  }
+
+  function renderFlipAuto() {
+    var data = autoFlip();
+    var best = data[0];
+    var cheap = null;
+    data.forEach(function (o) {
+      if (o.capital > 0 && (!cheap || o.capital < cheap.capital)) cheap = o;
+    });
+    $('flAutoCount').textContent = data.length + ' peluang untung';
+    $('flStats').innerHTML =
+      statBox('Paling untung', best ? money(best.profit) : '—',
+        best ? best.name : 'tunggu feed', 'pos') +
+      statBox('Rute', best ? best.tag : '—',
+        best ? 'kota acuan ' + CFG.city + ' · transport ' + money(CFG.transport) : '—') +
+      statBox('Modal terkecil', cheap ? money(cheap.capital) : '—',
+        cheap ? cheap.name : '—') +
+      statBox('Peluang', silver(data.length), M.tracked().length + ' item dipantau');
+
+    var hero = $('flAutoHero');
+    if (!best) {
+      hero.innerHTML =
+        '<span class="hero-k">Belum ada flip untung</span>' +
+        '<span class="hero-h">—</span>' +
+        '<span class="hero-s">Tidak ada sebaran harga yang beats tax + setup di ' +
+        esc(M.regionLabel()) + '. Tunggu feed atau ganti region.</span>';
+      $('flAutoList').innerHTML = '';
+      return;
+    }
+    hero.innerHTML =
+      '<span class="hero-k">Lakukan dulu · flip otomatis</span>' +
+      '<span class="hero-h">' + esc(best.name) + '</span>' +
+      '<span class="hero-s">' + esc(best.how) + '</span>' +
+      '<span class="hero-money">' + money(best.profit) + ' / unit</span>' +
+      '<span class="hero-meta">' + best.roiTxt + ' · ' + money(best.sph) + '/jam' +
+      ' · ' + silver(CFG.throughput) + ' unit/jam</span>' +
+      '<span class="hero-go">Ketuk baris di bawah untuk isi kalkulator flip.</span>';
+    $('flAutoList').innerHTML = data.slice(0, LIMIT).map(function (o) {
+      return autoRowHtml(o, 'flip');
+    }).join('') + autoHiddenNote(data.length);
+  }
+
+  function renderSearchAuto(hits) {
+    var box = $('seAuto'), btns = $('seAutoBtns');
+    if (!hits.length) {
+      box.innerHTML = '';
+      btns.style.display = 'none';
+      return;
+    }
+    var m = null, i;
+    for (i = 0; i < hits.length; i++) {
+      if (hits[i].id === STATE.seFocus) { m = hits[i]; break; }
+    }
+    if (!m) m = hits[0];
+
+    var a = autoItem(m);
+    if (!a) {
+      box.innerHTML = '<div class="state">Belum ada harga di region ini untuk ' + esc(m.label) + '.</div>';
+      btns.style.display = 'none';
+      return;
+    }
+    var v = autoVerdict(m, a);
+    var extra = [];
+    if (a.ref) {
+      extra.push('Refine ' + M.meta(M.refId(m.tier, m.chain)).label + ' di ' + a.ref.city +
+        ' = ' + signed(a.ref.prem) + '/unit dari bahan sendiri');
+    } else if (m.kind === 'raw') {
+      extra.push('Di tier ini refined lebih murah dari bahan mentahnya — jangan refine');
+    }
+    if (a.thin) extra.push('pasar tipis: item cuma ada di 1–2 kota, harga bisa hilang');
+
+    box.innerHTML =
+      '<span class="hero-k">Otomatis · ' + esc(m.label) + '</span>' +
+      '<span class="hero-h">' + esc(v.head) + '</span>' +
+      '<span class="hero-s">' + esc(v.meta) + '</span>' +
+      '<span class="hero-money">' + money(v.money) + ' / unit</span>' +
+      '<span class="hero-meta">' + esc(extra.join(' · ') || 'Bandingkan manual di bawah') + '</span>' +
+      '<span class="hero-go">Pakai hasil ini: isi Flip atau Refine tanpa ketik ulang.</span>';
+
+    btns.style.display = 'grid';
+    $('seToRefine').style.display = a.ref ? '' : 'none';
+  }
   function renderRefine() {
+    renderRefineAuto();
     var chain = M.CHAINS.filter(function (c) { return c.key === STATE.chain; })[0] || M.CHAINS[0];
     var tier = STATE.tier;
     var rl = M.refLive(tier, chain, CFG.city);
@@ -964,6 +1280,7 @@
   }
 
   function renderFlip() {
+    renderFlipAuto();
     var m = STATE.selected ? M.meta(STATE.selected) : null;
     $('flName').textContent = m ? m.label + ' (' + m.id + ')' : 'belum ada item — cari di tab CARI';
 
@@ -997,34 +1314,42 @@
   function renderSearch() {
     var q = STATE.query, box = $('seList');
     if (q.length < 2) {
+      renderSearchAuto([]);
       box.innerHTML = '<div class="state">Ketik minimal 2 huruf. Contoh: <b>ORE</b>, <b>CLOTH</b>, ' +
         '<b>WOOD</b>, atau id bebas seperti <b>T6_SWORD</b> — item di luar watchlist diambil on-demand.</div>';
       return;
     }
     var hits = M.search(q);
     if (STATE.searching) {
+      renderSearchAuto([]);
       box.innerHTML = '<div class="state">Mengambil harga “' + esc(q) + '” dari feed…</div>';
       return;
     }
     if (!hits.length) {
+      renderSearchAuto([]);
       box.innerHTML = '<div class="state">Tidak ada “' + esc(q) + '”. Coba id persis, misal <b>T6_CLOTH</b>.</div>';
       return;
     }
+    renderSearchAuto(hits);
     box.innerHTML = hits.map(function (m) {
-      var e = M.at(m.id, CFG.city);
-      var profit = e && e.sell && e.buy ? netSell(e.buy) - costBuy(e.sell) : 0;
-      var p = profit >= 0 ? 'var(--pos)' : 'var(--neg)';
-      var cityTxt = e ? e.city : '—';
-      return '<button type="button" class="row" data-id="' + esc(m.id) + '">' +
-        '<span class="r-main"><span class="r-tag">' + esc(m.id) + '</span>' +
-        '<span class="r-name">' + esc(m.label) + '</span></span>' +
+      var a = autoItem(m);
+      if (!a) {
+        return '<div class="state">' + esc(m.label) + ': belum ada harga di region ini.</div>';
+      }
+      var v = autoVerdict(m, a);
+      var p = v.money > 0 ? 'var(--pos)' : 'var(--muted)';
+      return '<button type="button" class="row" data-id="' + esc(m.id) + '"' +
+        ' data-buy="' + v.buy + '" data-sell="' + v.sell + '">' +
+        '<span class="r-main"><span class="r-tag">' + esc(v.city) + '</span>' +
+        '<span class="r-name">' + esc(m.label) + '</span>' +
+        '<span class="r-how">' + esc(v.head) + '</span></span>' +
         '<span class="r-right"><span class="r-profit" style="color:' + p + '">' +
-          (e && e.sell && e.buy ? signed(profit) : '—') +
-        '</span><span class="r-roi">margin flip</span></span>' +
+          (v.money > 0 ? signed(v.money) : '—') +
+        '</span><span class="r-roi">per unit</span></span>' +
         '<span class="r-grid">' +
-        '<span class="r-cell"><span class="r-cell-k">Kota</span><span class="r-cell-v">' + esc(cityTxt) + '</span></span>' +
-        '<span class="r-cell"><span class="r-cell-k">Beli</span><span class="r-cell-v">' + (e && e.sell ? money(e.sell) : '—') + '</span></span>' +
-        '<span class="r-cell"><span class="r-cell-k">Jual</span><span class="r-cell-v">' + (e && e.buy ? money(e.buy) : '—') + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Beli</span><span class="r-cell-v">' + (v.buy ? money(v.buy) : '—') + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Jual</span><span class="r-cell-v">' + (v.sell ? money(v.sell) : '—') + '</span></span>' +
+        '<span class="r-cell"><span class="r-cell-k">Id</span><span class="r-cell-v">' + esc(m.id) + '</span></span>' +
         '</span></button>';
     }).join('');
   }
@@ -1400,8 +1725,85 @@
 
     /* cari: id di luar watchlist diambil on-demand (1 request) */
     var t = null;
+    $('rfSort').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.aSortRefine = c.dataset.v;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderRefine();
+    });
+
+    $('flSort').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      STATE.aSortFlip = c.dataset.v;
+      this.querySelectorAll('.chip').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === c));
+      });
+      renderFlip();
+    });
+
+    /* ketuk baris refine otomatis -> isi kalkulator refine */
+    $('rfAutoList').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      STATE.chain = b.dataset.chain;
+      STATE.tier = num(b.dataset.tier);
+      $('rfChain').value = STATE.chain;
+      $('rfTier').value = String(STATE.tier);
+      if (b.dataset.city && M.ROYALS.indexOf(b.dataset.city) > -1) {
+        CFG.city = b.dataset.city;
+        saveCfg();
+        fillCfgInputs();
+      }
+      renderRefine();
+    });
+
+    /* ketuk baris flip otomatis -> isi kalkulator flip */
+    $('flAutoList').addEventListener('click', function (e) {
+      var b = e.target.closest('button.row');
+      if (!b) return;
+      STATE.selected = b.dataset.id;
+      if (num(b.dataset.buy)) $('flBuy').value = num(b.dataset.buy);
+      if (num(b.dataset.sell)) $('flSell').value = num(b.dataset.sell);
+      renderFlip();
+    });
+
+    /* tombol di kartu otomatis tab Cari */
+    $('seToFlip').addEventListener('click', function () {
+      var m = STATE.seFocus ? M.meta(STATE.seFocus) : null;
+      var hits = m ? M.search(m.id) : [];
+      var a = m && hits.length ? autoItem(hits[0]) : null;
+      if (!a) return;
+      var v = autoVerdict(hits[0], a);
+      STATE.selected = hits[0].id;
+      $('flBuy').value = v.buy;
+      $('flSell').value = v.sell;
+      setView('flip');
+    });
+
+    $('seToRefine').addEventListener('click', function () {
+      var m = STATE.seFocus ? M.meta(STATE.seFocus) : null;
+      var hits = m ? M.search(m.id) : [];
+      var a = m && hits.length ? autoItem(hits[0]) : null;
+      if (!a || !a.ref) return;
+      STATE.chain = a.ref.chain;
+      STATE.tier = a.ref.tier;
+      $('rfChain').value = STATE.chain;
+      $('rfTier').value = String(a.ref.tier);
+      if (a.ref.city && M.ROYALS.indexOf(a.ref.city) > -1) {
+        CFG.city = a.ref.city;
+        saveCfg();
+        fillCfgInputs();
+      }
+      setView('refine');
+    });
+
     $('seInput').addEventListener('input', function () {
       STATE.query = this.value;
+      STATE.seFocus = null;
       var q = STATE.query.trim().toUpperCase();
       renderSearch();
       if (q.length < 2) return;
@@ -1418,14 +1820,18 @@
     });
 
     $('seList').addEventListener('click', function (e) {
-      var row = e.target.closest('.row');
+      var row = e.target.closest('button.row');
       if (!row) return;
       STATE.selected = row.dataset.id;
-      var ent = M.at(STATE.selected, CFG.city);
-      if (ent) {
-        $('flBuy').value = Math.round(ent.sell || 0);
-        $('flSell').value = Math.round(ent.buy || 0);
+      STATE.seFocus = row.dataset.id;
+      var buy = num(row.dataset.buy), sell = num(row.dataset.sell);
+      if (!buy || !sell) {
+        var ent = M.at(STATE.selected, CFG.city);
+        buy = Math.round(ent ? ent.sell : 0);
+        sell = Math.round(ent ? ent.buy : 0);
       }
+      $('flBuy').value = buy;
+      $('flSell').value = sell;
       setView('flip');
     });
 

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.6">
+  <link rel="stylesheet" href="../../data/css/market-v2.css?v=2.7">
 </head>
 <body>
   <div class="app">
@@ -273,6 +273,29 @@
 
     <!-- ===== 3 REFINE ===== -->
     <section class="view" id="view-refine" role="tabpanel" aria-label="Kalkulator refine">
+      <div class="stats" id="rfStats"></div>
+
+      <div class="hero" id="rfAutoHero"></div>
+
+      <div class="tools" id="rfSort" role="group" aria-label="Urutkan perbandingan">
+        <button type="button" class="chip" data-v="profit" aria-pressed="true">Urut: profit/unit</button>
+        <button type="button" class="chip" data-v="roi" aria-pressed="false">Urut: ROI</button>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Bandingkan semua refine</span>
+        <span class="sec-s" id="rfAutoCount">—</span>
+      </div>
+
+      <div class="list" id="rfAutoList"></div>
+
+      <p class="note">
+        Perbandingan ini memindai semua material × tier T2–T8 × semua kota dari harga live
+        yang sudah ada di memori, jadi tidak menambah request. Baris di bawah memakai biaya bahan
+        <b>di kota yang sama</b> — beli bahan di sana, refine di sana, jual di sana, tanpa
+        transport. Ketuk baris untuk memindahkan kalkulator ke kombinasi itu.
+      </p>
+
       <div class="sec"><span class="sec-h">Kalkulator refine</span><span class="sec-s">biaya bahan live + RRR</span></div>
 
       <div class="form">
@@ -321,6 +344,31 @@
 
     <!-- ===== 3 FLIP ===== -->
     <section class="view" id="view-flip" role="tabpanel" aria-label="Kalkulator flip">
+      <div class="stats" id="flStats"></div>
+
+      <div class="hero" id="flAutoHero"></div>
+
+      <div class="tools" id="flSort" role="group" aria-label="Urutkan perbandingan">
+        <button type="button" class="chip" data-v="roi" aria-pressed="true">Urut: ROI</button>
+        <button type="button" class="chip" data-v="profit" aria-pressed="false">Urut: profit/unit</button>
+        <button type="button" class="chip" data-v="sph" aria-pressed="false">Urut: silver/jam</button>
+      </div>
+
+      <div class="sec">
+        <span class="sec-h">Bandingkan semua flip</span>
+        <span class="sec-s" id="flAutoCount">—</span>
+      </div>
+
+      <div class="list" id="flAutoList"></div>
+
+      <p class="note">
+        Perbandingan ini memindai arbitrage antar kota <b>dan</b> flip satu kota di
+        <b>Kota acuan</b> untuk semua item yang dipantau, memakai ongkos transport dari
+        parameter di bawah. ROI dihitung dari modal yang benar-benar dipakai, jadi
+        urutan ROI berguna saat modalmu kecil. Kota PK (Brecilien, Black Market)
+        tidak ikut dibandingkan. Ketuk baris untuk mengisi kalkulator flip.
+      </p>
+
       <div class="sec"><span class="sec-h">Kalkulator flip</span><span class="sec-s" id="flName">belum ada item</span></div>
 
       <div class="form">
@@ -395,8 +443,20 @@
         </div>
       </div>
 
+      <div class="hero" id="seAuto"></div>
+
+      <div class="btn-row" id="seAutoBtns" style="display:none">
+        <button type="button" class="btn primary" id="seToFlip">Isi Flip dari rekomendasi</button>
+        <button type="button" class="btn" id="seToRefine">Isi Refine dari rekomendasi</button>
+      </div>
+
       <div class="list" id="seList"></div>
-      <p class="note">Ketuk hasil untuk mengirim harga beli &amp; jual ke tab <b>Flip</b>.</p>
+      <p class="note">
+        Kartu di atas sudah otomatis membandingkan semua kota untuk hasil teratas:
+        jual instan di kota mana, arbitrase dari kota mana ke kota mana, dan apakah bahan itu
+        lebih untung di-refine atau dijual mentah. Ketuk hasil untuk mengirim harga
+        beli &amp; jual ke tab <b>Flip</b>.
+      </p>
     </section>
 
     <!-- ===== parameter global ===== -->
@@ -478,11 +538,11 @@
     </details>
 
     <footer class="ftr">
-      Silver Ops v2.6 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
+      Silver Ops v2.7 · data dari Albion Online Data Project (crowd-sourced, 1 menit) · bukan panduan trading resmi · main dengan jakarta modal secukupnya
     </footer>
   </div>
 
-  <script src="../../data/js/albion-market.js?v=2.6"></script>
-  <script src="../../data/js/albion-v2.js?v=2.6"></script>
+  <script src="../../data/js/albion-market.js?v=2.7"></script>
+  <script src="../../data/js/albion-v2.js?v=2.7"></script>
 </body>
 </html>
