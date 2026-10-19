@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIVE ECONOMIC CALENDAR</title>
+<meta name="description" content="Jadwal rilis data ekonomi berdampak tinggi &amp; jam pasar dunia">
+<style>
+:root{--bg:#070b12;--panel:#0d1521;--panel2:#111d2e;--line:#22334a;--line2:#2c4059;--text:#dbe6f3;--muted:#8ea3bd;--accent:#f0c16c;--cyan:#63d4dd;--green:#4fd18b;--red:#ff7a7a;--violet:#b79cff}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;background-image:linear-gradient(rgba(120,140,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(120,140,170,.05) 1px,transparent 1px);background-size:10px 10px}
+a{color:var(--cyan)}
+.wrap{max-width:1120px;margin:0 auto;padding:18px 14px 42px}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,rgba(20,32,48,.9),rgba(10,18,28,.9));padding:14px 16px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand .ico{width:40px;height:40px;flex:0 0 40px;border:1px solid var(--line2);border-radius:9px;display:grid;place-items:center;font-size:19px;background:#0b1420}
+h1{font-size:17px;margin:0;letter-spacing:.4px;color:var(--accent)}
+.sub{color:var(--muted);font-size:11.5px;margin-top:3px}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{font-size:11px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px;color:var(--muted);background:#0b1420}
+.links a:hover{border-color:var(--cyan);color:var(--cyan)}
+.status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:var(--muted);margin:0 0 14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;box-shadow:0 0 8px currentColor}
+.dot.on{background:var(--green);color:var(--green)}
+.dot.warn{background:var(--accent);color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin-bottom:14px;overflow:hidden}
+.card>.hd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.card>.hd h2{font-size:13.5px;margin:0;letter-spacing:.5px;color:var(--accent)}
+.card>.hd small{color:var(--muted);font-size:11px;font-weight:400}
+.card>.bd{padding:14px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+label{display:block;font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:5px;text-transform:uppercase}
+input,select,button,textarea{font:inherit;max-width:100%}
+input[type=text],input[type=number],input[type=date],input[type=datetime-local],input[type=time],select,textarea{width:100%;background:#0a121d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 10px;min-height:40px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--cyan);width:16px;height:16px}
+button{background:#16283d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 13px;min-height:40px;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#16202e;font-weight:700}
+button.ghost{background:transparent}
+button.sm{min-height:32px;padding:6px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.row>*{flex:1 1 170px}
+.row.compact>*{flex:0 1 auto}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+.metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.metric .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.metric .s{font-size:11px;color:var(--muted);margin-top:3px}
+.pos{color:var(--green)}.neg{color:var(--red)}.mid{color:var(--muted)}
+.big{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;border:1px solid var(--line2);border-radius:999px;padding:3px 9px;color:var(--muted)}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.bad{border-color:var(--red);color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#0b1420;position:sticky;top:0;z-index:1;cursor:pointer}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:#12203310}
+.scroll{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:9px}
+.msg{padding:11px 12px;border-radius:8px;font-size:12px;border:1px solid var(--line2);background:#0d1724;color:var(--muted)}
+.msg.err{border-color:#6d3b43;background:#241820;color:#ffbdbd}
+.msg.ok{border-color:#2c6c4d;background:#0f2018;color:#b6f0cf}
+.toast{position:fixed;right:14px;bottom:14px;z-index:50;display:flex;flex-direction:column;gap:8px;max-width:88vw}
+.toast>div{background:#122033;border:1px solid var(--line2);border-left:3px solid var(--cyan);border-radius:8px;padding:10px 12px;font-size:12px;box-shadow:0 8px 24px #0008}
+.toast>div.err{border-left-color:var(--red)}
+.toast>div.ok{border-left-color:var(--green)}
+.small{font-size:11px;color:var(--muted)}
+.right{text-align:right}
+.center{text-align:center}
+canvas{max-width:100%}
+.tvbox{min-height:420px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#0b1420}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{min-height:34px;padding:6px 12px;font-size:12px;border-radius:999px;background:#0d1724}
+.tabs button.active{border-color:var(--accent);color:var(--accent)}
+.bar{height:7px;border-radius:999px;background:#0b1420;border:1px solid var(--line);overflow:hidden}
+.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--accent))}
+.footer{border-top:1px solid var(--line);margin-top:18px;padding-top:12px;color:var(--muted);font-size:11px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+.alert-item{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;background:var(--panel2)}
+.alert-item.hit{border-color:var(--green)}
+.hidden{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);margin-top:8px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+@media(max-width:640px){.big{font-size:27px}.metric .v{font-size:17px}h1{font-size:15px}.wrap{padding:12px 10px 34px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="ico">🗓️</div>
+    <div>
+      <h1>LIVE ECONOMIC CALENDAR</h1>
+      <div class="sub">Jadwal rilis data ekonomi berdampak tinggi &amp; jam pasar dunia</div>
+    </div>
+  </div>
+  <div class="links">
+    <a href="../../index.html">&larr; CARTRIDGE VAULT</a>
+    <a href="https://github.com/kusnuzon/fx-project" target="_blank" rel="noopener noreferrer">GITHUB</a>
+  </div>
+</header>
+
+<div class="status">
+  <span id="clocks">—</span>
+</div>
+<div class="card">
+  <div class="hd"><h2>KALENDER EKONOMI</h2><small>Filter penting: tinggi &amp; sedang</small></div>
+  <div class="bd">
+    <div class="row">
+      <div><label>Negara</label><select id="country">
+        <option value="us,eu,gb,jp,au,ca,ch,cn,de,fr,id">Utama + Indonesia</option>
+        <option value="us">Amerika Serikat</option>
+        <option value="eu,de,fr,gb">Eropa &amp; Inggris</option>
+        <option value="jp,cn,au">Asia Pasifik</option>
+        <option value="id">Indonesia</option>
+        <option value="">Semua negara</option>
+      </select></div>
+      <div><label>Importance</label><select id="imp">
+        <option value="-1,0,1">Semua</option>
+        <option value="0,1">Sedang &amp; tinggi</option>
+        <option value="1">Tinggi saja</option>
+      </select></div>
+      <div><label>Zona waktu</label><select id="tz">
+        <option value="Asia/Jakarta">WIB (GMT+7)</option>
+        <option value="Africa/Cairo">Luxor / Kairo (GMT+3)</option>
+        <option value="UTC">UTC</option>
+        <option value="America/New_York">New York</option>
+        <option value="Europe/London">London</option>
+      </select></div>
+      <div><label>&nbsp;</label><button class="primary" id="go">TAMPILKAN</button></div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="hd"><h2>JADWAL</h2><small id="meta">—</small></div>
+  <div class="bd"><div class="tvbox" id="cal" style="min-height:640px"></div></div>
+</div>
+
+<div class="footer">
+  <span>Data pasar live dari sumber publik (Coinbase, gold-api, Binance, TradingView). Bukan saran keuangan.</span>
+  <span>Kalender TradingView. Jam dihitung dari zona waktu IANA (DST otomatis).</span>
+</div>
+</div>
+<div class="toast" id="toastHost"></div>
+<script>
+const FX = (() => {
+  const TIMEOUT = 12000;
+  async function jget(url, timeout = TIMEOUT) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+  const API = {
+    coinbase: (pair) => "https://api.coinbase.com/v2/prices/" + pair + "/spot",
+    gold: (sym) => "https://api.gold-api.com/price/" + sym,
+    binance: (path) => "https://data-api.binance.vision/api/v3/" + path,
+    frankfurter: (base, symbols) => "https://api.frankfurter.dev/v1/latest?base=" + base + "&symbols=" + symbols.join(","),
+    fawaz: (cur) => "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/" + cur + ".json"
+  };
+  async function spot(pair) {
+    const j = await jget(API.coinbase(pair));
+    const price = Number(j && j.data && j.data.amount);
+    if (!Number.isFinite(price)) throw new Error("Harga tidak valid");
+    return price;
+  }
+  async function metal(sym) {
+    const j = await jget(API.gold(sym));
+    const price = Number(j && j.price);
+    if (!Number.isFinite(price)) throw new Error("Harga tidak valid");
+    return { price, at: j.updatedAt, name: j.name };
+  }
+  async function binance(path) { return jget(API.binance(path)); }
+  function binanceWS(streams, onData, onState) {
+    let ws = null, closed = false;
+    const url = "wss://data-stream.binance.vision/stream?streams=" + streams.join("/");
+    function open() {
+      if (closed) return;
+      onState && onState("connecting");
+      try { ws = new WebSocket(url); } catch (e) { onState && onState("error"); return; }
+      ws.onopen = () => onState && onState("open");
+      ws.onmessage = (e) => { try { onData(JSON.parse(e.data)); } catch (_) {} };
+      ws.onerror = () => onState && onState("error");
+      ws.onclose = () => { onState && onState("closed"); if (!closed) setTimeout(open, 3000); };
+    }
+    open();
+    return { close() { closed = true; try { ws && ws.close(); } catch (_) {} } };
+  }
+  const fmt = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+  const pct = (n, d = 2) => Number.isFinite(n) ? (n >= 0 ? "+" : "") + n.toFixed(d) + "%" : "—";
+  const cls = (n) => !Number.isFinite(n) ? "mid" : n > 0 ? "pos" : n < 0 ? "neg" : "mid";
+  const el = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  };
+  function toast(msg, kind) {
+    let host = el("toastHost");
+    if (!host) { host = document.createElement("div"); host.id = "toastHost"; host.className = "toast"; document.body.appendChild(host); }
+    const d = document.createElement("div");
+    d.className = kind || "";
+    d.textContent = msg;
+    host.appendChild(d);
+    setTimeout(() => { d.style.opacity = "0"; d.style.transition = "opacity .4s"; setTimeout(() => d.remove(), 420); }, 3800);
+  }
+  function beep() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = new AC(); const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = 880; g.gain.value = 0.07;
+      o.connect(g); g.connect(c.destination); o.start();
+      setTimeout(() => { o.stop(); c.close(); }, 220);
+    } catch (_) {}
+  }
+  function clock(date, tz, opts) {
+    return new Intl.DateTimeFormat("en-GB", Object.assign({ timeZone: tz, hour12: false }, opts || { hour: "2-digit", minute: "2-digit", second: "2-digit" })).format(date);
+  }
+  function parts(date, tz) {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour12: false, weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", year: "numeric", month: "2-digit", day: "2-digit" });
+    const o = {};
+    for (const p of f.formatToParts(date)) if (p.type !== "literal") o[p.type] = p.value;
+    o.hour = Number(o.hour) % 24;
+    return o;
+  }
+  function tvWidget(containerId, widgetFile, config) {
+    const c = el(containerId);
+    if (!c) return;
+    c.innerHTML = "";
+    const holder = document.createElement("div");
+    holder.className = "tradingview-widget-container";
+    holder.style.height = "100%";
+    const inner = document.createElement("div");
+    inner.className = "tradingview-widget-container__widget";
+    inner.style.height = "100%";
+    holder.appendChild(inner);
+    c.appendChild(holder);
+    const s = document.createElement("script");
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = "https://s3.tradingview.com/external-embedding/embed-widget-" + widgetFile + ".js";
+    s.text = JSON.stringify(config);
+    holder.appendChild(s);
+  }
+  function sparkline(canvas, values, color) {
+    if (!canvas || !canvas.getContext) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || canvas.width || 320;
+    const h = canvas.clientHeight || canvas.height || 56;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!values || values.length < 2) return;
+    const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    const rng = (max - min) || 1;
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = (i / (values.length - 1)) * (w - 2) + 1;
+      const y = h - 2 - ((v - min) / rng) * (h - 6);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = color || "#63d4dd";
+    ctx.stroke();
+  }
+  return { jget, API, spot, metal, binance, binanceWS, fmt, pct, cls, el, store, toast, beep, clock, parts, tvWidget, sparkline };
+})();
+</script>
+<script>
+const ZONES = [["UTC", "UTC"], ["Asia/Jakarta", "WIB"], ["Africa/Cairo", "Luxor/Kairo"], ["Europe/London", "London"], ["America/New_York", "New York"], ["Asia/Tokyo", "Tokyo"], ["Australia/Sydney", "Sydney"]];
+
+function clocks() {
+  const now = new Date();
+  FX.el("clocks").innerHTML = ZONES.map(([tz, label]) =>
+    '<span class="pill">' + label + ' <b>' + FX.clock(now, tz, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) + '</b></span>').join(" ");
+}
+
+function mount() {
+  FX.tvWidget("cal", "events", {
+    colorTheme: "dark", isTransparent: true, width: "100%", height: 640, locale: "id",
+    importanceFilter: FX.el("imp").value, countryFilter: FX.el("country").value,
+    timezone: FX.el("tz").value
+  });
+  FX.el("meta").textContent = "Negara: " + (FX.el("country").value || "semua") + " · importance " + FX.el("imp").value + " · zona " + FX.el("tz").value;
+}
+
+FX.el("go").addEventListener("click", mount);
+clocks(); setInterval(clocks, 1000); mount();
+</script>
+</body>
+</html>

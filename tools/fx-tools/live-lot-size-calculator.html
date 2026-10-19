@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIVE LOT SIZE CALCULATOR</title>
+<meta name="description" content="Ukuran posisi berbasis risiko dengan harga pasar live &amp; konversi mata uang akun">
+<style>
+:root{--bg:#070b12;--panel:#0d1521;--panel2:#111d2e;--line:#22334a;--line2:#2c4059;--text:#dbe6f3;--muted:#8ea3bd;--accent:#f0c16c;--cyan:#63d4dd;--green:#4fd18b;--red:#ff7a7a;--violet:#b79cff}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;background-image:linear-gradient(rgba(120,140,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(120,140,170,.05) 1px,transparent 1px);background-size:10px 10px}
+a{color:var(--cyan)}
+.wrap{max-width:1120px;margin:0 auto;padding:18px 14px 42px}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,rgba(20,32,48,.9),rgba(10,18,28,.9));padding:14px 16px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand .ico{width:40px;height:40px;flex:0 0 40px;border:1px solid var(--line2);border-radius:9px;display:grid;place-items:center;font-size:19px;background:#0b1420}
+h1{font-size:17px;margin:0;letter-spacing:.4px;color:var(--accent)}
+.sub{color:var(--muted);font-size:11.5px;margin-top:3px}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{font-size:11px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px;color:var(--muted);background:#0b1420}
+.links a:hover{border-color:var(--cyan);color:var(--cyan)}
+.status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:var(--muted);margin:0 0 14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;box-shadow:0 0 8px currentColor}
+.dot.on{background:var(--green);color:var(--green)}
+.dot.warn{background:var(--accent);color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin-bottom:14px;overflow:hidden}
+.card>.hd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.card>.hd h2{font-size:13.5px;margin:0;letter-spacing:.5px;color:var(--accent)}
+.card>.hd small{color:var(--muted);font-size:11px;font-weight:400}
+.card>.bd{padding:14px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+label{display:block;font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:5px;text-transform:uppercase}
+input,select,button,textarea{font:inherit;max-width:100%}
+input[type=text],input[type=number],input[type=date],input[type=datetime-local],input[type=time],select,textarea{width:100%;background:#0a121d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 10px;min-height:40px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--cyan);width:16px;height:16px}
+button{background:#16283d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 13px;min-height:40px;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#16202e;font-weight:700}
+button.ghost{background:transparent}
+button.sm{min-height:32px;padding:6px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.row>*{flex:1 1 170px}
+.row.compact>*{flex:0 1 auto}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+.metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.metric .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.metric .s{font-size:11px;color:var(--muted);margin-top:3px}
+.pos{color:var(--green)}.neg{color:var(--red)}.mid{color:var(--muted)}
+.big{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;border:1px solid var(--line2);border-radius:999px;padding:3px 9px;color:var(--muted)}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.bad{border-color:var(--red);color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#0b1420;position:sticky;top:0;z-index:1;cursor:pointer}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:#12203310}
+.scroll{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:9px}
+.msg{padding:11px 12px;border-radius:8px;font-size:12px;border:1px solid var(--line2);background:#0d1724;color:var(--muted)}
+.msg.err{border-color:#6d3b43;background:#241820;color:#ffbdbd}
+.msg.ok{border-color:#2c6c4d;background:#0f2018;color:#b6f0cf}
+.toast{position:fixed;right:14px;bottom:14px;z-index:50;display:flex;flex-direction:column;gap:8px;max-width:88vw}
+.toast>div{background:#122033;border:1px solid var(--line2);border-left:3px solid var(--cyan);border-radius:8px;padding:10px 12px;font-size:12px;box-shadow:0 8px 24px #0008}
+.toast>div.err{border-left-color:var(--red)}
+.toast>div.ok{border-left-color:var(--green)}
+.small{font-size:11px;color:var(--muted)}
+.right{text-align:right}
+.center{text-align:center}
+canvas{max-width:100%}
+.tvbox{min-height:420px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#0b1420}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{min-height:34px;padding:6px 12px;font-size:12px;border-radius:999px;background:#0d1724}
+.tabs button.active{border-color:var(--accent);color:var(--accent)}
+.bar{height:7px;border-radius:999px;background:#0b1420;border:1px solid var(--line);overflow:hidden}
+.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--accent))}
+.footer{border-top:1px solid var(--line);margin-top:18px;padding-top:12px;color:var(--muted);font-size:11px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+.alert-item{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;background:var(--panel2)}
+.alert-item.hit{border-color:var(--green)}
+.hidden{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);margin-top:8px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+@media(max-width:640px){.big{font-size:27px}.metric .v{font-size:17px}h1{font-size:15px}.wrap{padding:12px 10px 34px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="ico">🧮</div>
+    <div>
+      <h1>LIVE LOT SIZE CALCULATOR</h1>
+      <div class="sub">Ukuran posisi berbasis risiko dengan harga pasar live &amp; konversi mata uang akun</div>
+    </div>
+  </div>
+  <div class="links">
+    <a href="../../index.html">&larr; CARTRIDGE VAULT</a>
+    <a href="https://github.com/kusnuzon/fx-project" target="_blank" rel="noopener noreferrer">GITHUB</a>
+  </div>
+</header>
+
+<div class="status">
+  <span><span class="dot" id="pDot"></span> Harga live: <b id="pState">memuat…</b></span>
+  <span id="upd">—</span>
+</div>
+<div class="card">
+  <div class="hd"><h2>PARAMETER</h2><small>Isi lalu hitung — harga live untuk instrumen terpilih dipakai otomatis</small></div>
+  <div class="bd">
+    <div class="grid g3">
+      <div><label>Instrumen</label><select id="instr"></select></div>
+      <div><label>Mata uang akun</label><select id="acctCur"></select></div>
+      <div><label>Saldo akun</label><input id="balance" type="number" value="10000" step="any"></div>
+      <div><label>Risiko per transaksi (%)</label><input id="riskPct" type="number" value="1" step="0.1"></div>
+      <div><label>Stop loss (pips/poin)</label><input id="slPips" type="number" value="150" step="any"></div>
+      <div><label>Leverage (1:x)</label><input id="leverage" type="number" value="100" step="1"></div>
+      <div><label>Harga entry</label><input id="entry" type="number" step="any" placeholder="otomatis dari harga live"></div>
+      <div><label>Harga live</label><div class="row compact" style="gap:6px"><input id="livePrice" type="number" step="any" readonly><button class="sm" id="useLive">PAKAI</button></div></div>
+      <div><label>&nbsp;</label><button class="primary" id="calcBtn" style="width:100%">HITUNG</button></div>
+    </div>
+  </div>
+</div>
+<div class="grid g4" id="out"></div>
+<div class="split">
+  <div class="card">
+    <div class="hd"><h2>RINCIAN</h2></div>
+    <div class="bd"><div id="detail" class="small">Menunggu perhitungan…</div></div>
+  </div>
+  <div class="card">
+    <div class="hd"><h2>CATATAN INSTRUMEN</h2></div>
+    <div class="bd"><div id="spec" class="small"></div></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Data pasar live dari sumber publik (Coinbase, gold-api, Binance, TradingView). Bukan saran keuangan.</span>
+  <span>Nilai pip &amp; margin bersifat perkiraan; konfirmasi spesifikasi broker.</span>
+</div>
+</div>
+<div class="toast" id="toastHost"></div>
+<script>
+const FX = (() => {
+  const TIMEOUT = 12000;
+  async function jget(url, timeout = TIMEOUT) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+  const API = {
+    coinbase: (pair) => "https://api.coinbase.com/v2/prices/" + pair + "/spot",
+    gold: (sym) => "https://api.gold-api.com/price/" + sym,
+    binance: (path) => "https://data-api.binance.vision/api/v3/" + path,
+    frankfurter: (base, symbols) => "https://api.frankfurter.dev/v1/latest?base=" + base + "&symbols=" + symbols.join(","),
+    fawaz: (cur) => "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/" + cur + ".json"
+  };
+  async function spot(pair) {
+    const j = await jget(API.coinbase(pair));
+    const price = Number(j && j.data && j.data.amount);
+    if (!Number.isFinite(price)) throw new Error("Harga tidak valid");
+    return price;
+  }
+  async function metal(sym) {
+    const j = await jget(API.gold(sym));
+    const price = Number(j && j.price);
+    if (!Number.isFinite(price)) throw new Error("Harga tidak valid");
+    return { price, at: j.updatedAt, name: j.name };
+  }
+  async function binance(path) { return jget(API.binance(path)); }
+  function binanceWS(streams, onData, onState) {
+    let ws = null, closed = false;
+    const url = "wss://data-stream.binance.vision/stream?streams=" + streams.join("/");
+    function open() {
+      if (closed) return;
+      onState && onState("connecting");
+      try { ws = new WebSocket(url); } catch (e) { onState && onState("error"); return; }
+      ws.onopen = () => onState && onState("open");
+      ws.onmessage = (e) => { try { onData(JSON.parse(e.data)); } catch (_) {} };
+      ws.onerror = () => onState && onState("error");
+      ws.onclose = () => { onState && onState("closed"); if (!closed) setTimeout(open, 3000); };
+    }
+    open();
+    return { close() { closed = true; try { ws && ws.close(); } catch (_) {} } };
+  }
+  const fmt = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+  const pct = (n, d = 2) => Number.isFinite(n) ? (n >= 0 ? "+" : "") + n.toFixed(d) + "%" : "—";
+  const cls = (n) => !Number.isFinite(n) ? "mid" : n > 0 ? "pos" : n < 0 ? "neg" : "mid";
+  const el = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  };
+  function toast(msg, kind) {
+    let host = el("toastHost");
+    if (!host) { host = document.createElement("div"); host.id = "toastHost"; host.className = "toast"; document.body.appendChild(host); }
+    const d = document.createElement("div");
+    d.className = kind || "";
+    d.textContent = msg;
+    host.appendChild(d);
+    setTimeout(() => { d.style.opacity = "0"; d.style.transition = "opacity .4s"; setTimeout(() => d.remove(), 420); }, 3800);
+  }
+  function beep() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = new AC(); const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = 880; g.gain.value = 0.07;
+      o.connect(g); g.connect(c.destination); o.start();
+      setTimeout(() => { o.stop(); c.close(); }, 220);
+    } catch (_) {}
+  }
+  function clock(date, tz, opts) {
+    return new Intl.DateTimeFormat("en-GB", Object.assign({ timeZone: tz, hour12: false }, opts || { hour: "2-digit", minute: "2-digit", second: "2-digit" })).format(date);
+  }
+  function parts(date, tz) {
+    const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour12: false, weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", year: "numeric", month: "2-digit", day: "2-digit" });
+    const o = {};
+    for (const p of f.formatToParts(date)) if (p.type !== "literal") o[p.type] = p.value;
+    o.hour = Number(o.hour) % 24;
+    return o;
+  }
+  function tvWidget(containerId, widgetFile, config) {
+    const c = el(containerId);
+    if (!c) return;
+    c.innerHTML = "";
+    const holder = document.createElement("div");
+    holder.className = "tradingview-widget-container";
+    holder.style.height = "100%";
+    const inner = document.createElement("div");
+    inner.className = "tradingview-widget-container__widget";
+    inner.style.height = "100%";
+    holder.appendChild(inner);
+    c.appendChild(holder);
+    const s = document.createElement("script");
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = "https://s3.tradingview.com/external-embedding/embed-widget-" + widgetFile + ".js";
+    s.text = JSON.stringify(config);
+    holder.appendChild(s);
+  }
+  function sparkline(canvas, values, color) {
+    if (!canvas || !canvas.getContext) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || canvas.width || 320;
+    const h = canvas.clientHeight || canvas.height || 56;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!values || values.length < 2) return;
+    const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    const rng = (max - min) || 1;
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = (i / (values.length - 1)) * (w - 2) + 1;
+      const y = h - 2 - ((v - min) / rng) * (h - 6);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = color || "#63d4dd";
+    ctx.stroke();
+  }
+  return { jget, API, spot, metal, binance, binanceWS, fmt, pct, cls, el, store, toast, beep, clock, parts, tvWidget, sparkline };
+})();
+</script>
+<script>
+const INSTR = {
+  XAUUSD: { label: "XAUUSD · Emas", pip: 0.1, contract: 100, quote: "USD", pair: "XAU-USD", src: "metal", unit: "oz" },
+  XAGUSD: { label: "XAGUSD · Perak", pip: 0.01, contract: 5000, quote: "USD", pair: "XAG-USD", src: "metal", sym: "XAG", unit: "oz" },
+  EURUSD: { label: "EURUSD", pip: 0.0001, contract: 100000, quote: "USD", pair: "EUR-USD" },
+  GBPUSD: { label: "GBPUSD", pip: 0.0001, contract: 100000, quote: "USD", pair: "GBP-USD" },
+  USDJPY: { label: "USDJPY", pip: 0.01, contract: 100000, quote: "JPY", pair: "USD-JPY" },
+  AUDUSD: { label: "AUDUSD", pip: 0.0001, contract: 100000, quote: "USD", pair: "AUD-USD" },
+  USDCAD: { label: "USDCAD", pip: 0.0001, contract: 100000, quote: "CAD", pair: "USD-CAD" },
+  USDCHF: { label: "USDCHF", pip: 0.0001, contract: 100000, quote: "CHF", pair: "USD-CHF" },
+  BTCUSD: { label: "BTCUSD · Bitcoin", pip: 1, contract: 1, quote: "USD", pair: "BTC-USD", unit: "BTC" },
+  ETHUSD: { label: "ETHUSD · Ethereum", pip: 1, contract: 1, quote: "USD", pair: "ETH-USD", unit: "ETH" }
+};
+const ACCT = ["USD", "IDR", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF"];
+let live = {};
+
+for (const k in INSTR) { const o = document.createElement("option"); o.value = k; o.textContent = INSTR[k].label; FX.el("instr").appendChild(o); }
+for (const c of ACCT) { const o = document.createElement("option"); o.value = c; o.textContent = c; FX.el("acctCur").appendChild(o); }
+
+async function getPrice(k) {
+  const it = INSTR[k];
+  if (it.src === "metal") {
+    const r = await FX.metal(it.sym || k.slice(0, 3));
+    return r.price;
+  }
+  return FX.spot(it.pair);
+}
+
+async function usdPer(cur) {
+  if (cur === "USD") return 1;
+  const f = await FX.jget(FX.API.frankfurter("USD", [cur]));
+  const rate = f.rates && f.rates[cur];
+  if (!Number.isFinite(rate)) throw new Error("kurs " + cur + " tidak tersedia");
+  return rate;
+}
+
+async function refreshPrice() {
+  const k = FX.el("instr").value;
+  try {
+    const p = await getPrice(k);
+    live.price = p; live.key = k;
+    FX.el("livePrice").value = p;
+    FX.el("pDot").className = "dot on";
+    FX.el("pState").textContent = k + " $" + FX.fmt(p, p < 10 ? 4 : 2) + " · " + new Date().toLocaleTimeString("en-GB");
+    FX.el("upd").textContent = "Harga live diperbarui";
+    spec(k);
+  } catch (e) {
+    FX.el("pDot").className = "dot";
+    FX.el("pState").textContent = "gagal memuat harga live";
+  }
+}
+
+function spec(k) {
+  const it = INSTR[k];
+  FX.el("spec").innerHTML = "1 lot = <b>" + FX.fmt(it.contract, 0) + " " + (it.unit || it.quote) + "</b><br>" +
+    "1 pip = <b>" + it.pip + "</b> pada harga<br>" +
+    "Nilai 1 pip / lot ≈ <b>" + FX.fmt(it.pip * it.contract, 2) + " " + it.quote + "</b><br>" +
+    "Mata uang kuotasi: " + it.quote + " · harga live via " + (it.src === "metal" ? "gold-api" : "Coinbase") + ".";
+}
+
+function card(k, v, s, cls) {
+  return '<div class="metric"><div class="k">' + k + '</div><div class="v ' + (cls || "") + '">' + v + '</div><div class="s">' + (s || "") + '</div></div>';
+}
+
+async function calc() {
+  const k = FX.el("instr").value, it = INSTR[k];
+  const balance = Number(FX.el("balance").value), riskPct = Number(FX.el("riskPct").value);
+  const slPips = Number(FX.el("slPips").value), lev = Number(FX.el("leverage").value);
+  const acct = FX.el("acctCur").value;
+  const entry = Number(FX.el("entry").value) || (live.key === k ? live.price : NaN);
+  const out = FX.el("out");
+  if (![balance, riskPct, slPips, lev, entry].every(Number.isFinite) || balance <= 0 || slPips <= 0 || lev <= 0) {
+    out.innerHTML = '<div class="msg err">Periksa isian: saldo, risiko, stop loss, leverage, dan harga entry harus valid.</div>';
+    return;
+  }
+  let conv;
+  try { conv = await usdPer(acct); }
+  catch (e) { out.innerHTML = '<div class="msg err">' + e.message + '</div>'; return; }
+  const riskAccount = balance * riskPct / 100;
+  const pipValueQuote = it.pip * it.contract;
+  const pipValueUsd = it.quote === "USD" ? pipValueQuote : pipValueQuote / (await usdPer(it.quote));
+  const pipValueAcct = pipValueUsd * conv;
+  const riskPerLotAcct = pipValueAcct * slPips;
+  const lots = riskAccount / riskPerLotAcct;
+  const notional = lots * it.contract * entry;
+  const margin = notional / lev;
+  const actualRisk = lots * riskPerLotAcct;
+  const stopAmount = lots * it.contract * (slPips * it.pip);
+  out.innerHTML =
+    card("UKURAN POSISI", FX.fmt(lots, 3) + " lot", "≈ " + FX.fmt(lots * it.contract, 2) + " " + (it.unit || it.quote), "pos") +
+    card("RISIKO MAKSIMAL", FX.fmt(riskAccount, 2) + " " + acct, riskPct + "% dari saldo") +
+    card("RISIKO AKTUAL", FX.fmt(actualRisk, 2) + " " + acct, "setelah pembulatan lot") +
+    card("NILAI / PIP", FX.fmt(pipValueAcct, 2) + " " + acct, "per 1 lot") +
+    card("NILAI STOP LOSS", FX.fmt(stopAmount, 2) + " " + it.quote, slPips + " pip") +
+    card("NOSIONAL", FX.fmt(notional, 2) + " " + it.quote, "nilai kontrak") +
+    card("MARGIN (1:" + FX.fmt(lev, 0) + ")", FX.fmt(margin, 2) + " " + it.quote, "perkiraan broker") +
+    card("HARGA ENTRY", FX.fmt(entry, entry < 10 ? 4 : 2), live.key === k ? "live" : "manual");
+  const warn = [];
+  if (lots < 0.01) warn.push("Ukuran posisi di bawah 0.01 lot — turunkan stop loss atau naikkan risiko secara wajar.");
+  if (riskPct > 3) warn.push("Risiko per transaksi di atas 3% dinilai agresif.");
+  if (margin > balance) warn.push("Margin melebihi saldo akun — kurangi lot atau naikkan leverage dengan hati-hati.");
+  FX.el("detail").innerHTML =
+    "Rumus: <b>lot = (saldo × risiko%) ÷ (nilai pip per lot × stop loss pip)</b>.<br>" +
+    "Kurs " + (acct === "USD" ? "1" : conv.toFixed(4)) + " " + acct + " per USD (Frankfurter, harian).<br>" +
+    "Nilai pip kuotasi " + it.quote + ": " + FX.fmt(pipValueQuote, 2) + " → diubah ke USD: " + FX.fmt(pipValueUsd, 2) + ".<br>" +
+    (warn.length ? '<span class="neg">⚠ ' + warn.join("<br>⚠ ") + "</span>" : '<span class="pos">✔ Parameter risiko dalam batas wajar.</span>');
+}
+
+FX.el("instr").addEventListener("change", () => { FX.el("entry").value = ""; refreshPrice(); });
+FX.el("acctCur").addEventListener("change", calc);
+FX.el("useLive").addEventListener("click", () => { FX.el("entry").value = FX.el("livePrice").value; calc(); });
+FX.el("calcBtn").addEventListener("click", calc);
+["balance", "riskPct", "slPips", "leverage", "entry"].forEach(id => FX.el(id).addEventListener("input", calc));
+refreshPrice().then(calc);
+setInterval(refreshPrice, 20000);
+</script>
+</body>
+</html>
