@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRAILING STOP PLANNER</title>
+<meta name="description" content="Rencana trailing stop &amp; breakeven: simulasi jalur harga, kunci profit, dan tabel level SL interaktif (offline)">
+<style>
+:root{--bg:#070b12;--panel:#0d1521;--panel2:#111d2e;--line:#22334a;--line2:#2c4059;--text:#dbe6f3;--muted:#8ea3bd;--accent:#f0c16c;--cyan:#63d4dd;--green:#4fd18b;--red:#ff7a7a;--violet:#b79cff}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;background-image:linear-gradient(rgba(120,140,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(120,140,170,.05) 1px,transparent 1px);background-size:10px 10px}
+a{color:var(--cyan)}
+.wrap{max-width:1120px;margin:0 auto;padding:18px 14px 42px}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,rgba(20,32,48,.9),rgba(10,18,28,.9));padding:14px 16px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand .ico{width:40px;height:40px;flex:0 0 40px;border:1px solid var(--line2);border-radius:9px;display:grid;place-items:center;font-size:19px;background:#0b1420}
+h1{font-size:17px;margin:0;letter-spacing:.4px;color:var(--accent)}
+.sub{color:var(--muted);font-size:11.5px;margin-top:3px}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{font-size:11px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px;color:var(--muted);background:#0b1420}
+.links a:hover{border-color:var(--cyan);color:var(--cyan)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin-bottom:14px;overflow:hidden}
+.card>.hd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.card>.hd h2{font-size:13.5px;margin:0;letter-spacing:.5px;color:var(--accent)}
+.card>.hd small{color:var(--muted);font-size:11px;font-weight:400}
+.card>.bd{padding:14px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+label{display:block;font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:5px;text-transform:uppercase}
+input,select,button{font:inherit;max-width:100%}
+input[type=number],select{width:100%;background:#0a121d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 10px;min-height:40px;outline:none}
+input:focus,select:focus{border-color:var(--cyan)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--cyan);width:16px;height:16px}
+button{background:#16283d;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:9px 13px;min-height:40px;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#16202e;font-weight:700}
+button.ghost{background:transparent}
+button.sm{min-height:32px;padding:6px 10px;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.row>*{flex:1 1 170px}
+.row.compact>*{flex:0 0 auto}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 12px}
+.metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.metric .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.metric .s{font-size:11px;color:var(--muted);margin-top:3px}
+.pos{color:var(--green)}.neg{color:var(--red)}.mid{color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;border:1px solid var(--line2);border-radius:999px;padding:3px 9px;color:var(--muted)}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.bad{border-color:var(--red);color:var(--red)}
+.pill.warn{border-color:var(--accent);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:8px 9px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:400}
+tr:last-child td{border-bottom:none}
+.table-scroll{overflow-x:auto}
+canvas{width:100%;height:260px;display:block;background:#0a121d;border:1px solid var(--line);border-radius:9px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:9px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.note{border:1px dashed var(--line2);border-radius:9px;padding:10px 12px;font-size:11.5px;color:var(--muted);background:rgba(17,29,46,.5)}
+@media (max-width:640px){canvas{height:210px}.metric .v{font-size:17px}th,td{padding:7px 7px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="ico">🎯</div>
+      <div>
+        <h1>TRAILING STOP PLANNER</h1>
+        <div class="sub">Rencana trailing &amp; breakeven — simulasi jalur harga + tabel level SL, 100% offline</div>
+      </div>
+    </div>
+    <div class="links">
+      <a href="../../index.html">◀ Cartridge Vault</a>
+      <a href="../index.html">Tools</a>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="hd"><h2>⚙️ Parameter Posisi</h2><small>entry, risiko awal, pip size</small></div>
+    <div class="bd">
+      <div class="grid g3">
+        <div>
+          <label for="dir">Arah</label>
+          <select id="dir"><option value="1">LONG (buy)</option><option value="-1">SHORT (sell)</option></select>
+        </div>
+        <div>
+          <label for="entry">Harga entry</label>
+          <input type="number" id="entry" value="1.10000" step="any">
+        </div>
+        <div>
+          <label for="risk">SL awal (pips risiko)</label>
+          <input type="number" id="risk" value="20" min="1" step="any">
+        </div>
+        <div>
+          <label for="target">Target (pips profit)</label>
+          <input type="number" id="target" value="80" min="1" step="any">
+        </div>
+        <div>
+          <label for="preset">Instrumen / pip size</label>
+          <select id="preset">
+            <option value="0.0001" selected>FX mayor (pip 0.0001)</option>
+            <option value="0.01">FX JPY (pip 0.01)</option>
+            <option value="0.1">Gold XAU (pip 0.1)</option>
+            <option value="0.01">Silver XAG (pip 0.01)</option>
+            <option value="0.1">Index (point 0.1)</option>
+            <option value="1">Crypto (point 1)</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+        <div id="pipWrap" style="display:none">
+          <label for="pip">Pip size (custom)</label>
+          <input type="number" id="pip" value="0.001" min="0.000001" step="any">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><h2>📉 Strategi Trailing</h2><small>SL hanya mengunci, tidak pernah mundur</small></div>
+    <div class="bd">
+      <div class="grid g3">
+        <div>
+          <label for="method">Metode trailing</label>
+          <select id="method">
+            <option value="fixed" selected>Tetap (fixed pips)</option>
+            <option value="step">Bertahap (step lock)</option>
+            <option value="atr">ATR × multiplier</option>
+            <option value="pct">Persentase harga</option>
+          </select>
+        </div>
+        <div id="mFixed">
+          <label for="fixedPips">Jarak trailing (pips)</label>
+          <input type="number" id="fixedPips" value="12" min="0.1" step="any">
+        </div>
+        <div id="mStep" style="display:none">
+          <label for="stepEvery">Setiap naik (pips)</label>
+          <input type="number" id="stepEvery" value="10" min="1" step="any">
+        </div>
+        <div id="mStep2" style="display:none">
+          <label for="stepSize">Kunci profit (pips)</label>
+          <input type="number" id="stepSize" value="6" min="0" step="any">
+        </div>
+        <div id="mAtr" style="display:none">
+          <label for="atr">ATR (pips)</label>
+          <input type="number" id="atr" value="30" min="0.1" step="any">
+        </div>
+        <div id="mAtr2" style="display:none">
+          <label for="atrMult">Multiplier ATR</label>
+          <input type="number" id="atrMult" value="2" min="0.1" step="any">
+        </div>
+        <div id="mPct" style="display:none">
+          <label for="pct">Jarak trailing (% dari harga)</label>
+          <input type="number" id="pct" value="0.4" min="0.01" step="any">
+        </div>
+      </div>
+
+      <div class="grid g3" style="margin-top:14px">
+        <div class="metric">
+          <div class="k">Breakeven</div>
+          <div class="v"><label style="display:flex;gap:9px;align-items:center;margin:6px 0 0;color:var(--text);text-transform:none;font-size:13px;letter-spacing:0"><input type="checkbox" id="beOn" checked> Aktifkan pindah SL ke BE</label></div>
+        </div>
+        <div>
+          <label for="beTrigger">Pemicu BE (pips profit)</label>
+          <input type="number" id="beTrigger" value="15" min="0" step="any">
+        </div>
+        <div>
+          <label for="beLock">Kunci di BE (pips di atas entry)</label>
+          <input type="number" id="beLock" value="0" min="0" step="any">
+        </div>
+      </div>
+
+      <div class="grid g3" style="margin-top:14px">
+        <div>
+          <label for="vol">Volatilitas simulasi (pips / langkah)</label>
+          <input type="range" id="vol" min="0.5" max="12" step="0.5" value="3">
+          <div class="hint">vol: <span id="volOut">3</span> pips</div>
+        </div>
+        <div>
+          <label for="steps">Jumlah langkah jalur harga</label>
+          <input type="range" id="steps" min="60" max="500" step="10" value="250">
+          <div class="hint">langkah: <span id="stepsOut">250</span></div>
+        </div>
+        <div style="display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap">
+          <button class="primary" id="btnRoll" style="flex:1 1 140px">🎲 Roll jalur harga</button>
+          <button class="ghost" id="btnReset" style="flex:0 1 auto">Reset</button>
+        </div>
+      </div>
+      <div class="hint">Drift otomatis menuju target; naikkan volatilitas untuk uji ketahanan trailing. Setiap roll memakai seed berbeda.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><h2>📈 Simulasi &amp; Hasil</h2><small id="seedLabel">seed —</small></div>
+    <div class="bd">
+      <div class="grid g4" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="metric"><div class="k">Exit</div><div class="v" id="outExit">—</div><div class="s" id="outExitSub">—</div></div>
+        <div class="metric"><div class="k">Hasil exit</div><div class="v" id="outR">—</div><div class="s" id="outPips">—</div></div>
+        <div class="metric"><div class="k">Profit maks</div><div class="v" id="outMax">—</div><div class="s">sebelum exit / drawdown mundur</div></div>
+        <div class="metric"><div class="k">SL saat exit</div><div class="v" id="outSl">—</div><div class="s" id="outSlPips">—</div></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <canvas id="cv" width="1100" height="260"></canvas>
+        <div class="legend">
+          <span><i style="background:#63d4dd"></i>harga</span>
+          <span><i style="background:#ff7a7a"></i>trailing SL</span>
+          <span><i style="background:#f0c16c"></i>entry</span>
+          <span><i style="background:#4fd18b"></i>target</span>
+          <span id="exitLegend"></span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label for="scrub">Geser posisi waktu (<span id="scrubOut">0</span> langkah)</label>
+        <input type="range" id="scrub" min="0" max="250" value="0" step="1">
+      </div>
+
+      <div class="grid g4" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:12px">
+        <div class="metric"><div class="k">Harga saat ini</div><div class="v" id="scPrice">—</div><div class="s" id="scPips">—</div></div>
+        <div class="metric"><div class="k">SL saat ini</div><div class="v" id="scSl">—</div><div class="s" id="scSlPips">—</div></div>
+        <div class="metric"><div class="k">Profit terkunci</div><div class="v" id="scLock">—</div><div class="s" id="scR">—</div></div>
+        <div class="metric"><div class="k">Status</div><div class="v" id="scStatus" style="font-size:15px">—</div><div class="s" id="scSub">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><h2>🗺️ Rencana Level SL</h2><small>harga bergerak monotonik — jadwal kunci profit</small></div>
+    <div class="bd">
+      <div class="table-scroll">
+        <table id="planTable">
+          <thead><tr><th>Profit</th><th>Harga</th><th>SL</th><th>Terkunci</th><th>R</th><th>Jarak SL</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:12px">Catatan: tabel di atas asumsi harga bergerak mulus searah (tanpa koreksi), sehingga menampilkan jadwal ideal trailing. Hasil simulasi di atas memakai jalur berisik dan bisa berbeda — SL yang pernah terkunci tidak akan mundur pada keduanya.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var PRESETS={"0.0001":4,"0.01":2,"0.1":1,"1":0};
+var digits=4,dir=1,entry=1.1,riskPips=20,targetPips=80,pip=0.0001;
+var seed=(Math.random()*4294967296)>>>0;
+
+function fmtPrice(v){
+  var d=Math.min(6,digits+1);
+  return v.toFixed(d);
+}
+function clamp(v,a,b){return v<a?a:(v>b?b:v)}
+
+function readCfg(){
+  dir=parseFloat($("dir").value)||1;
+  entry=parseFloat($("entry").value);
+  riskPips=Math.max(0.1,parseFloat($("risk").value)||20);
+  targetPips=Math.max(1,parseFloat($("target").value)||80);
+  var p=$("preset").value;
+  if(p==="custom"){ pip=Math.max(1e-8,parseFloat($("pip").value)||0.001); }
+  else { pip=parseFloat(p); }
+  digits=Math.max(0,Math.min(6,Math.round(-Math.log10(pip))));
+  return isFinite(entry)&&entry>0;
+}
+function methodCfg(){
+  return {
+    method:$("method").value,
+    fixedPips:Math.max(0.1,parseFloat($("fixedPips").value)||12),
+    stepEvery:Math.max(1,parseFloat($("stepEvery").value)||10),
+    stepSize:Math.max(0,parseFloat($("stepSize").value)||6),
+    atr:Math.max(0.1,parseFloat($("atr").value)||30),
+    atrMult:Math.max(0.1,parseFloat($("atrMult").value)||2),
+    pct:Math.max(0.01,parseFloat($("pct").value)||0.4),
+    beOn:$("beOn").checked,
+    beTrigger:Math.max(0,parseFloat($("beTrigger").value)||0),
+    beLock:Math.max(0,parseFloat($("beLock").value)||0)
+  };
+}
+
+function initSl(){ return entry-dir*riskPips*pip; }
+
+function betterSl(a,b){ return dir>0?Math.max(a,b):Math.min(a,b); }
+
+function candidateSl(cfg,price,sl,beDone){
+  var profitPips=(price-entry)*dir/pip, c=sl;
+  if(cfg.method==="fixed"){ c=price-dir*cfg.fixedPips*pip; }
+  else if(cfg.method==="step"){
+    var n=Math.floor(profitPips/cfg.stepEvery);
+    c=n>=1?entry+dir*Math.min(n*cfg.stepSize,profitPips)*pip:sl;
+  }
+  else if(cfg.method==="atr"){ c=price-dir*cfg.atr*cfg.atrMult*pip; }
+  else { c=price-dir*(price*cfg.pct/100); }
+  if(cfg.beOn && beDone){ c=betterSl(c,entry+dir*cfg.beLock*pip); }
+  return c;
+}
+
+function runPath(prices,cfg){
+  var sl=initSl(),beDone=false,out=[],i,price,profitPips,exitIdx=-1;
+  for(i=0;i<prices.length;i++){
+    price=prices[i];
+    profitPips=(price-entry)*dir/pip;
+    if(i>0 && ((dir>0 && price<=sl)||(dir<0 && price>=sl))){
+      out.push({price:sl,sl:sl,be:beDone,profitPips:(sl-entry)*dir/pip});
+      exitIdx=i;
+      break;
+    }
+    if(cfg.beOn && !beDone && profitPips>=cfg.beTrigger){
+      beDone=true;
+      sl=betterSl(sl,entry+dir*cfg.beLock*pip);
+    }
+    var c=candidateSl(cfg,price,sl,beDone);
+    sl=betterSl(sl,c);
+    out.push({price:price,sl:sl,be:beDone,profitPips:profitPips});
+  }
+  return {pts:out,exitIdx:exitIdx};
+}
+
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function gauss(rnd){
+  var u=0,v=0;
+  while(u===0)u=rnd();
+  while(v===0)v=rnd();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function makePath(){
+  var n=parseInt($("steps").value,10)||250;
+  var vol=parseFloat($("vol").value)||3;
+  var rnd=mulberry32(seed);
+  var drift=targetPips/n;
+  var prices=[],p=entry,cum=0;
+  prices.push(p);
+  for(var i=0;i<n;i++){
+    cum+=drift+gauss(rnd)*vol;
+    p=entry+cum*pip*dir;
+    if(p<=0)p=prices[prices.length-1]+Math.abs(entry*0.0001);
+    prices.push(p);
+  }
+  return prices;
+}
+
+function runSim(){
+  if(!readCfg()){ flash(); return; }
+  var cfg=methodCfg();
+  var prices=makePath();
+  var res=runPath(prices,cfg);
+  var pts=res.pts;
+  var last=pts[pts.length-1];
+  var endIdx=res.exitIdx>=0?res.exitIdx:pts.length-1;
+  var exitPt=pts[endIdx];
+  var reason=res.exitIdx>=0?"trailing SL kena":"jalur habis / target";
+  var maxProf=-Infinity;
+  for(var i=0;i<pts.length;i++){ if(pts[i].profitPips>maxProf)maxProf=pts[i].profitPips; }
+  var exitPips=dir>0?(exitPt.price-entry)/pip:(entry-exitPt.price)/pip;
+  var r=exitPips/riskPips;
+  var slPips=(exitPt.sl-entry)*dir/pip;
+
+  $("outExit").textContent=fmtPrice(exitPt.price);
+  $("outExitSub").textContent=(res.exitIdx>=0?"langkah "+endIdx+"/"+(prices.length-1):"tanpa exit")+" · "+reason;
+  $("outR").textContent=(r>=0?"+":"")+r.toFixed(2)+"R";
+  $("outR").className="v "+(r>=0?"pos":"neg");
+  $("outPips").textContent=(exitPips>=0?"+":"")+exitPips.toFixed(1)+" pips";
+  $("outMax").textContent=(maxProf>=0?"+":"")+maxProf.toFixed(1);
+  $("outMax").className="v "+(maxProf>=0?"pos":"neg");
+  $("outSl").textContent=fmtPrice(exitPt.sl);
+  $("outSlPips").textContent="terkunci "+slPips.toFixed(1)+" pips dari entry";
+  $("seedLabel").textContent="seed "+seed+" · vol "+$("vol").value+" pips/langkah";
+
+  var scrub=$("scrub");
+  scrub.max=String(pts.length-1);
+  if(parseInt(scrub.value,10)>pts.length-1)scrub.value="0";
+
+  window.__sim={pts:pts,exitIdx:res.exitIdx,prices:prices,entry:entry,riskPips:riskPips,cfg:cfg,pip:pip,dir:dir,endIdx:endIdx};
+  paintScrub();
+  drawChart();
+  buildPlan(cfg);
+}
+
+function paintScrub(){
+  var sim=window.__sim; if(!sim)return;
+  var idx=clamp(parseInt($("scrub").value,10)||0,0,sim.pts.length-1);
+  var pt=sim.pts[idx];
+  $("scrubOut").textContent=String(idx);
+  var pips=(pt.price-sim.entry)*sim.dir/sim.pip;
+  var slPips=(pt.price-pt.sl)*sim.dir/sim.pip;
+  var lockPips=(pt.sl-sim.entry)*sim.dir/sim.pip;
+  $("scPrice").textContent=fmtPrice(pt.price);
+  $("scPips").textContent=(pips>=0?"+":"")+pips.toFixed(1)+" pips dari entry";
+  $("scSl").textContent=fmtPrice(pt.sl);
+  $("scSlPips").textContent="jarak "+slPips.toFixed(1)+" pips dari harga";
+  var lk=$("scLock");
+  lk.textContent=(lockPips>=0?"+":"")+lockPips.toFixed(1)+" pips";
+  lk.className="v "+(lockPips>0?"pos":(lockPips<0?"neg":"mid"));
+  $("scR").textContent="≈ "+(lockPips/sim.riskPips).toFixed(2)+"R terkunci";
+  var st=$("scStatus"),sub=$("scSub");
+  if(sim.exitIdx>=0 && idx>=sim.exitIdx){
+    st.textContent="POSISI CLOSED"; st.className="v neg";
+    sub.textContent="SL kena di langkah "+sim.exitIdx;
+  } else if(pt.be){
+    st.textContent="SL di breakeven"; st.className="v mid";
+    sub.textContent="terkunci "+lockPips.toFixed(1)+" pips di atas entry";
+  } else {
+    st.textContent="TRAILING AKTIF"; st.className="v pos";
+    sub.textContent="SL mengikuti "+(sim.cfg.method)+" · "+(idx+1)+" langkah berjalan";
+  }
+}
+
+function drawChart(){
+  var sim=window.__sim; if(!sim)return;
+  var cv=$("cv"),ctx=cv.getContext("2d");
+  var W=cv.clientWidth||1100,H=cv.clientHeight||260,dpr=window.devicePixelRatio||1;
+  cv.width=Math.max(1,Math.round(W*dpr));cv.height=Math.max(1,Math.round(H*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  var pts=sim.pts,n=pts.length;
+  var minV=Infinity,maxV=-Infinity,i;
+  for(i=0;i<n;i++){
+    minV=Math.min(minV,pts[i].price,pts[i].sl);
+    maxV=Math.max(maxV,pts[i].price,pts[i].sl,sim.entry);
+  }
+  var tgt=sim.entry+sim.dir*targetPips*sim.pip;
+  minV=Math.min(minV,tgt);maxV=Math.max(maxV,tgt);
+  var pad=(maxV-minV)*0.08||sim.pip*10;
+  minV-=pad;maxV+=pad;
+  var padL=52,padR=8,padT=8,padB=18;
+  var X=function(k){return padL+(n<=1?0:k/(n-1)*(W-padL-padR))};
+  var Y=function(v){return padT+(maxV-v)/(maxV-minV)*(H-padT-padB)};
+
+  ctx.strokeStyle="rgba(142,163,189,.15)";
+  ctx.lineWidth=1;
+  ctx.font="10px ui-monospace,monospace";
+  ctx.fillStyle="#8ea3bd";
+  ctx.textAlign="right";
+  for(var g=0;g<=4;g++){
+    var v=minV+(maxV-minV)*g/4;
+    ctx.beginPath();ctx.moveTo(padL,Y(v));ctx.lineTo(W-padR,Y(v));ctx.stroke();
+    ctx.fillText(fmtPrice(v),padL-6,Y(v)+3);
+  }
+  function hline(v,color,dash){
+    ctx.strokeStyle=color;ctx.setLineDash(dash||[]);
+    ctx.beginPath();ctx.moveTo(padL,Y(v));ctx.lineTo(W-padR,Y(v));ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  hline(sim.entry,"#f0c16c",[6,5]);
+  hline(tgt,"#4fd18b",[2,6]);
+
+  ctx.strokeStyle="#ff7a7a";ctx.lineWidth=1.6;
+  ctx.beginPath();
+  for(i=0;i<n;i++){ var x=X(i),y=Y(pts[i].sl); if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y); }
+  ctx.stroke();
+
+  var end=sim.exitIdx>=0?sim.exitIdx:n-1;
+  ctx.strokeStyle="#63d4dd";ctx.lineWidth=2;
+  ctx.beginPath();
+  for(i=0;i<=end;i++){ var x2=X(i),y2=Y(pts[i].price); if(i===0)ctx.moveTo(x2,y2);else ctx.lineTo(x2,y2); }
+  ctx.stroke();
+
+  ctx.fillStyle="#63d4dd";
+  ctx.beginPath();ctx.arc(X(end),Y(pts[end].price),3.5,0,Math.PI*2);ctx.fill();
+  if(sim.exitIdx>=0){
+    ctx.fillStyle="#ff7a7a";
+    ctx.beginPath();ctx.arc(X(end),Y(pts[end].sl),4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle="#8ea3bd";ctx.textAlign="left";
+  ctx.fillText("langkah 0",padL,H-5);
+  ctx.textAlign="right";
+  ctx.fillText("langkah "+(n-1),W-padR,H-5);
+  $("exitLegend").innerHTML=sim.exitIdx>=0
+    ?'<i style="background:#ff7a7a"></i>exit di langkah '+sim.exitIdx
+    :'<i style="background:#4fd18b"></i>tahan sampai akhir';
+}
+
+function buildPlan(cfg){
+  var body=$("planTable").querySelector("tbody");
+  body.innerHTML="";
+  var levels=[5,10,15,20,30,40,50,75,100,125,150,200];
+  var maxPlan=Math.max(targetPips,200);
+  var stepPips=0.5;
+  var prices=[],sl=initSl(),beDone=false,plan=[],li=0,p=entry;
+  var totalSteps=Math.ceil(maxPlan/stepPips);
+  for(var i=0;i<=totalSteps;i++){
+    var profit=i*stepPips;
+    p=entry+dir*profit*pip;
+    if(cfg.beOn&&!beDone&&profit>=cfg.beTrigger){beDone=true;sl=betterSl(sl,entry+dir*cfg.beLock*pip);}
+    sl=betterSl(sl,candidateSl(cfg,p,sl,beDone));
+    while(li<levels.length&&levels[li]<=profit&&levels[li]<=maxPlan){
+      var lv=levels[li];
+      var lp=entry+dir*lv*pip;
+      var locked=(sl-entry)*dir/pip;
+      var dist=Math.abs(lp-sl)/pip;
+      var tr=document.createElement("tr");
+      tr.innerHTML="<td>+"+lv+" pips</td><td>"+fmtPrice(lp)+"</td><td>"+fmtPrice(sl)+"</td><td"+
+        (locked>0?' class="pos"':(locked<0?' class="neg"':""))+">"+(locked>=0?"+":"")+locked.toFixed(1)+" pips</td><td"+
+        (locked/riskPips>0?' class="pos"':"")+">"+(locked/riskPips>=0?"+":"")+(locked/riskPips).toFixed(2)+"R</td><td>"+dist.toFixed(1)+" pips</td>";
+      body.appendChild(tr);
+      li++;
+    }
+  }
+}
+
+function syncMethod(){
+  var m=$("method").value;
+  $("mFixed").style.display=m==="fixed"?"":"none";
+  $("mStep").style.display=m==="step"?"":"none";
+  $("mStep2").style.display=m==="step"?"":"none";
+  $("mAtr").style.display=m==="atr"?"":"none";
+  $("mAtr2").style.display=m==="atr"?"":"none";
+  $("mPct").style.display=m==="pct"?"":"none";
+}
+function syncPreset(){
+  var c=$("preset").value==="custom";
+  $("pipWrap").style.display=c?"":"none";
+}
+function flash(){
+  $("outExit").textContent="?";
+  $("outExitSub").textContent="cek input (entry & pip size)";
+}
+function reroll(){ seed=(Math.random()*4294967296)>>>0; runSim(); }
+
+["dir","entry","risk","target","preset","pip","method","fixedPips","stepEvery","stepSize","atr","atrMult","pct","beOn","beTrigger","beLock"].forEach(function(id){
+  var el=$(id);
+  el.addEventListener("change",function(){syncPreset();syncMethod();runSim();});
+  el.addEventListener("input",function(){ if(id==="method")syncMethod(); runSim(); });
+});
+$("vol").addEventListener("input",function(){$("volOut").textContent=this.value;runSim();});
+$("steps").addEventListener("input",function(){$("stepsOut").textContent=this.value;runSim();});
+$("scrub").addEventListener("input",function(){paintScrub();drawChart();});
+$("btnRoll").addEventListener("click",reroll);
+$("btnReset").addEventListener("click",function(){
+  $("dir").value="1";$("entry").value="1.10000";$("risk").value="20";$("target").value="80";
+  $("preset").value="0.0001";$("method").value="fixed";$("fixedPips").value="12";
+  $("stepEvery").value="10";$("stepSize").value="6";$("atr").value="30";$("atrMult").value="2";
+  $("pct").value="0.4";$("beOn").checked=true;$("beTrigger").value="15";$("beLock").value="0";
+  $("vol").value="3";$("volOut").textContent="3";$("steps").value="250";$("stepsOut").textContent="250";
+  $("scrub").value="0";
+  syncPreset();syncMethod();reroll();
+});
+window.addEventListener("resize",function(){drawChart();});
+
+syncPreset();syncMethod();
+runSim();
+})();
+</script>
+</body>
+</html>
