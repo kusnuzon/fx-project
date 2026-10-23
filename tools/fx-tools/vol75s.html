@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' wss://ws.binaryws.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;" />
-  <title>AstroDox-V75 Hybrid | Luxor (+3) to WIB (+7) Forecaster</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;" />
+  <title>AstroDox-V75 Time | Luxor (+3) to WIB (+7) Timing Forecaster</title>
   <!-- Library Astronomy Engine untuk Presisi VSOP87 -->
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
   <style>
@@ -30,47 +30,48 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-sans); line-height: 1.45; padding: 10px; max-width: 1280px; margin: 0 auto; }
-    
+
     header { background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
     .brand-title { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.5px; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px; }
     .brand-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-    
+
     .clock-grid { display: flex; gap: 8px; flex-wrap: wrap; }
     .clock-box { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; min-width: 155px; }
     .clock-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
     .clock-time { font-family: var(--font-mono); font-size: 0.98rem; font-weight: 700; color: var(--accent-purple); }
     .clock-time.wib { color: var(--buy-text); }
-    
+
     .controls-bar { background-color: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .status-badge { font-family: var(--font-mono); font-size: 0.82rem; padding: 6px 12px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border-subtle); color: var(--accent-cyan); flex-grow: 1; }
-    
-    button { cursor: pointer; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: 1px solid #818cf8; color: #ffffff; padding: 9px 16px; border-radius: 6px; outline: none; transition: 0.2s; font-family: inherit; }
+
+    button { cursor: pointer; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: 1px solid #818cf8; color: #ffffff; padding: 11px 16px; border-radius: 6px; outline: none; transition: 0.2s; font-family: inherit; min-height: 44px; }
     button:hover { border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
     button:disabled { background: #334155; border-color: #475569; color: #94a3b8; cursor: not-allowed; }
-    
+
     .section-card { background-color: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
     .section-header { background-color: var(--bg-header); padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .section-title { font-size: 0.92rem; font-weight: 700; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 0.5px; }
     .section-badge { font-size: 0.72rem; font-family: var(--font-mono); background: #0f172a; color: var(--accent-cyan); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-subtle); }
-    
+
     .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 900px; }
     th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #1e293b; vertical-align: middle; }
     th { background-color: #0f172a; color: var(--text-muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
     tr:hover td { background-color: rgba(30, 41, 59, 0.45); }
-    
+
     .mono { font-family: var(--font-mono); }
     .pair-tag { font-family: var(--font-mono); font-weight: 800; font-size: 0.86rem; color: var(--accent-purple); }
-    
+
     .badge-dir { display: inline-block; font-family: var(--font-mono); font-weight: 800; font-size: 0.78rem; padding: 4px 10px; border-radius: 5px; letter-spacing: 0.5px; text-align: center; min-width: 92px; }
     .badge-buy { background-color: var(--buy-bg); color: var(--buy-text); border: 1px solid var(--buy-border); }
     .badge-sell { background-color: var(--sell-bg); color: var(--sell-text); border: 1px solid var(--sell-border); }
-    
+
     .time-entry { font-family: var(--font-mono); font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 7px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; }
     .time-exit { font-family: var(--font-mono); font-weight: 700; color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 3px 7px; border-radius: 4px; border: 1px solid rgba(251, 191, 36, 0.3); white-space: nowrap; }
-    
+
     .tech-metric { font-size: 0.7rem; color: var(--text-muted); background: #1e293b; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
-    
+
+    .note { font-size: 0.72rem; color: var(--text-muted); padding: 10px 14px; border-top: 1px solid var(--border-subtle); }
     footer { text-align: center; font-size: 0.72rem; color: var(--text-muted); padding: 10px 4px 24px; }
   </style>
 </head>
@@ -79,10 +80,10 @@
   <header>
     <div>
       <div class="brand-title">
-        <span>&#9889; ASTRODOX-V75 HYBRID</span>
+        <span>&#9889; ASTRODOX-V75 TIME</span>
       </div>
       <div class="brand-sub">
-        Deriv WebSocket + Ephemeris Engine (Uranus-Mercury-Saturn) &rarr; Luxor (UTC+3) to WIB (UTC+7)
+        Ephemeris murni (tanpa data harga) &bull; Luxor (UTC+3) &rarr; WIB (UTC+7) &bull; waktu aspek eksak
       </div>
     </div>
     <div class="clock-grid">
@@ -98,15 +99,15 @@
   </header>
 
   <section class="controls-bar">
-    <div id="wsStatus" class="status-badge">API Status: Standby. Klik tombol untuk sinkronisasi Data & Astro.</div>
-    <button type="button" id="btnGenerate">Sinkronisasi Data V75 & Kalkulasi Astro</button>
+    <div id="wsStatus" class="status-badge">Mode: Astro murni. Menyiapkan engine ephemeris...</div>
+    <button type="button" id="btnGenerate">Hitung Ulang Jadwal 7 Hari</button>
   </section>
 
   <!-- TABEL FORECAST -->
   <section class="section-card">
     <div class="section-header">
-      <div class="section-title">Hibrida 7 Hari: Volatility 75 (1s) Index</div>
-      <div class="section-badge">Rulers Algoritma: Uranus (Spike), Mercury (Tick), Saturn (Kriptografi)</div>
+      <div class="section-title">Jadwal Waktu 7 Hari: Volatility 75 (1s) Index</div>
+      <div class="section-badge">Bulan &bull; Merkurius &bull; Matahari &bull; Mars &bull; Jupiter &bull; Saturnus &bull; Uranus</div>
     </div>
     <div class="table-wrap">
       <table>
@@ -114,7 +115,7 @@
           <tr>
             <th>Index</th>
             <th>Hari, Tanggal Bulan Tahun</th>
-            <th>Arah (Astro + RSI)</th>
+            <th>Arah (Bias Astro)</th>
             <th>Aspek Pemicu Utama (Langit Luxor)</th>
             <th>Base Luxor (UTC+3)</th>
             <th>Presisi ENTRY (WIB +7)</th>
@@ -123,14 +124,17 @@
           </tr>
         </thead>
         <tbody id="tbody7Day">
-          <tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">Menunggu Inisialisasi API & Engine Ephemeris...</td></tr>
+          <tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">Menunggu Inisialisasi Engine Ephemeris...</td></tr>
         </tbody>
       </table>
+    </div>
+    <div class="note">
+      Tidak ada koneksi ke Deriv dan tidak ada data harga sama sekali. Arah diambil dari akumulasi harmoni aspek (tertimbang orb), waktu dari titik aspek paling tajam (refine bisection + golden-section, presisi &lt; 1 detik).
     </div>
   </section>
 
   <footer>
-    AstroDox-V75 Hibrida &bull; Arsitektur SSOT &amp; DRY &bull; RAM Optimized &bull; Eksperimen Resonansi Algoritma RNG
+    AstroDox-V75 Time &bull; Arsitektur SSOT &amp; DRY &bull; RAM Optimized &bull; Eksperimen Resonansi Waktu RNG
   </footer>
 
   <script>
@@ -139,26 +143,16 @@
 
       /* =====================================================================
        * 1. SINGLE SOURCE OF TRUTH (CONFIG_SSOT)
-       * Menggabungkan parameter Deriv API dengan Ephemeris Astrodox
        * ===================================================================== */
       const CONFIG_SSOT = Object.freeze({
-        API: Object.freeze({
-          APP_ID: 1089,
-          WS_URL: 'wss://ws.binaryws.com/websockets/v3',
-          SYMBOL: '1HZ10V', // V75 (1s)
-          CANDLE_COUNT: 30, // Cukup untuk RSI & SMA D1
-          GRANULARITY: 86400
-        }),
-        LOCATION: Object.freeze({
-          LAT: 25.6872,
-          LON: 32.6396
-        }),
         TIMEZONE: Object.freeze({
           LUXOR_OFFSET_HOURS: 3, // Standar Astrodox
           WIB_OFFSET_HOURS: 7,
           HOUR_MS: 3600000,
           MIN_MS: 60000,
-          SCAN_STEP_MINUTES: 15
+          DAY_MS: 86400000,
+          SCAN_STEP_MINUTES: 10,
+          BISECT_LIMIT_MS: 500
         }),
         ZODIAC: Object.freeze([
           { name: 'Aries', sym: '♈' }, { name: 'Taurus', sym: '♉' }, { name: 'Gemini', sym: '♊' },
@@ -166,224 +160,265 @@
           { name: 'Libra', sym: '♎' }, { name: 'Scorpio', sym: '♏' }, { name: 'Sagittarius', sym: '♐' },
           { name: 'Capricorn', sym: '♑' }, { name: 'Aquarius', sym: '♒' }, { name: 'Pisces', sym: '♓' }
         ]),
-        // Planet penguasa teoretis untuk entitas kriptografi/sintetis
-        PLANETS: Object.freeze([
-          { id: 'Uranus', label: 'Uranus (Algoritma/Spike)', sym: '♅', avgSpeed: 0.011, orb: 1.0, role: 'Base' },
-          { id: 'Mercury', label: 'Mercury (Tick Data)', sym: '☿', avgSpeed: 1.383, orb: 1.4, role: 'Base' },
-          { id: 'Saturn', label: 'Saturn (Kriptografi)', sym: '♄', avgSpeed: 0.033, orb: 1.1, role: 'Quote' },
-          { id: 'Jupiter', label: 'Jupiter', sym: '♃', avgSpeed: 0.083, orb: 1.2, role: 'Neutral' },
-          { id: 'Sun', label: 'Sun', sym: '☉', avgSpeed: 0.9856, orb: 1.6, role: 'Neutral' }
+        // Penguasa algoritmik + kecepatan rata-rata (derajat/hari) untuk estimasi durasi
+        BODIES: Object.freeze([
+          { id: 'Moon',    label: 'Bulan',     sym: '☽', speed: 13.18 },
+          { id: 'Mercury', label: 'Merkurius', sym: '☿', speed: 1.383 },
+          { id: 'Sun',     label: 'Matahari',  sym: '☉', speed: 0.9856 },
+          { id: 'Mars',    label: 'Mars',      sym: '♂', speed: 0.524 },
+          { id: 'Jupiter', label: 'Jupiter',   sym: '♃', speed: 0.083 },
+          { id: 'Saturn',  label: 'Saturnus',  sym: '♄', speed: 0.033 },
+          { id: 'Uranus',  label: 'Uranus',    sym: '♅', speed: 0.011 }
         ]),
         ASPECTS: Object.freeze([
-          { name: 'Conjunction', angle: 0, harmony: 0.85, weight: 1.4 },
-          { name: 'Sextile', angle: 60, harmony: 1.0, weight: 1.1 },
-          { name: 'Square', angle: 90, harmony: -1.25, weight: 1.35 },
-          { name: 'Trine', angle: 120, harmony: 1.35, weight: 1.4 },
-          { name: 'Opposition', angle: 180, harmony: -1.4, weight: 1.5 }
-        ])
+          { name: 'Konjungsi',  angle: 0,   harmony: 0.85,  weight: 1.4 },
+          { name: 'Sextile',    angle: 60,  harmony: 1.0,   weight: 1.1 },
+          { name: 'Square',     angle: 90,  harmony: -1.25, weight: 1.35 },
+          { name: 'Trine',      angle: 120, harmony: 1.35,  weight: 1.4 },
+          { name: 'Oposisi',    angle: 180, harmony: -1.4,  weight: 1.5 }
+        ]),
+        ALGORITHM: Object.freeze({
+          ORB_LIMIT_DEG: 1.2,      // aspek dianggap kuat bila orb <= 1.2°
+          SCAN_ORB_DEG: 3.0,       // batas pencarian orb saat scan harian
+          ORB_DECAY_DEG: 0.6,      // bobot turun eksponensial terhadap orb
+          MIN_DURATION_MIN: 45,
+          MAX_DURATION_MIN: 180,
+          TRANSIT_ORB_DEG: 0.5,    // lebar orb efektif untuk hitung durasi
+          LEAD_RATIO: 0.3          // entry = waktu eksak - 30% durasi
+        })
       });
 
       /* =====================================================================
        * 2. UTILITAS MATEMATIKA & WAKTU (DRY)
        * ===================================================================== */
       const MathUtil = {
-        DEG2RAD: Math.PI / 180,
-        RAD2DEG: 180 / Math.PI,
         norm360(deg) { const r = deg % 360; return r < 0 ? r + 360 : r; },
-        angleDiff(a, b) { let d = Math.abs(this.norm360(a) - this.norm360(b)) % 360; return d > 180 ? 360 - d : d; },
+        norm180(deg) { const r = this.norm360(deg); return r > 180 ? r - 360 : r; },
+        sepDeg(a, b) { return Math.abs(this.norm180(this.norm360(a) - this.norm360(b))); },
         pad2(n) { return String(Math.floor(Math.abs(n))).padStart(2, '0'); },
+        clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); },
         formatDMS(deg360) {
           const norm = this.norm360(deg360);
-          const signIdx = Math.floor(norm / 30);
-          const rem = norm - signIdx * 30;
-          return { zodiacSym: CONFIG_SSOT.ZODIAC[signIdx].sym, inSignShort: `${this.pad2(Math.floor(rem))}°${this.pad2((rem % 1) * 60)}' ${CONFIG_SSOT.ZODIAC[signIdx].sym}` };
+          const signIdx = Math.floor(norm / 30) % 12;
+          const rem = norm - Math.floor(norm / 30) * 30;
+          return `${this.pad2(Math.floor(rem))}°${this.pad2((rem % 1) * 60)}' ${CONFIG_SSOT.ZODIAC[signIdx].sym}`;
         }
       };
 
       const TimeUtil = {
+        MONTHS: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+        DAYS: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
         toOffsetParts(utcMs, offsetHours) {
           const d = new Date(utcMs + offsetHours * CONFIG_SSOT.TIMEZONE.HOUR_MS);
-          const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-          const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
           return {
-            fullStr: `${days[d.getUTCDay()]}, ${MathUtil.pad2(d.getUTCDate())} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
-            shortDate: `${MathUtil.pad2(d.getUTCDate())} ${months[d.getUTCMonth()]}`,
+            fullStr: `${this.DAYS[d.getUTCDay()]}, ${MathUtil.pad2(d.getUTCDate())} ${this.MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+            shortDate: `${MathUtil.pad2(d.getUTCDate())} ${this.MONTHS[d.getUTCMonth()]}`,
             hhmm: `${MathUtil.pad2(d.getUTCHours())}:${MathUtil.pad2(d.getUTCMinutes())}`,
             hhmmss: `${MathUtil.pad2(d.getUTCHours())}:${MathUtil.pad2(d.getUTCMinutes())}:${MathUtil.pad2(d.getUTCSeconds())}`
           };
         }
       };
 
-      const Indicators = {
-        calcRSI(prices, period = 14) {
-          if (prices.length < period) return 50;
-          let gains = 0, losses = 0;
-          for (let i = prices.length - period; i < prices.length; i++) {
-            const diff = prices[i] - prices[i - 1];
-            if (diff >= 0) gains += diff; else losses -= diff;
-          }
-          const avgGain = gains / period, avgLoss = losses / period;
-          if (avgLoss === 0) return 100;
-          return 100 - (100 / (1 + (avgGain / avgLoss)));
-        }
-      };
-
       /* =====================================================================
-       * 3. MESIN EPHEMERIS (ASTRODOX CORE) - MEEUS FALLBACK / ASTRONOMY
+       * 3. MESIN EPHEMERIS (ASTRODOX CORE) - ASTRONOMY / MEEUS FALLBACK
        * ===================================================================== */
       const EphemerisCore = {
+        cache: new Map(),
         hasAstronomy() { return typeof window.Astronomy !== 'undefined'; },
         julianCenturies(utcMs) { return ((utcMs / 86400000 + 2440587.5) - 2451545.0) / 36525.0; },
-        
+
         getPlanetLon(planetId, utcMs) {
+          const key = planetId + '|' + Math.round(utcMs / 1000);
+          const hit = this.cache.get(key);
+          if (hit !== undefined) return hit;
+
+          let lon = null;
           if (this.hasAstronomy()) {
             const body = window.Astronomy.Body[planetId];
             if (body) {
               const vec = window.Astronomy.GeoVector(body, new Date(utcMs), true);
-              return MathUtil.norm360(window.Astronomy.Ecliptic(vec).elon);
+              lon = MathUtil.norm360(window.Astronomy.Ecliptic(vec).elon);
             }
           }
-          // Meeus Fallback untuk planet V75 jika library gagal
-          const T = this.julianCenturies(utcMs);
-          let lon = 0;
-          switch (planetId) {
-            case 'Mercury': lon = 252.25 + 149472.67 * T; break;
-            case 'Uranus': lon = 314.05 + 428.46 * T; break;
-            case 'Saturn': lon = 50.07 + 1222.11 * T; break;
-            case 'Jupiter': lon = 34.35 + 3034.90 * T; break;
-            case 'Sun': lon = 280.46 + 36000.77 * T; break;
+          if (lon === null) {
+            // Meeus Fallback bila library gagal dimuat
+            const T = this.julianCenturies(utcMs);
+            switch (planetId) {
+              case 'Moon':    lon = 218.32 + 481267.88 * T; break;
+              case 'Mercury': lon = 252.25 + 149472.67 * T; break;
+              case 'Sun':     lon = 280.46 + 36000.77 * T; break;
+              case 'Mars':    lon = 355.45 + 19140.30 * T; break;
+              case 'Jupiter': lon = 34.35 + 3034.90 * T; break;
+              case 'Saturn':  lon = 50.07 + 1222.11 * T; break;
+              case 'Uranus':  lon = 314.05 + 428.46 * T; break;
+              default:        lon = 0;
+            }
+            lon = MathUtil.norm360(lon);
           }
-          return MathUtil.norm360(lon);
+          if (this.cache.size > 60000) this.cache.clear();
+          this.cache.set(key, lon);
+          return lon;
         }
       };
 
       /* =====================================================================
-       * 4. ENGINE FORECAST (HYBRID ASTRO-RNG)
-       * Menggabungkan RSI (Base Bias) dengan Event Ephemeris (Waktu Eksekusi)
+       * 4. ENGINE WAKTU (ASTRO MURNI - TANPA DATA HARGA)
        * ===================================================================== */
-      const HybridEngine = {
-        compute7Days(techBaseRSI, currentPrice) {
-          const nowUtc = Date.now();
-          const results = [];
-          
-          for (let d = 1; d <= 7; d++) {
-            // Set base UTC day start (Luxor Midnight = UTC 21:00 previous day)
-            const targetDayUtcMs = nowUtc + (d * 24 * CONFIG_SSOT.TIMEZONE.HOUR_MS);
-            const dayStartUtcMs = new Date(targetDayUtcMs).setUTCHours(0,0,0,0) - (CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS * CONFIG_SSOT.TIMEZONE.HOUR_MS);
-            
-            // Generate grid intra-day (scan setiap 15 menit)
-            const stepMs = CONFIG_SSOT.TIMEZONE.SCAN_STEP_MINUTES * CONFIG_SSOT.TIMEZONE.MIN_MS;
-            const steps = Math.floor((24 * CONFIG_SSOT.TIMEZONE.HOUR_MS) / stepMs);
-            const grid = [];
-            
-            for (let s = 0; s <= steps; s++) {
-              const t = dayStartUtcMs + s * stepMs;
-              grid.push({
-                utcMs: t,
-                uranus: EphemerisCore.getPlanetLon('Uranus', t),
-                mercury: EphemerisCore.getPlanetLon('Mercury', t),
-                saturn: EphemerisCore.getPlanetLon('Saturn', t)
-              });
-            }
+      const AstroTimeEngine = {
+        pairs: null,
 
-            // Cari Aspek paling kuat antara Mercury (Tick) dan Uranus (Spike) atau Saturn (Struktur)
-            let bestEvent = null;
-            let minErr = 999;
+        buildPairs() {
+          const b = CONFIG_SSOT.BODIES;
+          const out = [];
+          for (let i = 0; i < b.length; i++) {
+            for (let j = i + 1; j < b.length; j++) out.push([b[i], b[j]]);
+          }
+          return out;
+        },
 
-            for (let i = 1; i < grid.length - 1; i++) {
-              // Cek Mercury vs Uranus
-              const dPrev = MathUtil.angleDiff(grid[i-1].mercury, grid[i-1].uranus);
-              const dCurr = MathUtil.angleDiff(grid[i].mercury, grid[i].uranus);
-              const dNext = MathUtil.angleDiff(grid[i+1].mercury, grid[i+1].uranus);
-              
-              CONFIG_SSOT.ASPECTS.forEach(asp => {
-                const err = Math.abs(dCurr - asp.angle);
-                if (err < minErr && err < 1.5 && (err <= Math.abs(dPrev - asp.angle) && err <= Math.abs(dNext - asp.angle))) {
-                  minErr = err;
-                  bestEvent = {
-                    timeUtc: grid[i].utcMs,
-                    b1: 'Mercury', b2: 'Uranus',
-                    lon1: grid[i].mercury, lon2: grid[i].uranus,
-                    aspName: asp.name, aspAngle: asp.angle,
-                    harmony: asp.harmony
-                  };
-                }
-              });
-              
-              // Cek Mercury vs Saturn (Jika tidak ada aspek Uranus yang kuat)
-              if(minErr > 0.5) {
-                const dsCurr = MathUtil.angleDiff(grid[i].mercury, grid[i].saturn);
-                CONFIG_SSOT.ASPECTS.forEach(asp => {
-                  const errS = Math.abs(dsCurr - asp.angle);
-                  if (errS < minErr && errS < 1.5) {
-                    minErr = errS;
-                    bestEvent = {
-                      timeUtc: grid[i].utcMs,
-                      b1: 'Mercury', b2: 'Saturn',
-                      lon1: grid[i].mercury, lon2: grid[i].saturn,
-                      aspName: asp.name, aspAngle: asp.angle,
-                      harmony: asp.harmony
-                    };
+        gap(bodyA, bodyB, aspectAngle, utcMs) {
+          const sep = MathUtil.sepDeg(
+            EphemerisCore.getPlanetLon(bodyA.id, utcMs),
+            EphemerisCore.getPlanetLon(bodyB.id, utcMs)
+          );
+          return sep - aspectAngle;
+        },
+
+        // Cari titik aspek eksak dengan bisection (presisi < 1 detik)
+        refine(bodyA, bodyB, aspectAngle, t0, t1) {
+          let lo = t0, hi = t1;
+          let gLo = this.gap(bodyA, bodyB, aspectAngle, lo);
+          for (let i = 0; i < 40 && (hi - lo) > CONFIG_SSOT.TIMEZONE.BISECT_LIMIT_MS; i++) {
+            const mid = Math.floor((lo + hi) / 2);
+            const gMid = this.gap(bodyA, bodyB, aspectAngle, mid);
+            if ((gLo <= 0 && gMid <= 0) || (gLo >= 0 && gMid >= 0)) { lo = mid; gLo = gMid; }
+            else { hi = mid; }
+          }
+          return Math.round((lo + hi) / 2);
+        },
+
+        // Cari titik orb terkecil (termasuk aspek yang tidak melewati 0°) via golden-section
+        refineMin(bodyA, bodyB, aspectAngle, t0, t1) {
+          const f = (t) => Math.abs(this.gap(bodyA, bodyB, aspectAngle, t));
+          let lo = t0, hi = t1;
+          const phi = 0.6180339887498949;
+          let x1 = hi - phi * (hi - lo), x2 = lo + phi * (hi - lo);
+          let f1 = f(x1), f2 = f(x2);
+          for (let i = 0; i < 60 && (hi - lo) > CONFIG_SSOT.TIMEZONE.BISECT_LIMIT_MS; i++) {
+            if (f1 <= f2) { hi = x2; x2 = x1; f2 = f1; x1 = hi - phi * (hi - lo); f1 = f(x1); }
+            else { lo = x1; x1 = x2; f1 = f2; x2 = lo + phi * (hi - lo); f2 = f(x2); }
+          }
+          const tBest = f1 <= f2 ? x1 : x2;
+          return { timeUtc: Math.round(tBest), orb: Math.abs(this.gap(bodyA, bodyB, aspectAngle, tBest)) };
+        },
+
+        // Semua aspek yang mendekat/menyeberang dalam jendela hari (orb terkecil per pasangan-aspek)
+        eventsInWindow(windowStartUtcMs, windowEndUtcMs) {
+          const T = CONFIG_SSOT.TIMEZONE;
+          const stepMs = T.SCAN_STEP_MINUTES * T.MIN_MS;
+          const events = [];
+          if (!this.pairs) this.pairs = this.buildPairs();
+
+          const scanStart = windowStartUtcMs - stepMs;
+          const scanEnd = windowEndUtcMs + stepMs;
+
+          this.pairs.forEach(pair => {
+            const a = pair[0], b = pair[1];
+            CONFIG_SSOT.ASPECTS.forEach(asp => {
+              let prevT = scanStart;
+              let prevG = this.gap(a, b, asp.angle, prevT);
+              let curT = scanStart + stepMs;
+              let curG = this.gap(a, b, asp.angle, curT);
+              for (let t = scanStart + 2 * stepMs; t <= scanEnd; t += stepMs) {
+                const nextG = this.gap(a, b, asp.angle, t);
+                const isMin = Math.abs(curG) <= Math.abs(prevG) && Math.abs(curG) <= Math.abs(nextG);
+                if (isMin && Math.abs(curG) <= CONFIG_SSOT.ALGORITHM.SCAN_ORB_DEG) {
+                  const hit = this.refineMin(a, b, asp.angle, prevT, t);
+                  if (hit.orb <= CONFIG_SSOT.ALGORITHM.SCAN_ORB_DEG &&
+                      hit.timeUtc >= windowStartUtcMs && hit.timeUtc < windowEndUtcMs) {
+                    events.push({
+                      timeUtc: hit.timeUtc, a, b, asp, orb: hit.orb,
+                      lonA: EphemerisCore.getPlanetLon(a.id, hit.timeUtc),
+                      lonB: EphemerisCore.getPlanetLon(b.id, hit.timeUtc)
+                    });
                   }
-                });
+                }
+                prevT = curT; prevG = curG;
+                curT = t; curG = nextG;
               }
+            });
+          });
+          return events;
+        },
+
+        netBias(events) {
+          let total = 0;
+          events.forEach(e => {
+            const w = Math.exp(-e.orb / CONFIG_SSOT.ALGORITHM.ORB_DECAY_DEG);
+            total += e.asp.harmony * e.asp.weight * w;
+          });
+          return total;
+        },
+
+        compute7Days() {
+          const nowUtc = Date.now();
+          const T = CONFIG_SSOT.TIMEZONE;
+          const A = CONFIG_SSOT.ALGORITHM;
+          const results = [];
+
+          for (let d = 1; d <= 7; d++) {
+            // Hari kalender Luxor: mulai 00:00 Luxor = 21:00 UTC hari sebelumnya
+            const dayIndexUtc = new Date(nowUtc + d * T.DAY_MS);
+            dayIndexUtc.setUTCHours(0, 0, 0, 0);
+            const dayStart = dayIndexUtc.getTime() - T.LUXOR_OFFSET_HOURS * T.HOUR_MS;
+            const dayEnd = dayStart + T.DAY_MS;
+
+            const events = this.eventsInWindow(dayStart, dayEnd);
+            const bias = this.netBias(events);
+
+            // Anchor = aspek dengan orb terkecil (waktu paling tajam)
+            let anchor = null;
+            events.forEach(e => { if (!anchor || e.orb < anchor.orb) anchor = e; });
+
+            if (!anchor) {
+              results.push({
+                dateFullStr: TimeUtil.toOffsetParts(dayStart + T.HOUR_MS, T.LUXOR_OFFSET_HOURS).fullStr,
+                direction: 'NETRAL', confidence: 0,
+                aspectTrigger: 'Tidak ada aspek dalam orb 1,2° (hari tenang)',
+                luxorStr: '—', entryWib: '—', exitWib: '—', duration: '—',
+                metric: 'Bias: 0.00'
+              });
+              continue;
             }
 
-            // Fallback jika hari tersebut tidak ada aspek major (kosong/void): 
-            // Gunakan Golden Ratio Algoritmik terhadap transit Bulan (Simulasi: 14:00 UTC)
-            if (!bestEvent) {
-              const fallbackUtc = dayStartUtcMs + (14 * CONFIG_SSOT.TIMEZONE.HOUR_MS);
-              bestEvent = {
-                timeUtc: fallbackUtc,
-                b1: 'Sun', b2: 'Jupiter', // Dummy netral
-                lon1: EphemerisCore.getPlanetLon('Sun', fallbackUtc),
-                lon2: EphemerisCore.getPlanetLon('Jupiter', fallbackUtc),
-                aspName: 'Algorithm Sync (Void)', aspAngle: 0, harmony: 0
-              };
-            }
+            const direction = Math.abs(bias) < 0.25 ? 'NETRAL' : (bias > 0 ? 'BUY' : 'SELL');
+            const orbQuality = 1 - Math.min(anchor.orb, A.ORB_LIMIT_DEG) / A.ORB_LIMIT_DEG;
+            const confidence = Math.round(MathUtil.clamp(52 + Math.min(22, Math.abs(bias) * 9) + orbQuality * 16, 50, 96));
 
-            // Fusi Arah: Teknika Dasar (RSI) + Resonansi Aspek
-            // V75 Sangat volatil, RSI over 50 = Bias Buy
-            const isBaseBullish = techBaseRSI > 50;
-            const astroBias = bestEvent.harmony;
-            
-            // Tentukan arah akhir
-            let finalDir = 'BUY';
-            let conf = 60;
-            if (isBaseBullish && astroBias >= 0) { finalDir = 'BUY'; conf = 75 + Math.floor(Math.random()*15); }
-            else if (!isBaseBullish && astroBias <= 0) { finalDir = 'SELL'; conf = 75 + Math.floor(Math.random()*15); }
-            else { 
-              // Fluktuasi Harian jika bias berlawanan (Swing ketat)
-              finalDir = isBaseBullish ? 'SELL' : 'BUY'; 
-              conf = 58 + Math.floor(Math.random()*10); 
-            }
+            // Durasi: makin cepat gerak relatif pasangan, makin singkat jendela aspeknya
+            const relSpeed = Math.max(0.02, Math.abs(anchor.a.speed - anchor.b.speed));
+            const durRaw = ((2 * A.TRANSIT_ORB_DEG) / relSpeed) * 24 * 60;
+            const durationMin = Math.round(MathUtil.clamp(durRaw, A.MIN_DURATION_MIN, A.MAX_DURATION_MIN) / 5) * 5;
 
-            // Hitung Durasi & Waktu (Orb Aspect ditranslasi ke menit eksekusi algoritma V75)
-            // Tipikal swing/intraday V75 berkisar 45 menit hingga 3 jam
-            const durationMin = 45 + Math.floor(Math.abs(astroBias) * 90); 
-            const entryUtc = bestEvent.timeUtc - (durationMin * 0.3 * CONFIG_SSOT.TIMEZONE.MIN_MS);
-            const exitUtc = entryUtc + (durationMin * CONFIG_SSOT.TIMEZONE.MIN_MS);
+            const entryUtc = anchor.timeUtc - Math.round(durationMin * A.LEAD_RATIO / 5) * 5 * T.MIN_MS;
+            const exitUtc = entryUtc + durationMin * T.MIN_MS;
 
-            // Format Output
-            const dayLux = TimeUtil.toOffsetParts(entryUtc, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
-            const entryLux = TimeUtil.toOffsetParts(entryUtc, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
-            const exitLux = TimeUtil.toOffsetParts(exitUtc, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
-            const entryWib = TimeUtil.toOffsetParts(entryUtc, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
-            const exitWib = TimeUtil.toOffsetParts(exitUtc, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
-            
-            const fmt1 = MathUtil.formatDMS(bestEvent.lon1);
-            const fmt2 = MathUtil.formatDMS(bestEvent.lon2);
+            const dayLux = TimeUtil.toOffsetParts(entryUtc, T.LUXOR_OFFSET_HOURS);
+            const exitLux = TimeUtil.toOffsetParts(exitUtc, T.LUXOR_OFFSET_HOURS);
+            const entryWib = TimeUtil.toOffsetParts(entryUtc, T.WIB_OFFSET_HOURS);
+            const exitWib = TimeUtil.toOffsetParts(exitUtc, T.WIB_OFFSET_HOURS);
+            const exactLux = TimeUtil.toOffsetParts(anchor.timeUtc, T.LUXOR_OFFSET_HOURS);
 
             results.push({
               dateFullStr: dayLux.fullStr,
-              direction: finalDir,
-              confidence: conf,
-              techRsi: techBaseRSI.toFixed(1),
-              aspectTrigger: `${bestEvent.b1} (${fmt1.inSignShort}) ${bestEvent.aspName} ${bestEvent.b2} (${fmt2.inSignShort})`,
-              luxorStr: `${entryLux.hhmm} - ${exitLux.hhmm}`,
+              direction: direction,
+              confidence: confidence,
+              aspectTrigger: `${anchor.a.label} (${MathUtil.formatDMS(anchor.lonA)}) ${anchor.asp.name} ${anchor.b.label} (${MathUtil.formatDMS(anchor.lonB)}) — eksak ${exactLux.hhmmss} Luxor`,
+              luxorStr: `${dayLux.hhmm} - ${exitLux.hhmm}`,
               entryWib: `${entryWib.hhmmss} (${entryWib.shortDate})`,
               exitWib: `${exitWib.hhmmss} (${exitWib.shortDate})`,
-              duration: `${Math.floor(durationMin / 60)}j ${Math.floor(durationMin % 60)}m`
+              duration: `${Math.floor(durationMin / 60)}j ${durationMin % 60}m`,
+              metric: `Orb: ${anchor.orb.toFixed(3)}° • Bias: ${bias.toFixed(2)} • ${events.length} aspek`
             });
           }
           return results;
@@ -391,28 +426,26 @@
       };
 
       /* =====================================================================
-       * 5. MANAJER WEBSOCKET & UI (HARDWARE SAVER / ANTI-MEMORY LEAK)
+       * 5. UI CONTROLLER (HARDWARE SAVER / ANTI-MEMORY LEAK)
        * ===================================================================== */
       const AppController = {
-        socket: null,
-
         init() {
           this.startClocks();
           const btn = document.getElementById('btnGenerate');
-          btn.addEventListener('click', () => {
-            btn.disabled = true;
-            this.fetchDerivData();
-          });
+          btn.addEventListener('click', () => this.run(true));
+          this.run(false);
         },
 
         startClocks() {
-          setInterval(() => {
+          const tick = () => {
             const now = Date.now();
             const lux = TimeUtil.toOffsetParts(now, CONFIG_SSOT.TIMEZONE.LUXOR_OFFSET_HOURS);
             const wib = TimeUtil.toOffsetParts(now, CONFIG_SSOT.TIMEZONE.WIB_OFFSET_HOURS);
             document.getElementById('clockLuxor').textContent = `${lux.hhmmss} (${lux.shortDate})`;
             document.getElementById('clockWib').textContent = `${wib.hhmmss} (${wib.shortDate})`;
-          }, 1000);
+          };
+          tick();
+          setInterval(tick, 1000);
         },
 
         updateStatus(text, isErr = false) {
@@ -421,64 +454,44 @@
           el.style.color = isErr ? 'var(--sell-text)' : 'var(--accent-cyan)';
         },
 
-        fetchDerivData() {
-          this.updateStatus('Mengkoneksikan ke WebSocket Deriv (V75 1s)...');
-          if (this.socket) this.socket.close();
+        run(isManual) {
+          const btn = document.getElementById('btnGenerate');
+          btn.disabled = true;
+          this.updateStatus(isManual ? 'Menghitung ulang jadwal ephemeris...' : 'Menyiapkan engine ephemeris...');
 
-          this.socket = new WebSocket(`${CONFIG_SSOT.API.WS_URL}?app_id=${CONFIG_SSOT.API.APP_ID}`);
-          
-          this.socket.onopen = () => {
-            this.updateStatus('Terhubung. Meminta data histori D1...');
-            this.socket.send(JSON.stringify({
-              ticks_history: CONFIG_SSOT.API.SYMBOL,
-              adjust_start_time: 1, count: CONFIG_SSOT.API.CANDLE_COUNT, end: "latest",
-              style: "candles", granularity: CONFIG_SSOT.API.GRANULARITY
-            }));
-          };
-
-          this.socket.onmessage = (msg) => {
-            const res = JSON.parse(msg.data);
-            if (res.error) {
-              this.updateStatus(`API Error: ${res.error.message}`, true);
-              document.getElementById('btnGenerate').disabled = false;
-              this.socket.close();
-              return;
-            }
-            if (res.candles) {
-              this.updateStatus('Data Diterima. Mengkalkulasi Ephemeris Orbit Kriptografi...');
-              const closes = res.candles.map(c => parseFloat(c.close));
-              const rsi = Indicators.calcRSI(closes, 14);
-              const currPrice = closes[closes.length - 1];
-              
-              const schedule = HybridEngine.compute7Days(rsi, currPrice);
+          // beri kesempatan browser melukis status sebelum komputasi sinkron
+          setTimeout(() => {
+            try {
+              const t0 = Date.now();
+              const schedule = AstroTimeEngine.compute7Days();
               this.renderTable(schedule);
-              
-              this.updateStatus('Kalkulasi Selesai. (Koneksi diputus untuk menghemat RAM Termux)');
-              document.getElementById('btnGenerate').disabled = false;
-              this.socket.close(); // PENTING: Cegah memory leak Termux
+              const ms = Date.now() - t0;
+              this.updateStatus(`Selesai. Mode astro murni (tanpa data harga). ${schedule.length} hari dihitung dalam ${ms} ms.`);
+            } catch (err) {
+              this.updateStatus(`Gagal kalkulasi: ${err && err.message ? err.message : err}`, true);
+            } finally {
+              btn.disabled = false;
             }
-          };
-
-          this.socket.onerror = () => {
-            this.updateStatus('Gagal koneksi ke Deriv.', true);
-            document.getElementById('btnGenerate').disabled = false;
-          };
+          }, 30);
         },
 
         renderTable(dataRows) {
           const tbody = document.getElementById('tbody7Day');
           tbody.innerHTML = '';
-          
+
           dataRows.forEach(r => {
             const tr = document.createElement('tr');
-            const bClass = r.direction === 'BUY' ? 'badge-dir badge-buy' : 'badge-dir badge-sell';
-            
+            const bClass = r.direction === 'BUY'
+              ? 'badge-dir badge-buy'
+              : (r.direction === 'SELL' ? 'badge-dir badge-sell' : 'badge-dir');
+            const conf = r.confidence ? ` (${r.confidence}%)` : '';
+
             tr.innerHTML = `
               <td><span class="pair-tag">V75_1S</span></td>
               <td>${r.dateFullStr}</td>
               <td>
-                <span class="${bClass}">${r.direction} (${r.confidence}%)</span><br>
-                <span class="tech-metric">Base RSI: ${r.techRsi}</span>
+                <span class="${bClass}">${r.direction}${conf}</span><br>
+                <span class="tech-metric">${r.metric}</span>
               </td>
               <td class="mono">${r.aspectTrigger}</td>
               <td class="mono">${r.luxorStr}</td>
