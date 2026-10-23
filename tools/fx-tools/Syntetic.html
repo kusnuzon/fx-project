@@ -908,8 +908,8 @@ footer{color:var(--muted);font-size:10.5px;margin-top:16px;line-height:1.7}
     }
     setMode('error', 'FEED GAGAL');
     startSim(true);
-    setLog('Feed live gagal (' + esc(String(reason).replace(/\.$/, '')) +
-      '). Kemungkinan handshake WebSocket diblokir jaringan/proxy. Panel diisi ' +
+    setLog('Feed live gagal — ' + esc(String(reason).replace(/\.$/, '')) +
+      '. Kemungkinan handshake WebSocket diblokir jaringan/proxy. Panel diisi ' +
       '<b>data simulasi lokal</b> — label LIVE hanya muncul bila data benar-benar dari Deriv. ' +
       'Tekan <b>Hubungkan</b> untuk mencoba lagi.');
   }
