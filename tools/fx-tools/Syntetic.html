@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>SYNTETIC · Deriv Volatility 75 (1s)</title>
+<meta name="description" content="Lab tick &amp; digit untuk Deriv Volatility 75 (1s): feed WebSocket live, grafik, distribusi digit, strek, volatilitas, dan kalkulator EV.">
+<style>
+:root{
+  --bg:#070b12;--panel:#0d1521;--panel2:#111d2e;--line:#22334a;--line2:#2c4059;
+  --text:#dbe6f3;--muted:#8ea3bd;--accent:#f0c16c;--cyan:#63d4dd;--green:#4fd18b;
+  --red:#ff7a7a;--violet:#b79cff;--radius:11px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font:13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;
+  background-image:linear-gradient(rgba(120,140,170,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(120,140,170,.045) 1px,transparent 1px);
+  background-size:12px 12px;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--cyan)}
+.wrap{max-width:1160px;margin:0 auto;padding:16px 12px 44px}
+
+/* ---------- header ---------- */
+header.top{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(180deg,rgba(20,32,48,.92),rgba(10,18,28,.92));
+  padding:13px 15px;margin-bottom:13px;
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand .ico{
+  width:40px;height:40px;flex:0 0 40px;border:1px solid var(--line2);border-radius:9px;
+  display:grid;place-items:center;font-size:19px;background:#0b1420;
+}
+h1{font-size:16.5px;margin:0;letter-spacing:.5px;color:var(--accent)}
+.sub{color:var(--muted);font-size:11px;margin-top:3px;line-height:1.4}
+.links{display:flex;gap:7px;flex-wrap:wrap}
+.links a{
+  font-size:10.5px;text-decoration:none;border:1px solid var(--line);border-radius:999px;
+  padding:6px 10px;color:var(--muted);background:#0b1420;
+}
+.links a:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ---------- cards ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:13px;overflow:hidden}
+.card>.hd{
+  display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:space-between;
+  padding:11px 13px;border-bottom:1px solid var(--line);
+}
+.card>.hd h2{font-size:13px;margin:0;letter-spacing:.5px;color:var(--accent)}
+.card>.hd h2 .n{color:var(--muted);font-weight:400;margin-right:5px}
+.card>.hd small{color:var(--muted);font-size:10.5px;font-weight:400}
+.card>.bd{padding:13px}
+
+/* ---------- form controls ---------- */
+label{display:block;font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:5px;text-transform:uppercase}
+input,select,button{font:inherit;max-width:100%}
+input[type=number],input[type=text],select{
+  width:100%;background:#0a121d;color:var(--text);border:1px solid var(--line2);
+  border-radius:8px;padding:8px 10px;min-height:38px;outline:none;
+}
+input:focus,select:focus{border-color:var(--cyan)}
+input[type=checkbox]{accent-color:var(--cyan);width:15px;height:15px;vertical-align:-2px}
+button{
+  background:#16283d;color:var(--text);border:1px solid var(--line2);border-radius:8px;
+  padding:8px 12px;min-height:38px;cursor:pointer;
+}
+button:hover{border-color:var(--cyan)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#16202e;font-weight:700}
+button.ghost{background:transparent}
+button.sm{min-height:30px;padding:5px 9px;font-size:11.5px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:9px;align-items:flex-end}
+.row>*{flex:1 1 150px;min-width:0}
+.row.tight>*{flex:0 0 auto}
+.row .wide{flex:2 1 220px}
+
+/* ---------- metrics ---------- */
+.grid{display:grid;gap:11px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.hero{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));margin-bottom:13px}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 11px;min-width:0}
+.metric .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric .v{font-size:19px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.metric .s{font-size:10.5px;color:var(--muted);margin-top:2px}
+.metric.price{grid-column:span 2}
+.metric.price .v{font-size:25px;color:#fff}
+.metric.digit .v{font-size:32px;line-height:1.1}
+.pos{color:var(--green)}.neg{color:var(--red)}.mid{color:var(--muted)}
+.tiny{font-size:10.5px;color:var(--muted)}
+
+/* ---------- pills / badges ---------- */
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;border:1px solid var(--line2);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.bad{border-color:var(--red);color:var(--red)}
+.pill.warn{border-color:var(--accent);color:var(--accent)}
+.pill.live{border-color:var(--green);color:var(--green)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.dot.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- chart ---------- */
+.chart-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tf{padding:4px 9px;min-height:28px;font-size:11px;border-radius:6px;background:#0b1420}
+.tf.on{background:var(--accent);border-color:var(--accent);color:#16202e;font-weight:700}
+.chart-wrap{position:relative}
+#chart{width:100%;height:clamp(210px,36vw,320px);display:block;background:#0a121d;border:1px solid var(--line);border-radius:9px;touch-action:none;cursor:crosshair}
+.chart-info{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);margin-top:7px;font-variant-numeric:tabular-nums;min-height:17px}
+.chart-info b{color:var(--text);font-weight:600}
+.legend{display:flex;gap:13px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+
+/* ---------- digit stream ---------- */
+.stream{display:flex;flex-wrap:wrap;gap:5px;min-height:34px}
+.chip{
+  width:31px;height:31px;border-radius:7px;display:grid;place-items:center;position:relative;
+  font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;
+  border:1px solid var(--line2);background:#0a121d;color:var(--text);
+}
+.chip.even{border-color:#1e6f7a;background:rgba(99,212,221,.10);color:#a9eef3}
+.chip.odd{border-color:#4b3f78;background:rgba(183,156,255,.10);color:#cfc0ff}
+.chip.target{outline:2px solid var(--accent);outline-offset:-1px}
+.chip .ar{position:absolute;top:-1px;right:1px;font-size:8px;line-height:1;opacity:.9}
+.chip .ar.up{color:var(--green)}
+.chip .ar.dn{color:var(--red)}
+.chip .ar.fl{color:var(--muted)}
+
+/* ---------- distribution ---------- */
+.dist-wrap{position:relative;margin-top:6px}
+.dist{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;height:168px;padding-top:6px;align-items:end}
+.dcol{display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
+.dbar{
+  border-radius:4px 4px 0 0;min-height:2px;background:#2b4a68;position:relative;
+  transition:height .25s ease;
+}
+.dbar.hi{background:linear-gradient(180deg,#f0c16c,#b4832c)}
+.dbar.lo{background:linear-gradient(180deg,#4a7fa8,#2b4a68)}
+.dbar .cnt{
+  position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:var(--muted);white-space:nowrap;
+}
+.dlabel{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-top:6px}
+.dlabel span{text-align:center;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dlabel span.t{color:var(--accent);font-weight:700}
+.expline{position:absolute;left:0;right:0;border-top:1px dashed rgba(240,193,108,.55);pointer-events:none}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:400}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(99,212,221,.04)}
+.up-t{color:var(--green)}.dn-t{color:var(--red)}
+
+/* ---------- misc ---------- */
+.note{border:1px dashed var(--line2);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--muted);background:rgba(17,29,46,.5)}
+.note b{color:var(--text)}
+.warnbox{border:1px solid rgba(255,122,122,.35);background:rgba(255,122,122,.07);border-radius:9px;padding:10px 12px;font-size:11px;color:#ffbdbd}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:11.5px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums;text-align:right}
+details{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:rgba(17,29,46,.4)}
+summary{cursor:pointer;font-size:11.5px;color:var(--accent)}
+details p,details li{font-size:11px;color:var(--muted);line-height:1.6}
+details code{color:var(--cyan);background:#0a121d;padding:1px 4px;border-radius:4px}
+footer{color:var(--muted);font-size:10.5px;margin-top:16px;line-height:1.7}
+.toast{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);
+  background:#16283d;border:1px solid var(--line2);border-radius:10px;padding:10px 15px;
+  font-size:12px;color:var(--text);opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:92vw;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:620px){
+  .wrap{padding:12px 9px 36px}
+  .metric.price{grid-column:span 2}
+  .metric.price .v{font-size:21px}
+  .metric .v{font-size:17px}
+  .hero .metric:nth-child(6){grid-column:span 3}
+  .dist{height:140px}
+  .dbar .cnt{font-size:8px;top:-13px}
+  .card>.bd{padding:11px}
+  .hero{gap:8px;grid-template-columns:repeat(3,1fr)}
+  th,td{padding:6px 6px}
+  .chip{width:28px;height:28px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="ico">⚡</div>
+      <div>
+        <h1>SYNTETIC · <span id="brandName">VOLATILITY 75 (1s)</span></h1>
+        <div class="sub">Deriv synthetic index — tick &amp; digit lab · WebSocket API v3, tanpa login</div>
+      </div>
+    </div>
+    <div class="links">
+      <a href="../../index.html">◀ Cartridge Vault</a>
+      <a href="https://developers.deriv.com/docs/" target="_blank" rel="noopener">Deriv API ↗</a>
+    </div>
+  </header>
+
+  <!-- ============ SUMBER DATA ============ -->
+  <section class="card">
+    <div class="hd">
+      <h2>🔌 Sumber Data</h2>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+        <span class="pill" id="modePill"><span class="dot"></span><span id="modeText">idle</span></span>
+        <span class="pill" id="latPill">latensi —</span>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="row">
+        <div style="flex:2 1 230px">
+          <label for="symbolSel">Simbol</label>
+          <select id="symbolSel"></select>
+        </div>
+        <div style="flex:0 1 120px">
+          <label for="appId">app_id</label>
+          <input id="appId" type="number" min="1" step="1" inputmode="numeric" value="1089">
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="primary" id="connectBtn" type="button">Hubungkan</button>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="ghost" id="disconnectBtn" type="button">Putuskan</button>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="ghost" id="simBtn" type="button">Mode simulasi</button>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="ghost" id="exportBtn" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div class="tiny" id="connLog" style="margin-top:9px">Belum terhubung. Tekan <b>Hubungkan</b> untuk feed live, atau <b>Mode simulasi</b> untuk demo offline.</div>
+    </div>
+  </section>
+
+  <!-- ============ HERO ============ -->
+  <div class="hero">
+    <div class="metric price">
+      <div class="k">Harga terakhir</div>
+      <div class="v" id="pxLast">—</div>
+      <div class="s" id="pxClock">menunggu tick</div>
+    </div>
+    <div class="metric digit">
+      <div class="k">Digit terakhir</div>
+      <div class="v" id="pxDigit">—</div>
+      <div class="s" id="pxDigitKind">—</div>
+    </div>
+    <div class="metric">
+      <div class="k">Perubahan tick</div>
+      <div class="v" id="pxChange">—</div>
+      <div class="s" id="pxChangePct">—</div>
+    </div>
+    <div class="metric">
+      <div class="k">Volatilitas /tick</div>
+      <div class="v" id="pxVol">—</div>
+      <div class="s">σ log-return</div>
+    </div>
+    <div class="metric">
+      <div class="k">Rentang 1σ · 5 tick</div>
+      <div class="v" id="pxRange5">—</div>
+      <div class="s" id="pxRange5Pip">—</div>
+    </div>
+    <div class="metric">
+      <div class="k">Interval tick</div>
+      <div class="v" id="pxInterval">—</div>
+      <div class="s" id="pxRate">—</div>
+    </div>
+  </div>
+
+  <!-- ============ CHART ============ -->
+  <section class="card">
+    <div class="hd">
+      <h2><span class="n">01</span>Grafik</h2>
+      <div class="chart-tools">
+        <button class="tf on" type="button" data-tf="1">Tick</button>
+        <button class="tf" type="button" data-tf="5">5s</button>
+        <button class="tf" type="button" data-tf="15">15s</button>
+        <button class="tf" type="button" data-tf="60">1m</button>
+        <button class="tf" type="button" data-tf="300">5m</button>
+        <label style="margin:0;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">
+          <input type="checkbox" id="smaChk" checked> SMA20
+        </label>
+        <label style="margin:0;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">
+          <input type="checkbox" id="bbChk"> BB
+        </label>
+        <button class="tf on" type="button" id="liveBtn">LIVE</button>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="chart-wrap"><canvas id="chart" aria-label="Grafik harga tick Deriv"></canvas></div>
+      <div class="chart-info" id="chartInfo">Geser untuk pan · scroll/pinch untuk zoom · klik LIVE untuk kembali ke ujung kanan.</div>
+      <div class="legend">
+        <span><i style="background:#4fd18b"></i>naik</span>
+        <span><i style="background:#ff7a7a"></i>turun</span>
+        <span><i style="background:#f0c16c"></i>SMA20</span>
+        <span><i style="background:#63d4dd"></i>BB(20,2)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STREAM + MARKET STATS ============ -->
+  <div class="grid g2">
+    <section class="card" style="margin-bottom:0">
+      <div class="hd">
+        <h2><span class="n">02</span>Aliran Digit</h2>
+        <small>60 tick terakhir · ← lama / baru →</small>
+      </div>
+      <div class="bd">
+        <div class="stream" id="digitStream"></div>
+        <div class="legend" style="margin-top:10px">
+          <span><span class="swatch" style="background:rgba(99,212,221,.35)"></span>genap</span>
+          <span><span class="swatch" style="background:rgba(183,156,255,.35)"></span>ganjil</span>
+          <span>▲ naik · ▼ turun · ▬ datar</span>
+          <span style="color:var(--accent)">□ target</span>
+        </div>
+        <div class="grid g3" style="margin-top:11px">
+          <div class="metric"><div class="k">Genap</div><div class="v" id="stEven">—</div><div class="s" id="stEvenN">—</div></div>
+          <div class="metric"><div class="k">Ganjil</div><div class="v" id="stOdd">—</div><div class="s" id="stOddN">—</div></div>
+          <div class="metric"><div class="k">Naik</div><div class="v" id="stRise">—</div><div class="s" id="stRiseN">—</div></div>
+          <div class="metric"><div class="k">Turun</div><div class="v" id="stFall">—</div><div class="s" id="stFallN">—</div></div>
+          <div class="metric"><div class="k">Over &gt; <span id="stBarrierLbl">4</span></div><div class="v" id="stOver">—</div><div class="s" id="stOverN">—</div></div>
+          <div class="metric"><div class="k">Under &lt; <span id="stBarrierLbl2">4</span></div><div class="v" id="stUnder">—</div><div class="s" id="stUnderN">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:0">
+      <div class="hd">
+        <h2><span class="n">03</span>Ringkasan Pasar</h2>
+        <small id="winLabel">jendela 500 tick</small>
+      </div>
+      <div class="bd">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Metrik</th><th>Nilai</th><th>Sekarang</th><th>Terpanjang / maks</th></tr>
+            </thead>
+            <tbody id="statBody"></tbody>
+          </table>
+        </div>
+        <div class="tiny" style="margin-top:9px">Strek dihitung dari tick berurutan dengan label sama di dalam jendela.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ DISTRIBUSI ============ -->
+  <section class="card" style="margin-top:13px">
+    <div class="hd">
+      <h2><span class="n">04</span>Distribusi Digit Terakhir</h2>
+      <div class="chart-tools">
+        <label style="margin:0;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted)">
+          <span>jendela</span>
+          <select id="winSel" style="min-height:30px;padding:4px 7px;width:auto">
+            <option value="100">100</option>
+            <option value="250">250</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+            <option value="2000">2000</option>
+            <option value="0">semua</option>
+          </select>
+        </label>
+        <label style="margin:0;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted)">
+          <span>barrier</span>
+          <select id="barrierSel" style="min-height:30px;padding:4px 7px;width:auto"></select>
+        </label>
+        <label style="margin:0;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted)">
+          <span>target</span>
+          <select id="targetSel" style="min-height:30px;padding:4px 7px;width:auto"></select>
+        </label>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="dist-wrap">
+        <div class="dist" id="distBars"></div>
+        <div class="expline" id="expLine"></div>
+      </div>
+      <div class="dlabel" id="distLabels"></div>
+      <div class="tiny" style="margin-top:6px">Garis putus-putus = harapan seragam 10%. Angka di atas batang = jumlah kemunculan.</div>
+      <div class="grid g3" style="margin-top:14px">
+        <div class="metric"><div class="k">Chi-square (df 9)</div><div class="v" id="chiVal">—</div><div class="s" id="chiNote">—</div></div>
+        <div class="metric"><div class="k">p-value</div><div class="v" id="chiP">—</div><div class="s">semakin kecil = makin tidak seragam</div></div>
+        <div class="metric"><div class="k">Deviasi maksimum</div><div class="v" id="maxDev">—</div><div class="s" id="maxDevNote">—</div></div>
+      </div>
+      <div class="note" style="margin-top:11px" id="distNote">
+        Digit pada indeks sintetis dibangkitkan dari RNG yang dirancang seragam. Deviasi jangka pendek itu normal;
+        distribusi masa lalu <b>tidak</b> mengubah peluang tick berikutnya.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STREAK + EV ============ -->
+  <div class="grid g2">
+    <section class="card" style="margin-bottom:0">
+      <div class="hd">
+        <h2><span class="n">05</span>Strek &amp; Pola</h2>
+        <small>20 run terakhir</small>
+      </div>
+      <div class="bd">
+        <div class="grid g3">
+          <div class="metric"><div class="k">Genap/Ganjil</div><div class="v" id="skParity">—</div><div class="s" id="skParityLong">—</div></div>
+          <div class="metric"><div class="k">Naik/Turun</div><div class="v" id="skDir">—</div><div class="s" id="skDirLong">—</div></div>
+          <div class="metric"><div class="k">Over/Under</div><div class="v" id="skOU">—</div><div class="s" id="skOULong">—</div></div>
+          <div class="metric"><div class="k">Jarak digit <span id="skTargetLbl">5</span></div><div class="v" id="skGap">—</div><div class="s" id="skGapMax">—</div></div>
+        </div>
+        <div class="table-scroll" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Jenis</th><th>Sisi</th><th>Panjang</th><th>Mulai</th><th>Selesai</th></tr></thead>
+            <tbody id="runsBody"><tr><td colspan="5" style="color:var(--muted)">menunggu data…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-bottom:0">
+      <div class="hd">
+        <h2><span class="n">06</span>Kalkulator EV &amp; Risiko</h2>
+        <small>berbasis frekuensi jendela</small>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div style="flex:2 1 170px">
+            <label for="famSel">Kontrak</label>
+            <select id="famSel">
+              <option value="even">Digit Even</option>
+              <option value="odd">Digit Odd</option>
+              <option value="over">Digit Over (&gt; barrier)</option>
+              <option value="under">Digit Under (&lt; barrier)</option>
+              <option value="match">Matches (digit target)</option>
+              <option value="diff">Differs (bukan digit target)</option>
+              <option value="rise">Rise</option>
+              <option value="fall">Fall</option>
+            </select>
+          </div>
+          <div><label for="payoutIn">Payout (% stake)</label><input id="payoutIn" type="number" min="1" max="1000" step="1" value="90" inputmode="numeric"></div>
+          <div><label for="stakeIn">Stake</label><input id="stakeIn" type="number" min="0.35" step="0.01" value="10" inputmode="decimal"></div>
+          <div><label for="balIn">Saldo</label><input id="balIn" type="number" min="0" step="1" value="100" inputmode="numeric"></div>
+          <div><label for="riskIn">Risiko/trade (%)</label><input id="riskIn" type="number" min="0.1" max="100" step="0.1" value="2" inputmode="decimal"></div>
+        </div>
+
+        <div class="grid g3" style="margin-top:12px">
+          <div class="metric"><div class="k">p (empiris)</div><div class="v" id="evP">—</div><div class="s" id="evCI">CI 95% —</div></div>
+          <div class="metric"><div class="k">Payout impas</div><div class="v" id="evBE">—</div><div class="s">(1−p)/p × 100%</div></div>
+          <div class="metric"><div class="k">EV per trade</div><div class="v" id="evVal">—</div><div class="s" id="evPct">—</div></div>
+        </div>
+
+        <div class="table-scroll" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Kalah beruntun</th><th>Peluang</th><th>1 dari</th><th>Modal martingale</th></tr></thead>
+            <tbody id="riskBody"></tbody>
+          </table>
+        </div>
+        <div class="warnbox" style="margin-top:11px">
+          Martingale melipatgandakan stake setelah kalah. Tabel di atas menunjukkan modal minimum jika Anda memaksa mengejar streak —
+          angka ini tumbuh eksponensial dan bukan strategi yang disarankan.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ VOLATILITAS ============ -->
+  <section class="card" style="margin-top:13px">
+    <div class="hd">
+      <h2><span class="n">07</span>Volatilitas &amp; Konteks</h2>
+      <small id="volLabel">dihitung dari jendela</small>
+    </div>
+    <div class="bd">
+      <div class="grid g3">
+        <div class="metric"><div class="k">σ / tick</div><div class="v" id="volTick">—</div><div class="s">log-return</div></div>
+        <div class="metric"><div class="k">σ / menit (60 tick)</div><div class="v" id="volMin">—</div><div class="s">√60 × σ tick</div></div>
+        <div class="metric"><div class="k">ATR(14) tick</div><div class="v" id="volAtr">—</div><div class="s">rata-rata |Δharga|</div></div>
+        <div class="metric"><div class="k">Rezim volatilitas</div><div class="v" id="volRegime">—</div><div class="s" id="volRegimeNote">σ pendek vs panjang</div></div>
+        <div class="metric"><div class="k">Posisi dalam range</div><div class="v" id="volPos">—</div><div class="s" id="volRange">—</div></div>
+        <div class="metric"><div class="k">1σ · 10 tick</div><div class="v" id="volMove10">—</div><div class="s">perkiraan simpangan</div></div>
+      </div>
+      <div class="note" style="margin-top:11px">
+        Volatilitas di sini adalah statistik deskriptif dari tick yang sudah terjadi, bukan ramalan.
+        Untuk kontrak berdurasi pendek, σ × √durasi hanya memberi skala pergerakan tipikal.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DOKUMENTASI ============ -->
+  <section class="card">
+    <div class="hd"><h2><span class="n">08</span>Catatan &amp; Dokumentasi</h2><small>cara pakai singkat</small></div>
+    <div class="bd">
+      <details open>
+        <summary>Endpoint yang dipakai</summary>
+        <p>Halaman ini bicara langsung ke <code>wss://ws.derivws.com/websockets/v3?app_id=&lt;id&gt;</code> tanpa autentikasi:</p>
+        <ul>
+          <li><code>{"ticks":"1HZ75V","subscribe":1}</code> — stream harga tiap detik.</li>
+          <li><code>{"ticks_history":"1HZ75V","count":1500,"end":"latest","style":"ticks"}</code> — isi awal grafik.</li>
+          <li><code>{"active_symbols":"brief","product_type":"basic"}</code> — daftar simbol + <code>pip</code>.</li>
+          <li><code>{"ping":1}</code> — ukur latensi.</li>
+        </ul>
+        <p>Referensi: <a href="https://developers.deriv.com/docs/data/ticks/" target="_blank" rel="noopener">Ticks</a>,
+        <a href="https://developers.deriv.com/docs/data/ticks-history/" target="_blank" rel="noopener">Ticks History</a>,
+        <a href="https://developers.deriv.com/docs/data/active-symbols/" target="_blank" rel="noopener">Active Symbols</a>.</p>
+      </details>
+      <details style="margin-top:9px">
+        <summary>Kenapa ada mode simulasi?</summary>
+        <p>Sebagian jaringan/ISP memblokir upgrade WebSocket (handshake gagal, mis. HTTP 520). Jika feed live tidak tersambung
+        dalam beberapa detik, halaman otomatis pindah ke <b>simulasi lokal</b> agar semua panel tetap bisa dipelajari.
+        Label mode selalu jujur: <b>LIVE</b> hanya saat data benar-benar datang dari Deriv. app_id default 1089 adalah app publik
+        untuk data pasar; ganti dengan app_id milik Anda bila perlu.</p>
+      </details>
+      <details style="margin-top:9px">
+        <summary>Batasan analisis digit</summary>
+        <p>Digit terakhir diambil dari harga yang diformat sesuai jumlah desimal simbol (mis. 1HZ75V 2 desimal → <code>1234.50</code>
+        digit 0). Uji chi-square dan z-score hanya mengukur apakah sampel menyimpang dari seragam; pada RNG sintetis,
+        penyimpangan biasanya kembali ke rata-rata. Tidak ada pola digit yang bisa dipakai sebagai kepastian.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <b>Disclaimer:</b> alat edukasi/analisis, bukan saran investasi. Trading kontrak Deriv berisiko kehilangan modal.
+    Data pasar disediakan apa adanya oleh Deriv API; halaman ini tidak mengirim order dan tidak menyimpan kredensial.
+    <br>SYNTETIC · dibuat untuk CARTRIDGE VAULT · <span id="buildStamp">—</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =====================================================================
+   * 0. UTIL
+   * ===================================================================== */
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+  var pad2 = function (n) { return String(n).padStart(2, '0'); };
+  var nowSec = function () { return Math.floor(Date.now() / 1000); };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+    });
+  };
+  var mean = function (a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : 0; };
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  function hhmmss(epoch) {
+    var d = new Date(epoch * 1000);
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+  }
+  function hhmm(epoch) {
+    var d = new Date(epoch * 1000);
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  /* Statistik: fungsi gamma & chi-square survival (Numerical Recipes) */
+  function lnGamma(x) {
+    var cof = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    var ser = 1.000000000190015;
+    for (var j = 0; j < 6; j++) ser += cof[j] / ++y;
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function gser(a, x) {
+    var ap = a, sum = 1 / a, del = sum;
+    for (var n = 1; n < 300; n++) {
+      ap += 1; del *= x / ap; sum += del;
+      if (Math.abs(del) < Math.abs(sum) * 3e-12) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - lnGamma(a));
+  }
+  function gcf(a, x) {
+    var FPMIN = 1e-300, b = x + 1 - a, c = 1 / FPMIN, d = 1 / b, h = d;
+    for (var i = 1; i < 300; i++) {
+      var an = -i * (i - a);
+      b += 2; d = an * d + b;
+      if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = b + an / c;
+      if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      var del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < 3e-12) break;
+    }
+    return Math.exp(-x + a * Math.log(x) - lnGamma(a)) * h;
+  }
+  function chi2SF(chi, df) {
+    if (!isFinite(chi) || chi <= 0) return 1;
+    var a = df / 2, x = chi / 2;
+    return x < a + 1 ? 1 - gser(a, x) : gcf(a, x);
+  }
+
+  /* =====================================================================
+   * 1. KONFIGURASI & STATE
+   * ===================================================================== */
+  var DEFAULT_APP_ID = 1089;
+  var WS_URL = 'wss://ws.derivws.com/websockets/v3';
+  var HISTORY_COUNT = 1500;
+  var MAX_TICKS = 6000;
+  var LS_KEY = 'syntetic.v1';
+
+  // Daftar fallback (aktif walau active_symbols gagal). pip dipakai untuk desimal.
+  var FALLBACK_SYMBOLS = [
+    { symbol: '1HZ75V',  name: 'Volatility 75 (1s)',   pip: 0.01 },
+    { symbol: 'R_75',    name: 'Volatility 75',        pip: 0.01 },
+    { symbol: '1HZ100V', name: 'Volatility 100 (1s)',  pip: 0.01 },
+    { symbol: '1HZ50V',  name: 'Volatility 50 (1s)',   pip: 0.01 },
+    { symbol: '1HZ25V',  name: 'Volatility 25 (1s)',   pip: 0.01 },
+    { symbol: '1HZ10V',  name: 'Volatility 10 (1s)',   pip: 0.001 },
+    { symbol: '1HZ150V', name: 'Volatility 150 (1s)',  pip: 0.01 },
+    { symbol: '1HZ250V', name: 'Volatility 250 (1s)',  pip: 0.01 },
+    { symbol: 'R_100',   name: 'Volatility 100',       pip: 0.01 },
+    { symbol: 'R_50',    name: 'Volatility 50',        pip: 0.0001 },
+    { symbol: 'R_25',    name: 'Volatility 25',        pip: 0.001 },
+    { symbol: 'R_10',    name: 'Volatility 10',        pip: 0.001 }
+  ];
+
+  var S = {
+    mode: 'idle',            // idle | connecting | live | sim | error
+    symbol: '1HZ75V',
+    appId: DEFAULT_APP_ID,
+    pip: 0.01,
+    decimals: 2,
+    ticks: [],               // {t, q} — data mentah
+    seq: [],                 // {t, q, d, dir} — turunan (digit & arah)
+    symbols: FALLBACK_SYMBOLS.slice(),
+
+    ws: null,
+    reqId: 0,
+    tickSubId: null,
+    manualClose: false,
+    retry: 0,
+    retryTimer: null,
+    connectTimer: null,
+    simTimer: null,
+    lastMsg: '',
+    latency: null,
+    pingSentAt: null,
+    pingTimer: null,
+
+    window: 500,
+    barrier: 4,
+    target: 5,
+    family: 'even'
+  };
+
+  var chart = {
+    canvas: null, ctx: null, W: 0, H: 0,
+    tf: 1, bars: 120, offset: 0,
+    sma: true, bb: false,
+    mouse: null, drag: null,
+    data: [],          // candle untuk tf > 1
+    line: [],          // titik untuk tf = 1
+    drew: false
+  };
+
+  /* =====================================================================
+   * 2. PERSISTENSI RINGAN
+   * ===================================================================== */
+  function loadPrefs() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (o.appId) S.appId = clamp(parseInt(o.appId, 10) || DEFAULT_APP_ID, 1, 999999);
+      if (o.symbol) S.symbol = String(o.symbol);
+      if (o.window !== undefined) S.window = clamp(parseInt(o.window, 10) || 0, 0, 5000);
+      if (o.barrier !== undefined) S.barrier = clamp(parseInt(o.barrier, 10) || 0, 0, 8);
+      if (o.target !== undefined) S.target = clamp(parseInt(o.target, 10) || 0, 0, 9);
+      if (o.family) S.family = String(o.family);
+      if (o.payout) $('payoutIn').value = o.payout;
+      if (o.stake) $('stakeIn').value = o.stake;
+      if (o.balance) $('balIn').value = o.balance;
+      if (o.risk) $('riskIn').value = o.risk;
+    } catch (e) { /* abaikan */ }
+  }
+  function savePrefs() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        appId: S.appId, symbol: S.symbol, window: S.window,
+        barrier: S.barrier, target: S.target, family: S.family,
+        payout: $('payoutIn').value, stake: $('stakeIn').value,
+        balance: $('balIn').value, risk: $('riskIn').value
+      }));
+    } catch (e) { /* abaikan */ }
+  }
+
+  /* =====================================================================
+   * 3. FORMAT HARGA & DIGIT
+   * ===================================================================== */
+  function fmt(q, dec) {
+    if (q === null || q === undefined || !isFinite(q)) return '—';
+    return Number(q).toFixed(dec === undefined ? S.decimals : dec);
+  }
+  function pipSize() { return Math.pow(10, -S.decimals); }
+  function decimalsFromPip(pip) {
+    if (!pip || !isFinite(pip) || pip <= 0) return 2;
+    if (pip >= 1) return Math.round(pip);              // sebagian endpoint kirim jumlah desimal
+    return clamp(Math.round(-Math.log10(pip)), 0, 8);
+  }
+  function digitOf(q) {
+    var s = fmt(q);
+    return parseInt(s.charAt(s.length - 1), 10) || 0;
+  }
+  function pipLabel() {
+    return 'pip ' + fmt(pipSize(), S.decimals) + ' · ' + S.decimals + ' desimal';
+  }
+
+  /* =====================================================================
+   * 4. DATA TICK
+   * ===================================================================== */
+  function recomputeSeq() {
+    var out = [];
+    for (var i = 0; i < S.ticks.length; i++) {
+      var t = S.ticks[i], prev = i ? S.ticks[i - 1].q : null;
+      out.push({ t: t.t, q: t.q, d: digitOf(t.q), dir: dirOf(t.q, prev) });
+    }
+    S.seq = out;
+  }
+  function dirOf(q, prev) {
+    if (prev === null || prev === undefined) return 0;
+    var eps = pipSize() / 2;
+    if (q - prev > eps) return 1;
+    if (prev - q > eps) return -1;
+    return 0;
+  }
+  function setDecimals(dec) {
+    if (!isFinite(dec)) return;
+    dec = clamp(dec, 0, 8);
+    if (dec === S.decimals) return;
+    S.decimals = dec;
+    recomputeSeq();
+  }
+  function setSymbolMeta(sym, pip) {
+    S.symbol = sym;
+    S.pip = pip || S.pip;
+    setDecimals(decimalsFromPip(S.pip));
+  }
+  function resetData() {
+    S.ticks = [];
+    S.seq = [];
+    chart.offset = 0;
+    chart.mouse = null;
+  }
+  function appendTick(t, q) {
+    if (!isFinite(q)) return;
+    var last = S.ticks[S.ticks.length - 1];
+    if (last && t <= last.t) t = last.t + 1;
+    var prev = last ? last.q : null;
+    S.ticks.push({ t: t, q: q });
+    S.seq.push({ t: t, q: q, d: digitOf(q), dir: dirOf(q, prev) });
+    if (S.ticks.length > MAX_TICKS) {
+      S.ticks.splice(0, S.ticks.length - MAX_TICKS);
+      S.seq.splice(0, S.seq.length - MAX_TICKS);
+    }
+    scheduleRender();
+  }
+  function loadHistory(times, prices) {
+    if (!times || !prices) return;
+    resetData();
+    for (var i = 0; i < times.length && i < prices.length; i++) {
+      var t = Number(times[i]), q = Number(prices[i]);
+      if (!isFinite(t) || !isFinite(q)) continue;
+      var prev = i ? Number(prices[i - 1]) : null;
+      S.ticks.push({ t: t, q: q });
+      S.seq.push({ t: t, q: q, d: digitOf(q), dir: dirOf(q, prev) });
+    }
+    scheduleRender();
+  }
+
+  /* =====================================================================
+   * 5. WEBSOCKET DERIV
+   * ===================================================================== */
+  function setMode(mode, text) {
+    S.mode = mode;
+    var pill = $('modePill'), t = $('modeText');
+    pill.className = 'pill';
+    var dot = pill.querySelector('.dot');
+    if (mode === 'live') { pill.classList.add('ok'); dot.classList.add('pulse'); }
+    else if (mode === 'connecting') { pill.classList.add('warn'); dot.classList.add('pulse'); }
+    else if (mode === 'sim') { pill.classList.add('warn'); }
+    else if (mode === 'error') { pill.classList.add('bad'); }
+    if (mode !== 'connecting') dot.classList.remove('pulse');
+    t.textContent = text || mode.toUpperCase();
+    $('connectBtn').disabled = (mode === 'live' || mode === 'connecting');
+    $('simBtn').disabled = (mode === 'sim');
+  }
+  function setLog(msg) {
+    S.lastMsg = msg;
+    $('connLog').innerHTML = msg;
+  }
+  function wsSend(obj) {
+    if (!S.ws || S.ws.readyState !== 1) return false;
+    if (obj.ping) S.pingSentAt = performance.now();
+    obj.req_id = ++S.reqId;
+    try { S.ws.send(JSON.stringify(obj)); return true; }
+    catch (e) { return false; }
+  }
+
+  function connect() {
+    cleanupSocket();
+    stopSim();
+    S.manualClose = false;
+    S.retry = 0;
+    $('latPill').textContent = 'latensi —';
+    $('latPill').className = 'pill';
+    resetData();
+    openSocket();
+  }
+
+  function openSocket() {
+    stopSim();
+    setMode('connecting', 'MENGHUBUNGKAN');
+    setLog('Menyambung ke <b>' + esc(WS_URL) + '</b> (app_id ' + S.appId + ')…');
+    var ws;
+    try {
+      ws = new WebSocket(WS_URL + '?app_id=' + encodeURIComponent(S.appId) + '&l=EN');
+    } catch (e) {
+      onSocketFail('WebSocket tidak bisa dibuat: ' + e.message);
+      return;
+    }
+    S.ws = ws;
+
+    clearTimeout(S.connectTimer);
+    S.connectTimer = setTimeout(function () {
+      if (S.mode === 'connecting') {
+        try { ws.close(); } catch (e) { /* noop */ }
+        onSocketFail('Handshake melebihi 7 detik (jaringan/proxy memblokir WebSocket?).');
+      }
+    }, 7000);
+
+    ws.onopen = function () {
+      clearTimeout(S.connectTimer);
+      if (S.ws !== ws) return;
+      S.retry = 0;
+      setMode('live', 'LIVE');
+      setLog('Terhubung. Meminta <b>active_symbols</b>, riwayat, dan stream tick…');
+      wsSend({ active_symbols: 'brief', product_type: 'basic' });
+      wsSend({ ticks_history: S.symbol, end: 'latest', count: HISTORY_COUNT, style: 'ticks' });
+      wsSend({ ticks: S.symbol, subscribe: 1 });
+      wsSend({ ping: 1 });
+      clearInterval(S.pingTimer);
+      S.pingTimer = setInterval(function () {
+        if (S.mode === 'live') wsSend({ ping: 1 });
+      }, 15000);
+    };
+
+    ws.onmessage = function (ev) {
+      var msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      handleMessage(msg);
+    };
+
+    ws.onerror = function () {
+      if (S.ws !== ws) return;
+      // onclose akan menyusul; cukup catat
+    };
+
+    ws.onclose = function (ev) {
+      if (S.ws !== ws) return;
+      clearTimeout(S.connectTimer);
+      clearInterval(S.pingTimer);
+      S.ws = null;
+      if (S.manualClose) {
+        setMode('idle', 'TERPUTUS');
+        setLog('Koneksi ditutup manual.');
+        return;
+      }
+      if (S.mode === 'connecting' || (ev && ev.code && ev.code !== 1000)) {
+        onSocketFail('Koneksi tertutup (kode ' + (ev && ev.code) + ').');
+      } else {
+        setMode('idle', 'TERPUTUS');
+        setLog('Koneksi berakhir. Tekan <b>Hubungkan</b> untuk menyambung ulang.');
+      }
+    };
+  }
+
+  function onSocketFail(reason) {
+    clearTimeout(S.connectTimer);
+    clearInterval(S.pingTimer);
+    S.ws = null;
+    // putus di tengah sesi live: coba sambung ulang (maks 2x) sebelum jatuh ke simulasi
+    if (S.mode === 'live' && S.retry < 2) {
+      S.retry++;
+      setMode('connecting', 'SAMBUNG ULANG ' + S.retry + '/2');
+      setLog('Koneksi terputus: ' + esc(reason) + ' Menyambung ulang…');
+      S.retryTimer = setTimeout(openSocket, 3000);
+      return;
+    }
+    setMode('error', 'FEED GAGAL');
+    startSim(true);
+    setLog('Feed live gagal (' + esc(String(reason).replace(/\.$/, '')) +
+      '). Kemungkinan handshake WebSocket diblokir jaringan/proxy. Panel diisi ' +
+      '<b>data simulasi lokal</b> — label LIVE hanya muncul bila data benar-benar dari Deriv. ' +
+      'Tekan <b>Hubungkan</b> untuk mencoba lagi.');
+  }
+
+  function cleanupSocket() {
+    clearTimeout(S.retryTimer);
+    clearTimeout(S.connectTimer);
+    clearInterval(S.pingTimer);
+    S.manualClose = true;
+    if (S.ws) {
+      try { S.ws.onclose = null; S.ws.close(); } catch (e) { /* noop */ }
+    }
+    S.ws = null;
+  }
+
+  function handleMessage(msg) {
+    if (msg.error) {
+      var code = msg.error.code || 'error';
+      setLog('API error: <b>' + esc(code) + '</b> — ' + esc(msg.error.message || ''));
+      if (code === 'InvalidSymbol' || code === 'InputValidationFailed') {
+        toast('Simbol ditolak API: ' + code);
+      }
+      return;
+    }
+
+    if (msg.msg_type === 'active_symbols') {
+      mergeSymbols(msg.active_symbols || []);
+      return;
+    }
+
+    if (msg.msg_type === 'ping') {
+      if (S.pingSentAt) {
+        S.latency = Math.round(performance.now() - S.pingSentAt);
+        $('latPill').textContent = 'latensi ' + S.latency + ' ms';
+        $('latPill').className = 'pill ' + (S.latency < 400 ? 'ok' : 'warn');
+      }
+      return;
+    }
+
+    if (msg.msg_type === 'ticks_history' && msg.history) {
+      var h = msg.history;
+      if (h.prices && h.times) {
+        loadHistory(h.times, h.prices);
+        // pip_size dari history tidak dikirim; pakai tick pertama nanti
+        setLog('Riwayat ' + h.prices.length + ' tick dimuat untuk <b>' + esc(S.symbol) + '</b>.');
+      }
+      return;
+    }
+
+    if (msg.msg_type === 'tick' && msg.tick) {
+      var tk = msg.tick;
+      if (tk.symbol && tk.symbol !== S.symbol) return;
+      if (tk.pip_size) {
+        var dec = decimalsFromPip(Number(tk.pip_size));
+        if (dec !== S.decimals) setDecimals(dec);
+      }
+      appendTick(Number(tk.epoch) || nowSec(), Number(tk.quote));
+      S.pingSentAt = null;
+      return;
+    }
+  }
+
+  function mergeSymbols(list) {
+    var syn = [];
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
+      if (s.market !== 'synthetic_index') continue;
+      syn.push({ symbol: s.symbol, name: s.display_name, pip: Number(s.pip) || 0.01 });
+    }
+    if (syn.length) {
+      var oneSec = [], rest = [];
+      syn.forEach(function (s) {
+        (/\(1s\)/i.test(s.name) ? oneSec : rest).push(s);
+      });
+      oneSec.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      rest.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      S.symbols = oneSec.concat(rest);
+      fillSymbolSelect();
+      refreshBrand();
+      var cur = findSymbol(S.symbol);
+      if (cur && cur.pip) {
+        S.pip = cur.pip;
+        setDecimals(decimalsFromPip(cur.pip));
+      }
+      setLog('Simbol tersedia: ' + S.symbols.length + ' indeks sintetis. Feed <b>' +
+        esc(findSymbol(S.symbol) ? findSymbol(S.symbol).name : S.symbol) + '</b> aktif · ' +
+        esc(pipLabel()) + '.');
+    }
+  }
+
+  function findSymbol(sym) {
+    for (var i = 0; i < S.symbols.length; i++) if (S.symbols[i].symbol === sym) return S.symbols[i];
+    return null;
+  }
+
+  function fillSymbolSelect() {
+    var sel = $('symbolSel');
+    var html = '';
+    var current = S.symbol;
+    var exists = false;
+    S.symbols.forEach(function (s) {
+      if (s.symbol === current) exists = true;
+      html += '<option value="' + esc(s.symbol) + '">' + esc(s.name) + ' · ' + esc(s.symbol) + '</option>';
+    });
+    if (!exists) html = '<option value="' + esc(current) + '">' + esc(current) + '</option>' + html;
+    sel.innerHTML = html;
+    sel.value = current;
+  }
+
+  function refreshBrand() {
+    var meta = findSymbol(S.symbol);
+    var name = meta ? meta.name : S.symbol;
+    var el = $('brandName');
+    if (el) el.textContent = String(name).toUpperCase();
+    document.title = 'SYNTETIC · Deriv ' + name;
+  }
+
+  function switchSymbol(sym) {
+    if (!sym || sym === S.symbol) return;
+    var meta = findSymbol(sym);
+    setSymbolMeta(sym, meta ? meta.pip : S.pip);
+    S.pip = meta ? meta.pip : S.pip;
+    refreshBrand();
+    savePrefs();
+    resetData();
+    scheduleRender();
+    toast('Simbol: ' + (meta ? meta.name : sym));
+    if (S.mode === 'live') {
+      wsSend({ forget_all: 'ticks' });
+      wsSend({ ticks_history: sym, end: 'latest', count: HISTORY_COUNT, style: 'ticks' });
+      wsSend({ ticks: sym, subscribe: 1 });
+      setLog('Pindah ke <b>' + esc(meta ? meta.name : sym) + '</b> — memuat riwayat &amp; stream baru.');
+    } else if (S.mode === 'sim') {
+      startSim(true);
+    }
+  }
+
+  /* =====================================================================
+   * 6. SIMULASI LOKAL (fallback)
+   * ===================================================================== */
+  var sim = { last: null, base: 1500 };
+
+  function gauss() {
+    var u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function simQuote(prev) {
+    var volPct = 0.000055 * (1 + Math.random() * 0.5);
+    var q = prev * (1 + gauss() * volPct);
+    return Number(q.toFixed(S.decimals));
+  }
+
+  function startSim(generateHistory) {
+    cleanupSocket();
+    stopSim();
+    setMode('sim', 'SIMULASI');
+    $('connectBtn').disabled = false;
+    $('latPill').textContent = 'latensi —';
+    $('latPill').className = 'pill';
+    resetData();
+    sim.base = 1000 + Math.round(Math.random() * 1500);
+    sim.last = Number(sim.base.toFixed(S.decimals));
+    if (generateHistory !== false) {
+      var t0 = nowSec() - 600;
+      var q = sim.last;
+      for (var i = 0; i < 600; i++) {
+        q = simQuote(q);
+        S.ticks.push({ t: t0 + i, q: q });
+      }
+      sim.last = q;
+      recomputeSeq();
+    }
+    setLog('Mode simulasi lokal untuk <b>' + esc(findSymbol(S.symbol) ? findSymbol(S.symbol).name : S.symbol) +
+      '</b>: data acak dengan volatilitas menyerupai indeks (bukan harga Deriv). ' +
+      'Semua statistik tetap berfungsi.');
+    scheduleRender();
+    S.simTimer = setInterval(function () {
+      sim.last = simQuote(sim.last);
+      appendTick(nowSec(), sim.last);
+    }, 1000);
+  }
+
+  function stopSim() {
+    clearInterval(S.simTimer);
+    S.simTimer = null;
+  }
+
+  /* =====================================================================
+   * 7. STATISTIK
+   * ===================================================================== */
+  function activeWindow() {
+    if (!S.window) return S.seq;
+    return S.seq.length > S.window ? S.seq.slice(-S.window) : S.seq;
+  }
+
+  function currentRun(values) {
+    if (!values.length) return { len: 0, val: null };
+    var v = values[values.length - 1], len = 1;
+    for (var i = values.length - 2; i >= 0 && values[i] === v; i--) len++;
+    return { len: len, val: v };
+  }
+  function longestRun(values) {
+    if (!values.length) return { len: 0, val: null };
+    var best = { len: 1, val: values[0] }, cur = 1;
+    for (var i = 1; i < values.length; i++) {
+      cur = values[i] === values[i - 1] ? cur + 1 : 1;
+      if (cur > best.len) best = { len: cur, val: values[i] };
+    }
+    return best;
+  }
+  function runsList(values, limit) {
+    var out = [], start = 0;
+    for (var i = 1; i <= values.length; i++) {
+      if (i === values.length || values[i] !== values[start]) {
+        out.push({ val: values[start], len: i - start, from: start, to: i - 1 });
+        start = i;
+      }
+    }
+    return out.slice(-limit).reverse();
+  }
+
+  function computeStats(win) {
+    var n = win.length;
+    var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var even = 0, over = 0, under = 0, rise = 0, fall = 0, flat = 0;
+    var parity = [], ou = [], dirs = [];
+    for (var i = 0; i < n; i++) {
+      var tk = win[i];
+      counts[tk.d]++;
+      if (tk.d % 2 === 0) even++;
+      if (tk.d > S.barrier) over++;
+      else if (tk.d < S.barrier) under++;
+      if (tk.dir > 0) rise++; else if (tk.dir < 0) fall++; else flat++;
+      parity.push(tk.d % 2 === 0);
+      ou.push(tk.d > S.barrier ? 'over' : (tk.d < S.barrier ? 'under' : 'sama'));
+      dirs.push(tk.dir > 0 ? 'naik' : (tk.dir < 0 ? 'turun' : 'datar'));
+    }
+    return {
+      n: n, counts: counts, even: even, odd: n - even,
+      over: over, under: under, eqBarrier: n - over - under,
+      rise: rise, fall: fall, flat: flat,
+      parity: parity, ou: ou, dirs: dirs,
+      targetCount: n ? counts[S.target] : 0
+    };
+  }
+
+  function percentileCI(p, n) {
+    if (!n) return null;
+    var z = 1.96, z2 = z * z;
+    var denom = 1 + z2 / n;
+    var centre = (p + z2 / (2 * n)) / denom;
+    var half = z * Math.sqrt(p * (1 - p) / n + z2 / (4 * n * n)) / denom;
+    return { lo: clamp(centre - half, 0, 1), hi: clamp(centre + half, 0, 1) };
+  }
+
+  function pct(part, total) { return total ? (part / total * 100) : 0; }
+  function pctTxt(part, total) { return total ? (part / total * 100).toFixed(1) + '%' : '—'; }
+
+  /* =====================================================================
+   * 8. RENDER — HERO & STATUS
+   * ===================================================================== */
+  var renderPending = false;
+  function scheduleRender() {
+    if (renderPending) return;
+    renderPending = true;
+    requestAnimationFrame(function () {
+      renderPending = false;
+      renderAll();
+    });
+  }
+
+  function renderAll() {
+    renderHero();
+    renderStream();
+    renderStatsTable();
+    renderDistribution();
+    renderStreaks();
+    renderEV();
+    renderVolatility();
+    drawChart();
+  }
+
+  function renderHero() {
+    var last = S.seq[S.seq.length - 1];
+    var prev = S.seq[S.seq.length - 2];
+    if (!last) {
+      $('pxLast').textContent = '—';
+      $('pxClock').textContent = S.mode === 'live' ? 'menunggu tick…' : 'belum ada data';
+      $('pxDigit').textContent = '—';
+      $('pxDigitKind').textContent = '—';
+      $('pxChange').textContent = '—';
+      $('pxChangePct').textContent = '—';
+      $('pxVol').textContent = '—';
+      $('pxRange5').textContent = '—';
+      $('pxRange5Pip').textContent = '—';
+      $('pxInterval').textContent = '—';
+      $('pxRate').textContent = '—';
+      return;
+    }
+    $('pxLast').textContent = fmt(last.q);
+    $('pxClock').textContent = hhmmss(last.t) + ' waktu perangkat · ' + S.seq.length + ' tick';
+
+    var dEl = $('pxDigit');
+    dEl.textContent = last.d;
+    dEl.className = 'v ' + (last.d % 2 === 0 ? 'pos' : 'neg');
+    $('pxDigitKind').textContent = (last.d % 2 === 0 ? 'genap' : 'ganjil') +
+      ' · ' + (last.d > S.barrier ? 'over ' + S.barrier : (last.d < S.barrier ? 'under ' + S.barrier : 'sama barrier'));
+
+    if (prev) {
+      var diff = last.q - prev.q;
+      var el = $('pxChange');
+      el.textContent = (diff > 0 ? '+' : '') + fmt(diff);
+      el.className = 'v ' + (diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'mid');
+      $('pxChangePct').textContent = (diff > 0 ? '+' : '') +
+        (prev.q ? (diff / prev.q * 100).toFixed(4) : '0.0000') + '%';
+    }
+
+    var vol = volQuick();
+    if (vol) {
+      $('pxVol').textContent = vol.sdPct.toFixed(4) + '%';
+      $('pxRange5').textContent = '±' + fmt(vol.price1 * Math.sqrt(5));
+      $('pxRange5Pip').textContent = Math.round(vol.price1 * Math.sqrt(5) / pipSize()) + ' pip';
+
+      var intervals = [];
+      var from = Math.max(1, S.seq.length - 12);
+      for (var i = from; i < S.seq.length; i++) {
+        var dt = S.seq[i].t - S.seq[i - 1].t;
+        if (dt > 0 && dt < 30) intervals.push(dt);
+      }
+      if (intervals.length) {
+        var avg = mean(intervals);
+        $('pxInterval').textContent = (avg * 1000).toFixed(0) + ' ms';
+        var span = S.seq[S.seq.length - 1].t - S.seq[Math.max(0, S.seq.length - 21)].t;
+        $('pxRate').textContent = span > 0 ? (Math.min(20, S.seq.length - 1) / span).toFixed(2) + ' tick/dtk' : '—';
+      }
+    }
+  }
+
+  /* =====================================================================
+   * 9. RENDER — STREAM & TABEL
+   * ===================================================================== */
+  function renderStream() {
+    var tail = S.seq.slice(-60);
+    var html = '';
+    for (var i = 0; i < tail.length; i++) {
+      var tk = tail[i];
+      var cls = 'chip ' + (tk.d % 2 === 0 ? 'even' : 'odd');
+      if (tk.d === S.target) cls += ' target';
+      var ar = tk.dir > 0 ? '<span class="ar up">▲</span>'
+        : tk.dir < 0 ? '<span class="ar dn">▼</span>' : '<span class="ar fl">▬</span>';
+      html += '<div class="' + cls + '" title="' + hhmmss(tk.t) + ' · ' + fmt(tk.q) + '">' + tk.d + ar + '</div>';
+    }
+    if (!html) html = '<div class="tiny" style="padding:8px 0">Belum ada tick.</div>';
+    $('digitStream').innerHTML = html;
+
+    var st = computeStats(activeWindow());
+    $('stEven').textContent = pctTxt(st.even, st.n);
+    $('stEvenN').textContent = st.even + ' dari ' + st.n;
+    $('stOdd').textContent = pctTxt(st.odd, st.n);
+    $('stOddN').textContent = st.odd + ' dari ' + st.n;
+    $('stRise').textContent = pctTxt(st.rise, st.n);
+    $('stRiseN').textContent = st.rise + ' tick';
+    $('stFall').textContent = pctTxt(st.fall, st.n);
+    $('stFallN').textContent = st.fall + ' tick';
+    $('stOver').textContent = pctTxt(st.over, st.n);
+    $('stOverN').textContent = st.over + ' tick';
+    $('stUnder').textContent = pctTxt(st.under, st.n);
+    $('stUnderN').textContent = st.under + ' tick';
+    $('stBarrierLbl').textContent = S.barrier;
+    $('stBarrierLbl2').textContent = S.barrier;
+    $('winLabel').textContent = 'jendela ' + (S.window ? S.window : 'semua') + ' tick';
+    $('skTargetLbl').textContent = S.target;
+  }
+
+  function streakCell(run, labelOf) {
+    if (!run.len) return '—';
+    return labelOf(run.val) + ' ×' + run.len;
+  }
+  function renderStatsTable() {
+    var st = computeStats(activeWindow());
+    var rows = [
+      {
+        name: 'Genap / Ganjil',
+        value: pctTxt(st.even, st.n) + ' / ' + pctTxt(st.odd, st.n),
+        cur: streakCell(currentRun(st.parity), function (v) { return v ? 'genap' : 'ganjil'; }),
+        max: streakCell(longestRun(st.parity), function (v) { return v ? 'genap' : 'ganjil'; })
+      },
+      {
+        name: 'Naik / Turun',
+        value: pctTxt(st.rise, st.n) + ' / ' + pctTxt(st.fall, st.n),
+        cur: streakCell(currentRun(st.dirs), function (v) { return v; }),
+        max: streakCell(longestRun(st.dirs), function (v) { return v; })
+      },
+      {
+        name: 'Over &gt; ' + S.barrier + ' / Under &lt; ' + S.barrier,
+        value: pctTxt(st.over, st.n) + ' / ' + pctTxt(st.under, st.n) + ' (sama ' + pctTxt(st.eqBarrier, st.n) + ')',
+        cur: streakCell(currentRun(st.ou), function (v) { return v; }),
+        max: streakCell(longestRun(st.ou), function (v) { return v; })
+      },
+      {
+        name: 'Digit = ' + S.target,
+        value: pctTxt(st.targetCount, st.n) + ' (' + st.targetCount + '×)',
+        cur: gapOf(st, S.target) + ' tick lalu',
+        max: 'gap maks ' + maxGap(st, S.target) + ' tick'
+      },
+      {
+        name: '≥ 5 / ≤ 4',
+        value: splitHighLow(st, 5),
+        cur: '—',
+        max: '—'
+      }
+    ];
+    var html = rows.map(function (r) {
+      return '<tr><td>' + r.name + '</td><td>' + r.value + '</td><td>' + r.cur + '</td><td>' + r.max + '</td></tr>';
+    }).join('');
+    $('statBody').innerHTML = html;
+  }
+
+  function gapOf(st, digit) {
+    var w = st ? st : computeStats(activeWindow());
+    var arr = activeWindow();
+    for (var i = arr.length - 1; i >= 0; i--) if (arr[i].d === digit) return arr.length - 1 - i;
+    return arr.length;
+  }
+  function maxGap(st, digit) {
+    var arr = activeWindow(), gap = 0, best = 0;
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].d === digit) { best = Math.max(best, gap); gap = 0; } else gap++;
+    }
+    return Math.max(best, gap);
+  }
+  function splitHighLow(st, cut) {
+    if (!st.n) return '—';
+    var hi = 0;
+    for (var i = cut; i <= 9; i++) hi += st.counts[i];
+    return pctTxt(hi, st.n) + ' / ' + pctTxt(st.n - hi, st.n);
+  }
+
+  /* =====================================================================
+   * 10. RENDER — DISTRIBUSI
+   * ===================================================================== */
+  function renderDistribution() {
+    var st = computeStats(activeWindow());
+    var ps = [];
+    var maxPct = 0;
+    for (var i = 0; i < 10; i++) {
+      var p = st.n ? st.counts[i] / st.n * 100 : 0;
+      ps.push(p);
+      if (p > maxPct) maxPct = p;
+    }
+    var scale = Math.max(12, maxPct * 1.12);
+
+    var bars = '', labels = '';
+    for (var d = 0; d < 10; d++) {
+      var h = st.n ? Math.max(2, ps[d] / scale * 100) : 2;
+      var cls = ps[d] > 10 ? ' hi' : ' lo';
+      bars += '<div class="dcol"><div class="dbar' + cls + '" style="height:' + h.toFixed(1) + '%">' +
+        '<span class="cnt">' + st.counts[d] + '</span></div></div>';
+      labels += '<span class="' + (d === S.target ? 't' : '') + '">' + d + '</span>';
+    }
+    $('distBars').innerHTML = bars;
+    $('distLabels').innerHTML = labels;
+
+    // garis harapan 10%: posisikan tepat di tinggi bar yang mewakili 10%
+    var lineEl = $('expLine');
+    var distEl = $('distBars');
+    var wrapEl = distEl.parentElement;
+    var distRect = distEl.getBoundingClientRect();
+    var wrapRect = wrapEl.getBoundingClientRect();
+    lineEl.style.top = (distRect.top - wrapRect.top + distRect.height * (1 - 10 / scale)) + 'px';
+    lineEl.style.bottom = 'auto';
+    lineEl.style.transform = 'none';
+
+    // chi-square
+    var exp = st.n / 10;
+    var chi = 0;
+    if (st.n > 0) {
+      for (var k = 0; k < 10; k++) chi += Math.pow(st.counts[k] - exp, 2) / exp;
+    }
+    var p = st.n ? chi2SF(chi, 9) : 1;
+    $('chiVal').textContent = st.n ? chi.toFixed(2) : '—';
+    $('chiNote').textContent = st.n ? 'n = ' + st.n : 'tanpa data';
+    $('chiP').textContent = st.n ? (p < 0.0001 ? '< 0.0001' : p.toFixed(4)) : '—';
+
+    var devMax = -1, devDigit = 0;
+    for (var j = 0; j < 10; j++) {
+      var dev = Math.abs(ps[j] - 10);
+      if (dev > devMax) { devMax = dev; devDigit = j; }
+    }
+    $('maxDev').textContent = st.n ? (devMax >= 0 ? devMax.toFixed(2) + ' pp' : '—') : '—';
+    $('maxDevNote').textContent = st.n ? 'digit ' + devDigit + ' · ' + ps[devDigit].toFixed(1) + '%' : '—';
+
+    var note;
+    if (!st.n) {
+      note = 'Belum ada data untuk diuji.';
+    } else if (p < 0.01) {
+      note = '<b>Menyimpang kuat</b> dari seragam (p &lt; 0.01). Bisa terjadi pada sampel kecil; bukan sinyal entry.';
+    } else if (p < 0.05) {
+      note = '<b>Menyimpang</b> dari seragam (p &lt; 0.05). Periksa ukuran sampel sebelum menyimpulkan apa pun.';
+    } else {
+      note = 'Konsisten dengan <b>acak seragam</b> (p = ' + (p < 0.0001 ? '&lt;0.0001' : p.toFixed(3)) +
+        '). Tidak ada digit yang "panas" secara statistik.';
+    }
+    $('distNote').innerHTML = note;
+  }
+
+  /* =====================================================================
+   * 11. RENDER — STREAK
+   * ===================================================================== */
+  var RUN_LABEL = { parity: 'Genap/Ganjil', dir: 'Naik/Turun', ou: 'Over/Under' };
+  function renderStreaks() {
+    var st = computeStats(activeWindow());
+    var runs = [];
+
+    runsList(st.parity, 20).forEach(function (r) {
+      runs.push({ type: 'Genap/Ganjil', side: r.val ? 'genap' : 'ganjil', len: r.len, from: r.from, to: r.to });
+    });
+    runsList(st.dirs, 20).forEach(function (r) {
+      runs.push({ type: 'Naik/Turun', side: r.val, len: r.len, from: r.from, to: r.to });
+    });
+    runsList(st.ou, 20).forEach(function (r) {
+      runs.push({ type: 'Over/Under', side: r.val, len: r.len, from: r.from, to: r.to });
+    });
+    runs.sort(function (a, b) { return b.to - a.to; });
+    var arr = activeWindow();
+    var html = runs.slice(0, 20).map(function (r) {
+      var t1 = arr[r.from] ? hhmmss(arr[r.from].t) : '—';
+      var t2 = arr[r.to] ? hhmmss(arr[r.to].t) : '—';
+      return '<tr><td>' + r.type + '</td><td>' + esc(r.side) + '</td><td>' + r.len +
+        '</td><td>' + t1 + '</td><td>' + t2 + '</td></tr>';
+    }).join('');
+    if (!html) html = '<tr><td colspan="5" style="color:var(--muted)">menunggu data…</td></tr>';
+    $('runsBody').innerHTML = html;
+
+    $('skParity').textContent = streakShort(currentRun(st.parity), function (v) { return v ? 'GNP' : 'GNJ'; });
+    $('skParityLong').textContent = 'terpanjang ' + streakShort(longestRun(st.parity), function (v) { return v ? 'GNP' : 'GNJ'; });
+    $('skDir').textContent = streakShort(currentRun(st.dirs), function (v) { return v; });
+    $('skDirLong').textContent = 'terpanjang ' + streakShort(longestRun(st.dirs), function (v) { return v; });
+    $('skOU').textContent = streakShort(currentRun(st.ou), function (v) { return v; });
+    $('skOULong').textContent = 'terpanjang ' + streakShort(longestRun(st.ou), function (v) { return v; });
+
+    var gap = gapOf(st, S.target);
+    $('skGap').textContent = gap + ' tick';
+    $('skGapMax').textContent = 'gap maks ' + maxGap(st, S.target) + ' tick';
+  }
+  function streakShort(run, labelOf) {
+    return run.len ? labelOf(run.val) + ' ×' + run.len : '—';
+  }
+
+  /* =====================================================================
+   * 12. RENDER — EV & RISIKO
+   * ===================================================================== */
+  function pForFamily(st, family) {
+    if (!st.n) return 0;
+    switch (family) {
+      case 'even': return st.even / st.n;
+      case 'odd': return st.odd / st.n;
+      case 'over': return st.over / st.n;
+      case 'under': return st.under / st.n;
+      case 'match': return st.counts[S.target] / st.n;
+      case 'diff': return 1 - st.counts[S.target] / st.n;
+      case 'rise': return st.rise / st.n;
+      case 'fall': return st.fall / st.n;
+      default: return 0;
+    }
+  }
+
+  function renderEV() {
+    var st = computeStats(activeWindow());
+    var p = pForFamily(st, S.family);
+    var payout = clamp(parseFloat($('payoutIn').value) || 0, 0, 1000) / 100;
+    var stake = Math.max(0, parseFloat($('stakeIn').value) || 0);
+    var balance = Math.max(0, parseFloat($('balIn').value) || 0);
+    var riskPct = clamp(parseFloat($('riskIn').value) || 0, 0, 100);
+
+    $('evP').textContent = st.n ? (p * 100).toFixed(2) + '%' : '—';
+    var ci = percentileCI(p, st.n);
+    $('evCI').textContent = ci ? 'CI 95% ' + (ci.lo * 100).toFixed(1) + '–' + (ci.hi * 100).toFixed(1) + '%' : 'CI 95% —';
+
+    $('evBE').textContent = p > 0 ? ((1 - p) / p * 100).toFixed(1) + '%' : '—';
+
+    var evPct = st.n ? (p * (1 + payout) - 1) * 100 : 0;
+    var evVal = stake * evPct / 100;
+    $('evVal').textContent = st.n ? (evVal >= 0 ? '+' : '') + evVal.toFixed(2) : '—';
+    $('evVal').className = 'v ' + (evVal > 0.0001 ? 'pos' : evVal < -0.0001 ? 'neg' : 'mid');
+    $('evPct').textContent = st.n ? (evPct >= 0 ? '+' : '') + evPct.toFixed(2) + '% per trade' : '—';
+    $('evPct').className = 's ' + (evPct > 0 ? 'pos' : evPct < 0 ? 'neg' : 'mid');
+
+    // tabel kalah beruntun
+    var q = 1 - p, rows = '';
+    for (var k = 1; k <= 6; k++) {
+      var prob = Math.pow(q, k);
+      rows += '<tr><td>' + k + '×</td><td>' + (prob * 100).toFixed(4) + '%</td><td>' +
+        (prob > 0 ? (1 / prob).toFixed(1) : '—') + '</td><td>' +
+        Math.pow(2, k) + '× stake</td></tr>';
+    }
+    $('riskBody').innerHTML = st.n ? rows : '<tr><td colspan="4" style="color:var(--muted)">menunggu data…</td></tr>';
+
+    var suggested = balance * riskPct / 100;
+    $('evP').title = 'Empiris dari ' + st.n + ' tick';
+    $('evVal').title = 'EV = stake × (p×(1+payout) − 1). Maks stake saran: ' +
+      (suggested > 0 ? suggested.toFixed(2) : '—') + ' (' + riskPct + '% saldo).';
+  }
+
+  /* =====================================================================
+   * 13. RENDER — VOLATILITAS
+   * ===================================================================== */
+  function volQuick() {
+    var n = S.seq.length;
+    if (n < 8) return null;
+    var from = Math.max(1, n - 300);
+    var rets = [];
+    for (var i = from; i < n; i++) {
+      var a = S.seq[i - 1].q, b = S.seq[i].q;
+      if (a > 0 && b > 0) rets.push(Math.log(b / a));
+    }
+    if (rets.length < 4) return null;
+    var m = mean(rets);
+    var variance = 0;
+    for (var j = 0; j < rets.length; j++) variance += Math.pow(rets[j] - m, 2);
+    variance /= rets.length;
+    var sd = Math.sqrt(variance);
+    var price = S.seq[n - 1].q;
+    return { sdPct: sd * 100, sd: sd, price1: price * sd, rets: rets };
+  }
+
+  function sdOf(arr) {
+    if (arr.length < 2) return 0;
+    var m = mean(arr), v = 0;
+    for (var i = 0; i < arr.length; i++) v += Math.pow(arr[i] - m, 2);
+    return Math.sqrt(v / arr.length);
+  }
+
+  function renderVolatility() {
+    var n = S.seq.length;
+    $('volLabel').textContent = 'dihitung dari ' + (S.window ? Math.min(S.window, n) : n) + ' tick jendela';
+    if (n < 10) {
+      ['volTick', 'volMin', 'volAtr', 'volRegime', 'volPos', 'volMove10'].forEach(function (id) {
+        $(id).textContent = '—';
+      });
+      return;
+    }
+    var vq = volQuick();
+    var sd = vq ? vq.sd : 0;
+    $('volTick').textContent = (sd * 100).toFixed(4) + '%';
+    $('volMin').textContent = (sd * Math.sqrt(60) * 100).toFixed(3) + '%';
+
+    // ATR 14 (harga)
+    var from = Math.max(1, n - 14), diffs = [];
+    for (var i = from; i < n; i++) diffs.push(Math.abs(S.seq[i].q - S.seq[i - 1].q));
+    var atr = mean(diffs);
+    $('volAtr').textContent = fmt(atr);
+
+    // rezim: sigma 60 tick terakhir vs 300
+    var short = [], longR = [];
+    var start = Math.max(1, n - 300);
+    for (var k = start; k < n; k++) {
+      var a = S.seq[k - 1].q, b = S.seq[k].q;
+      if (a > 0 && b > 0) {
+        var r = Math.log(b / a);
+        longR.push(r);
+        if (k >= n - 60) short.push(r);
+      }
+    }
+    var sShort = sdOf(short), sLong = sdOf(longR);
+    var ratio = sLong > 0 ? sShort / sLong : 1;
+    var regime = ratio > 1.25 ? 'MENGEMBANG' : ratio < 0.8 ? 'MENGEMPIS' : 'NORMAL';
+    $('volRegime').textContent = regime;
+    $('volRegime').className = 'v ' + (ratio > 1.25 ? 'neg' : ratio < 0.8 ? 'pos' : 'mid');
+    $('volRegimeNote').textContent = 'rasio σ60/σ300 ' + ratio.toFixed(2);
+
+    var win = activeWindow();
+    var lo = Infinity, hi = -Infinity;
+    for (var m = 0; m < win.length; m++) { lo = Math.min(lo, win[m].q); hi = Math.max(hi, win[m].q); }
+    if (isFinite(lo) && hi > lo) {
+      var pos = (S.seq[n - 1].q - lo) / (hi - lo) * 100;
+      $('volPos').textContent = pos.toFixed(1) + '%';
+      $('volRange').textContent = fmt(lo) + ' – ' + fmt(hi);
+    } else {
+      $('volPos').textContent = '—';
+      $('volRange').textContent = '—';
+    }
+    $('volMove10').textContent = '±' + fmt(S.seq[n - 1].q * sd * Math.sqrt(10));
+  }
+
+  /* =====================================================================
+   * 14. GRAFIK CANVAS
+   * ===================================================================== */
+  function initChart() {
+    chart.canvas = $('chart');
+    chart.ctx = chart.canvas.getContext('2d');
+    fitCanvas();
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { fitCanvas(); drawChart(); }).observe(chart.canvas.parentElement);
+    } else {
+      window.addEventListener('resize', function () { fitCanvas(); drawChart(); });
+    }
+
+    var cvs = chart.canvas;
+    cvs.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var f = e.deltaY > 0 ? 1.18 : 1 / 1.18;
+      chart.bars = clamp(Math.round(chart.bars * f), 24, 400);
+      chart.offset = clamp(chart.offset, 0, Math.max(0, chartLen() - chart.bars));
+      drawChart();
+    }, { passive: false });
+
+    cvs.addEventListener('pointerdown', function (e) {
+      chart.drag = { x: e.clientX, offset: chart.offset };
+      try { cvs.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+    });
+    cvs.addEventListener('pointermove', function (e) {
+      var rect = cvs.getBoundingClientRect();
+      chart.mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      if (chart.drag) {
+        var perBar = Math.max(1, (chart.W - 64) / chart.bars);
+        var delta = (e.clientX - chart.drag.x) / perBar;
+        var maxOff = Math.max(0, chartLen() - chart.bars);
+        chart.offset = clamp(Math.round(chart.drag.offset + delta), 0, maxOff);
+        $('liveBtn').classList.toggle('on', chart.offset === 0);
+      }
+      drawChart();
+    });
+    cvs.addEventListener('pointerup', function () { chart.drag = null; });
+    cvs.addEventListener('pointercancel', function () { chart.drag = null; });
+    cvs.addEventListener('pointerleave', function () { chart.drag = null; chart.mouse = null; drawChart(); });
+    cvs.addEventListener('dblclick', function () { chart.offset = 0; $('liveBtn').classList.add('on'); drawChart(); });
+  }
+
+  function fitCanvas() {
+    var cvs = chart.canvas;
+    if (!cvs) return;
+    var rect = cvs.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    chart.W = Math.max(280, Math.round(rect.width));
+    chart.H = Math.max(140, Math.round(rect.height));
+    cvs.width = Math.round(chart.W * dpr);
+    cvs.height = Math.round(chart.H * dpr);
+    chart.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function chartLen() {
+    if (chart.tf === 1) return S.seq.length;
+    return chart.data.length;
+  }
+
+  function buildCandles() {
+    var tf = chart.tf, out = [], cur = null;
+    for (var i = 0; i < S.seq.length; i++) {
+      var tk = S.seq[i];
+      var bucket = Math.floor(tk.t / tf) * tf;
+      if (!cur || bucket !== cur.t) {
+        if (cur) out.push(cur);
+        cur = { t: bucket, o: tk.q, h: tk.q, l: tk.q, c: tk.q, n: 1 };
+      } else {
+        if (tk.q > cur.h) cur.h = tk.q;
+        if (tk.q < cur.l) cur.l = tk.q;
+        cur.c = tk.q;
+        cur.n++;
+      }
+    }
+    if (cur) out.push(cur);
+    if (out.length > 2000) out = out.slice(-2000);
+    chart.data = out;
+  }
+
+  function sma(values, period, idx) {
+    var sum = 0, cnt = 0;
+    for (var i = Math.max(0, idx - period + 1); i <= idx; i++) { sum += values[i]; cnt++; }
+    return cnt ? sum / cnt : null;
+  }
+
+  function drawChart() {
+    var ctx = chart.ctx;
+    if (!ctx) return;
+    // pastikan ukuran sinkron (mis. saat halaman baru dimuat)
+    if (!chart.W) fitCanvas();
+
+    var W = chart.W, H = chart.H;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0a121d';
+    ctx.fillRect(0, 0, W, H);
+
+    if (chart.tf > 1) buildCandles();
+
+    var padL = 6, padR = 62, padT = 10, padB = 20;
+    var plotW = Math.max(10, W - padL - padR);
+    var plotH = Math.max(10, H - padT - padB);
+
+    var total = chart.tf === 1 ? S.seq.length : chart.data.length;
+    if (total < 2) {
+      ctx.fillStyle = '#5f7691';
+      ctx.font = '12px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('menunggu data…', W / 2, H / 2);
+      return;
+    }
+
+    chart.offset = clamp(chart.offset, 0, Math.max(0, total - chart.bars));
+    var end = total - chart.offset;
+    var start = Math.max(0, end - chart.bars);
+    var visLen = end - start;
+
+    var hi = -Infinity, lo = Infinity;
+    if (chart.tf === 1) {
+      for (var i = start; i < end; i++) { hi = Math.max(hi, S.seq[i].q); lo = Math.min(lo, S.seq[i].q); }
+    } else {
+      for (var j = start; j < end; j++) {
+        hi = Math.max(hi, chart.data[j].h); lo = Math.min(lo, chart.data[j].l);
+      }
+    }
+    if (!isFinite(hi) || !isFinite(lo)) return;
+    if (hi === lo) { hi += pipSize(); lo -= pipSize(); }
+    var pad = (hi - lo) * 0.08;
+    hi += pad; lo -= pad;
+
+    var xAt = function (k) { return padL + (k - start + 0.5) / visLen * plotW; };
+    var yAt = function (p) { return padT + (hi - p) / (hi - lo) * plotH; };
+
+    // grid horizontal
+    ctx.strokeStyle = 'rgba(120,145,175,.14)';
+    ctx.fillStyle = '#7f97b3';
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    for (var g = 0; g <= 4; g++) {
+      var yy = padT + plotH * g / 4;
+      ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(padL + plotW, yy); ctx.stroke();
+      var price = hi - (hi - lo) * g / 4;
+      ctx.fillText(fmt(price), padL + plotW + 6, yy);
+    }
+
+    // area / candle
+    if (chart.tf === 1) {
+      // garis + gradient
+      ctx.beginPath();
+      for (var a = start; a < end; a++) {
+        var px = xAt(a), py = yAt(S.seq[a].q);
+        if (a === start) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      var grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+      grad.addColorStop(0, 'rgba(99,212,221,.22)');
+      grad.addColorStop(1, 'rgba(99,212,221,0)');
+      ctx.lineTo(xAt(end - 1), padT + plotH);
+      ctx.lineTo(xAt(start), padT + plotH);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      for (var b = start; b < end; b++) {
+        var qx = xAt(b), qy = yAt(S.seq[b].q);
+        if (b === start) ctx.moveTo(qx, qy); else ctx.lineTo(qx, qy);
+      }
+      ctx.strokeStyle = '#63d4dd';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // titik digit pada zoom cukup besar
+      if (visLen <= 140) {
+        for (var d = start; d < end; d++) {
+          var tk2 = S.seq[d];
+          ctx.beginPath();
+          ctx.arc(xAt(d), yAt(tk2.q), 2, 0, Math.PI * 2);
+          ctx.fillStyle = tk2.dir > 0 ? '#4fd18b' : tk2.dir < 0 ? '#ff7a7a' : '#8ea3bd';
+          ctx.fill();
+        }
+      }
+
+      // SMA untuk line
+      if (chart.sma) {
+        var lineCloses = new Array(total);
+        for (var lc = 0; lc < total; lc++) lineCloses[lc] = S.seq[lc].q;
+        ctx.beginPath();
+        var lineStarted = false;
+        for (var s = start; s < end; s++) {
+          var sm = sma(lineCloses, 20, s);
+          if (sm === null) continue;
+          var sx = xAt(s), sy = yAt(sm);
+          if (!lineStarted) { ctx.moveTo(sx, sy); lineStarted = true; } else ctx.lineTo(sx, sy);
+        }
+        ctx.strokeStyle = '#f0c16c';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    } else {
+      var closes = [];
+      for (var c = 0; c < chart.data.length; c++) closes.push(chart.data[c].c);
+
+      // Bollinger
+      if (chart.bb) {
+        var period = 20, upper = [], lower = [];
+        for (var u = start; u < end; u++) {
+          var arr = closes.slice(Math.max(0, u - period + 1), u + 1);
+          var m = mean(arr), sdv = sdOf(arr);
+          upper.push(m + 2 * sdv); lower.push(m - 2 * sdv);
+        }
+        ctx.beginPath();
+        for (var uu = start; u < end; uu++) {
+          var ax = xAt(uu), ay = yAt(upper[uu - start]);
+          if (uu === start) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+        }
+        for (var ll = end - 1; ll >= start; ll--) {
+          ctx.lineTo(xAt(ll), yAt(lower[ll - start]));
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(99,212,221,.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(99,212,221,.45)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      var bw = Math.max(1.5, plotW / visLen * 0.62);
+      for (var k2 = start; k2 < end; k2++) {
+        var cd = chart.data[k2];
+        var x = xAt(k2);
+        var up = cd.c >= cd.o;
+        ctx.strokeStyle = up ? '#4fd18b' : '#ff7a7a';
+        ctx.fillStyle = up ? '#4fd18b' : '#ff7a7a';
+        ctx.beginPath();
+        ctx.moveTo(x, yAt(cd.h));
+        ctx.lineTo(x, yAt(cd.l));
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        var yo = yAt(cd.o), yc = yAt(cd.c);
+        var top = Math.min(yo, yc), hgt = Math.max(1.2, Math.abs(yc - yo));
+        ctx.fillRect(x - bw / 2, top, bw, hgt);
+      }
+
+      if (chart.sma) {
+        ctx.beginPath();
+        var started = false;
+        for (var s2 = start; s2 < end; s2++) {
+          var smv = sma(closes, 20, s2);
+          if (smv === null) continue;
+          var smx = xAt(s2), smy = yAt(smv);
+          if (!started) { ctx.moveTo(smx, smy); started = true; } else ctx.lineTo(smx, smy);
+        }
+        ctx.strokeStyle = '#f0c16c';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    }
+
+    // label waktu
+    ctx.fillStyle = '#7f97b3';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    var ticksX = 4;
+    for (var tlabel = 0; tlabel <= ticksX; tlabel++) {
+      var idx = Math.round(start + (visLen - 1) * tlabel / ticksX);
+      idx = clamp(idx, 0, total - 1);
+      var ep = chart.tf === 1 ? S.seq[idx].t : chart.data[idx].t;
+      var label = chart.tf >= 60 ? hhmm(ep) : hhmmss(ep);
+      ctx.fillText(label, xAt(idx), padT + plotH + 5);
+    }
+
+    // garis harga terakhir
+    var lastQ = chart.tf === 1 ? S.seq[total - 1].q : chart.data[total - 1].c;
+    if (chart.offset === 0 && lastQ !== undefined) {
+      var ly = yAt(lastQ);
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(240,193,108,.6)';
+      ctx.beginPath();
+      ctx.moveTo(padL, ly);
+      ctx.lineTo(padL + plotW, ly);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#f0c16c';
+      var txt = fmt(lastQ);
+      var tw = ctx.measureText(txt).width + 8;
+      ctx.fillRect(padL + plotW + 2, ly - 8, Math.min(tw, padR - 4), 16);
+      ctx.fillStyle = '#16202e';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(txt, padL + plotW + 6, ly + 1);
+    }
+
+    // crosshair
+    if (chart.mouse && chart.mouse.x > padL && chart.mouse.x < padL + plotW) {
+      var mx = chart.mouse.x, my = clamp(chart.mouse.y, padT, padT + plotH);
+      ctx.strokeStyle = 'rgba(219,230,243,.25)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(mx, padT); ctx.lineTo(mx, padT + plotH);
+      ctx.moveTo(padL, my); ctx.lineTo(padL + plotW, my);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      var rel = clamp((mx - padL) / plotW, 0, 0.99999);
+      var ci2 = clamp(Math.floor(start + rel * visLen), 0, total - 1);
+      var info = '';
+      if (chart.tf === 1) {
+        var it = S.seq[ci2];
+        info = '<b>' + fmt(it.q) + '</b> · digit ' + it.d + ' · ' + hhmmss(it.t) +
+          ' · ' + (it.dir > 0 ? 'naik' : it.dir < 0 ? 'turun' : 'datar');
+      } else {
+        var ic = chart.data[ci2];
+        info = '<b>' + fmt(ic.c) + '</b> · O ' + fmt(ic.o) + ' H ' + fmt(ic.h) +
+          ' L ' + fmt(ic.l) + ' · ' + ic.n + ' tick · ' + hhmm(ic.t);
+      }
+      $('chartInfo').innerHTML = info;
+    } else {
+      var lastLbl = chart.tf === 1
+        ? 'tick ' + fmt(S.seq[total - 1].q) + ' · digit ' + S.seq[total - 1].d
+        : 'candle ' + fmt(chart.data[total - 1].c) + ' · ' + chart.data[total - 1].n + ' tick';
+      $('chartInfo').innerHTML = lastLbl + ' · tampil ' + visLen +
+        (chart.tf === 1 ? ' tick' : ' candle ' + chart.tf + 's') +
+        ' · geser untuk pan, scroll untuk zoom';
+    }
+
+    ctx.fillStyle = S.mode === 'live' ? '#4fd18b' : S.mode === 'sim' ? '#f0c16c' : '#8ea3bd';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillText(S.mode === 'live' ? '● LIVE DERIV' : S.mode === 'sim' ? '● SIMULASI' : '● OFFLINE', padL + 4, padT + 2);
+  }
+
+  /* =====================================================================
+   * 15. CSV
+   * ===================================================================== */
+  function exportCSV() {
+    if (!S.seq.length) { toast('Belum ada data untuk diexport.'); return; }
+    var lines = ['epoch,iso_time,quote,digit,direction'];
+    for (var i = 0; i < S.seq.length; i++) {
+      var tk = S.seq[i];
+      lines.push([
+        tk.t,
+        new Date(tk.t * 1000).toISOString(),
+        fmt(tk.q),
+        tk.d,
+        tk.dir > 0 ? 'up' : tk.dir < 0 ? 'down' : 'flat'
+      ].join(','));
+    }
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'syntetic-' + S.symbol + '-' + nowSec() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast('CSV ' + S.seq.length + ' tick diunduh.');
+  }
+
+  /* =====================================================================
+   * 16. BINDING UI
+   * ===================================================================== */
+  function initSelects() {
+    var barrierSel = $('barrierSel'), targetSel = $('targetSel'), htmlB = '', htmlT = '';
+    for (var b = 0; b <= 8; b++) htmlB += '<option value="' + b + '">' + b + '</option>';
+    for (var d = 0; d <= 9; d++) htmlT += '<option value="' + d + '">' + d + '</option>';
+    barrierSel.innerHTML = htmlB;
+    targetSel.innerHTML = htmlT;
+    barrierSel.value = S.barrier;
+    targetSel.value = S.target;
+    $('winSel').value = String(S.window);
+    $('famSel').value = S.family;
+    $('appId').value = S.appId;
+  }
+
+  function bindUI() {
+    $('symbolSel').addEventListener('change', function () { switchSymbol(this.value); });
+    $('connectBtn').addEventListener('click', function () {
+      S.appId = clamp(parseInt($('appId').value, 10) || DEFAULT_APP_ID, 1, 999999);
+      savePrefs();
+      connect();
+    });
+    $('disconnectBtn').addEventListener('click', function () {
+      cleanupSocket();
+      stopSim();
+      setMode('idle', 'TERPUTUS');
+      setLog('Koneksi dihentikan. Data terakhir tetap ditampilkan.');
+    });
+    $('simBtn').addEventListener('click', function () { startSim(true); });
+    $('exportBtn').addEventListener('click', exportCSV);
+
+    $('appId').addEventListener('change', function () {
+      S.appId = clamp(parseInt(this.value, 10) || DEFAULT_APP_ID, 1, 999999);
+      this.value = S.appId;
+      savePrefs();
+    });
+
+    $('winSel').addEventListener('change', function () {
+      S.window = parseInt(this.value, 10) || 0;
+      savePrefs();
+      scheduleRender();
+    });
+    $('barrierSel').addEventListener('change', function () {
+      S.barrier = parseInt(this.value, 10) || 0;
+      savePrefs();
+      scheduleRender();
+    });
+    $('targetSel').addEventListener('change', function () {
+      S.target = parseInt(this.value, 10) || 0;
+      savePrefs();
+      scheduleRender();
+    });
+    $('famSel').addEventListener('change', function () {
+      S.family = this.value;
+      savePrefs();
+      scheduleRender();
+    });
+    ['payoutIn', 'stakeIn', 'balIn', 'riskIn'].forEach(function (id) {
+      $(id).addEventListener('input', function () { savePrefs(); scheduleRender(); });
+    });
+
+    document.querySelectorAll('.tf[data-tf]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tf[data-tf]').forEach(function (b) { b.classList.remove('on'); });
+        this.classList.add('on');
+        chart.tf = parseInt(this.getAttribute('data-tf'), 10) || 1;
+        chart.offset = 0;
+        chart.bars = chart.tf === 1 ? 120 : 90;
+        drawChart();
+      });
+    });
+
+    $('smaChk').addEventListener('change', function () { chart.sma = this.checked; drawChart(); });
+    $('bbChk').addEventListener('change', function () { chart.bb = this.checked; drawChart(); });
+    $('liveBtn').addEventListener('click', function () {
+      chart.offset = 0;
+      this.classList.add('on');
+      drawChart();
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && S.mode === 'sim') {
+        //isi celah saat tab kembali aktif
+        if (S.seq.length) {
+          var last = S.seq[S.seq.length - 1].t;
+          var gap = nowSec() - last;
+          if (gap > 2 && gap < 3600) {
+            for (var i = 1; i <= Math.min(gap, 60); i++) {
+              sim.last = simQuote(sim.last);
+              appendTick(last + i, sim.last);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* =====================================================================
+   * 17. BOOT
+   * ===================================================================== */
+  function boot() {
+    loadPrefs();
+    initSelects();
+    fillSymbolSelect();
+    refreshBrand();
+    bindUI();
+    initChart();
+
+    $('buildStamp').textContent = 'build ' + new Date().toISOString().slice(0, 10);
+    setMode('idle', 'IDLE');
+
+    // param ?sim untuk memaksa simulasi (berguna saat menguji offline)
+    if (/[?&]sim(=1|=true)?(&|$)/.test(location.search)) {
+      startSim(true);
+      return;
+    }
+
+    // pip_size kadang baru datang lewat tick; fallback awal dari tabel
+    var meta = findSymbol(S.symbol);
+    if (meta && meta.pip) {
+      S.pip = meta.pip;
+      S.decimals = decimalsFromPip(meta.pip);
+    }
+
+    drawChart();
+    connect();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
