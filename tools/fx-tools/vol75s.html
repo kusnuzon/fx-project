@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;" />
   <title>Astro Timing V75</title>
+  <link rel="icon" href="data:," />
   <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
   <style>
     :root {
@@ -602,6 +603,7 @@
           const A = CONFIG.ALGORITHM;
           const now = Date.now();
           const rows = [];
+          let nextEventUtc = null;
 
           // Hari ke-0 = hari ini (hanya aspek yang belum lewat), lalu 6 hari berikutnya
           for (let d = 0; d < A.DAYS; d++) {
@@ -614,6 +616,11 @@
             if (winStart >= dayEnd) continue;
 
             const evsAll = this.events(dayStart, dayEnd);
+            evsAll.forEach(e => {
+              if (e.timeUtc > now && (nextEventUtc === null || e.timeUtc < nextEventUtc)) {
+                nextEventUtc = e.timeUtc;
+              }
+            });
             const evsRemain = d === 0 ? evsAll.filter(e => e.timeUtc >= winStart) : evsAll;
             const pool = evsRemain.length ? evsRemain : evsAll;
             const bias = this.netBias(pool);
@@ -662,13 +669,11 @@
             });
           }
 
-          // Penanda "berikutnya" bila aspek hari ini sudah lewat
-          const n = rows.length;
-          for (let i = 0; i < n - 1; i++) {
-            if (rows[i].passed && rows[i + 1].entryUtc) {
-              const nx = TZ.parts(rows[i + 1].entryUtc, T.WIB_OFFSET_HOURS);
-              rows[i].nextLabel = `${nx.dowShort}, ${nx.date} ${nx.hhmmss} WIB`;
-            }
+          // Penanda aspek berikutnya bila aspek hari ini sudah lewat
+          if (nextEventUtc !== null) {
+            const nx = TZ.parts(nextEventUtc, T.WIB_OFFSET_HOURS);
+            const label = `${nx.dowShort}, ${nx.date} ${nx.hhmmss} WIB`;
+            rows.forEach(r => { if (r.passed) r.nextLabel = label; });
           }
           return rows;
         }
@@ -774,7 +779,7 @@
             const tagHtml = r.isToday
               ? (r.passed ? '<span class="tag-lewat">Lewat</span>' : '<span class="tag-today">Hari ini</span>')
               : '';
-            const hintHtml = r.nextLabel ? '<span class="next-hint">Aspek berikutnya ' + r.nextLabel + '</span>' : '';
+            const hintHtml = r.nextLabel ? '<span class="next-hint">Aspek berikutnya: ' + r.nextLabel + '</span>' : '';
 
             el.innerHTML =
               '<div class="cell-date">' +
